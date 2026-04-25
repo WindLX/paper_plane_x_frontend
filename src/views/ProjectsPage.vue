@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { ArrowDownUp, ArrowDownWideNarrow, ArrowUpWideNarrow, FolderOpen, Plus, Search, Trash2 } from 'lucide-vue-next'
 import { RouterLink } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import { api } from '../api/client'
 import AppButton from '../components/AppButton.vue'
@@ -15,6 +16,7 @@ import { formatDateTime } from '../utils/format'
 const projectStore = useProjectStore()
 const dialog = useDialog()
 const notify = useNotify()
+const { t } = useI18n()
 const name = ref('')
 const description = ref('')
 const submitting = ref(false)
@@ -45,34 +47,34 @@ async function removeProjectWithConfirm(projectId: string): Promise<void> {
     paperCount = paperPayload.total
   } catch {
     const fallbackConfirm = await dialog.confirm({
-      title: 'Delete Project',
-      message: `Delete project ${projectId}? This action cannot be undone.`,
-      confirmText: 'Delete',
+      title: t('projects.deleteTitle'),
+      message: t('projects.deleteConfirmSimple', { projectId }),
+      confirmText: t('actions.delete'),
       tone: 'danger',
     })
     if (!fallbackConfirm) {
       return
     }
     await projectStore.removeProject(projectId)
-    notify.push(`Project ${projectId} deleted`, 'success')
+    notify.push(t('projects.deleted', { projectId }), 'success')
     return
   }
 
   const message =
     paperCount > 0
-      ? `Project ${projectId} contains ${paperCount} paper(s).\nDeleting the project will unlink all related papers from this project.\nContinue?`
-      : `Delete project ${projectId}? This action cannot be undone.`
+      ? t('projects.deleteConfirmWithPapers', { projectId, paperCount })
+      : t('projects.deleteConfirmSimple', { projectId })
   const confirmed = await dialog.confirm({
-    title: 'Delete Project',
+    title: t('projects.deleteTitle'),
     message,
-    confirmText: 'Delete',
+    confirmText: t('actions.delete'),
     tone: 'danger',
   })
   if (!confirmed) {
     return
   }
   await projectStore.removeProject(projectId)
-  notify.push(`Project ${projectId} deleted`, 'success')
+  notify.push(t('projects.deleted', { projectId }), 'success')
 }
 
 const filteredProjects = computed(() => {
@@ -123,30 +125,30 @@ watch(
 <template>
   <section class="space-y-6">
     <header>
-      <h2 class="text-xl font-semibold">Projects</h2>
-      <p class="text-sm text-slate-500 dark:text-slate-400">Create, browse, and clean up projects.</p>
+      <h2 class="text-xl font-semibold">{{ t('projects.title') }}</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('projects.subtitle') }}</p>
       <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-        Total: {{ projectStore.projects.length }} · Showing: {{ sortedProjects.length }}
+        {{ t('common.total') }}: {{ projectStore.projects.length }} · {{ t('common.showing') }}: {{ sortedProjects.length }}
       </p>
     </header>
 
     <form
       class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-6"
       @submit.prevent="createProject">
-      <input v-model="name" placeholder="Project name"
+      <input v-model="name" :placeholder="t('projects.namePlaceholder')"
         class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none ring-sky-300 focus:ring dark:border-slate-600 dark:bg-slate-950 md:col-span-2" />
-      <input v-model="description" placeholder="Description (optional)"
+      <input v-model="description" :placeholder="t('projects.descriptionPlaceholder')"
         class="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none ring-sky-300 focus:ring dark:border-slate-600 dark:bg-slate-950 md:col-span-3" />
       <AppButton type="submit" :disabled="submitting" tone="sky" variant="solid" size="md">
         <Plus class="h-4 w-4" />
-        <span>Create</span>
+        <span>{{ t('actions.create') }}</span>
       </AppButton>
     </form>
 
     <div
       class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
       <Search class="h-4 w-4 text-slate-500 dark:text-slate-400" />
-      <input v-model="keyword" placeholder="Search by name / description / project_id"
+      <input v-model="keyword" :placeholder="t('projects.searchPlaceholder')"
         class="w-full bg-transparent text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500" />
     </div>
 
@@ -155,12 +157,12 @@ watch(
         <thead class="bg-slate-50 dark:bg-slate-800">
           <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
             <th class="px-3 py-2">#</th>
-            <th class="px-3 py-2">Project ID</th>
-            <th class="px-3 py-2">Name</th>
-            <th class="px-3 py-2">Description</th>
+            <th class="px-3 py-2">{{ t('projects.table.projectId') }}</th>
+            <th class="px-3 py-2">{{ t('projects.table.name') }}</th>
+            <th class="px-3 py-2">{{ t('projects.table.description') }}</th>
             <th class="px-3 py-2">
               <AppButton size="xs" @click="toggleSort('created')">
-                <span>Created</span>
+                <span>{{ t('projects.table.created') }}</span>
                 <ArrowUpWideNarrow v-if="sortField === 'created' && sortOrder === 'asc'" class="h-3.5 w-3.5" />
                 <ArrowDownWideNarrow v-else-if="sortField === 'created' && sortOrder === 'desc'" class="h-3.5 w-3.5" />
                 <ArrowDownUp v-else class="h-3.5 w-3.5" />
@@ -168,13 +170,13 @@ watch(
             </th>
             <th class="px-3 py-2">
               <AppButton size="xs" @click="toggleSort('updated')">
-                <span>Updated</span>
+                <span>{{ t('projects.table.updated') }}</span>
                 <ArrowUpWideNarrow v-if="sortField === 'updated' && sortOrder === 'asc'" class="h-3.5 w-3.5" />
                 <ArrowDownWideNarrow v-else-if="sortField === 'updated' && sortOrder === 'desc'" class="h-3.5 w-3.5" />
                 <ArrowDownUp v-else class="h-3.5 w-3.5" />
               </AppButton>
             </th>
-            <th class="px-3 py-2">Actions</th>
+            <th class="px-3 py-2">{{ t('projects.table.actions') }}</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -192,18 +194,18 @@ watch(
                 <RouterLink :to="`/projects/${project.project_id}`"
                   class="inline-flex items-center gap-1 rounded-md border border-sky-300 bg-sky-50 px-2 py-1 text-xs text-sky-700 hover:bg-sky-100 dark:border-sky-700 dark:bg-sky-900/20 dark:text-sky-300 dark:hover:bg-slate-800">
                   <FolderOpen class="h-3.5 w-3.5" />
-                  <span>Open</span>
+                  <span>{{ t('actions.open') }}</span>
                 </RouterLink>
                 <AppButton tone="rose" size="xs" @click="removeProjectWithConfirm(project.project_id)">
                   <Trash2 class="h-3.5 w-3.5" />
-                  <span>Delete</span>
+                  <span>{{ t('actions.delete') }}</span>
                 </AppButton>
               </div>
             </td>
           </tr>
           <tr v-if="sortedProjects.length === 0">
             <td colspan="7" class="px-3 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-              No projects
+              {{ t('projects.empty') }}
             </td>
           </tr>
         </tbody>

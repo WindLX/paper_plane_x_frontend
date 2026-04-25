@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { DataProcessTaskStatus } from '../types/api'
 
@@ -7,6 +8,7 @@ const props = defineProps<{
   status: DataProcessTaskStatus
 }>()
 
+const { t } = useI18n()
 const colorClass = computed(() => {
   switch (props.status) {
     case 'RUNNING':
@@ -22,10 +24,12 @@ const colorClass = computed(() => {
       return 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-200'
   }
 })
+
+const label = computed(() => t(`status.${props.status}`))
 </script>
 
 <template>
   <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold" :class="colorClass">
-    {{ status }}
+    {{ label }}
   </span>
 </template>

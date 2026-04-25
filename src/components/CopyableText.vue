@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Check, Copy } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   text: string
   mono?: boolean
 }>()
 
+const { t } = useI18n()
 const copied = ref(false)
 let timer: number | null = null
 
@@ -26,7 +28,8 @@ async function copyText(): Promise<void> {
 <template>
   <button type="button"
     class="inline-flex min-w-0 items-center gap-1 text-left text-sky-700 underline decoration-dotted underline-offset-2 hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200 cursor-pointer"
-    :class="mono ? 'font-mono text-xs' : 'text-sm'" :title="copied ? 'Copied' : 'Click to copy'" @click="copyText">
+    :class="mono ? 'font-mono text-xs' : 'text-sm'"
+    :title="copied ? t('copyable.copied') : t('copyable.clickToCopy')" @click="copyText">
     <span class="break-all">{{ text }}</span>
     <Check v-if="copied" class="h-3.5 w-3.5 shrink-0" />
     <Copy v-else class="h-3.5 w-3.5 shrink-0" />

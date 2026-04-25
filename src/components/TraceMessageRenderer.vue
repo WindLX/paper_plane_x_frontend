@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ChevronRight } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 import MarkdownContent from './MarkdownContent.vue'
 import JsonPanel from './JsonPanel.vue'
@@ -10,6 +11,8 @@ const props = defineProps<{
   message: TraceMessage
   index?: number
 }>()
+
+const { t } = useI18n()
 
 const roleCardClass = computed(() => {
   switch (props.message.role) {
@@ -104,7 +107,7 @@ const hasReasoning = computed(
 const previewText = computed(() => {
   const firstText = parsedParts.value.find((item) => item.type === 'text')
   if (!firstText) {
-    return parsedParts.value.length > 0 ? '[multimodal message]' : 'Empty content'
+    return parsedParts.value.length > 0 ? t('trace.multimodalMessage') : t('trace.emptyContent')
   }
   const text = firstText.text.replace(/\s+/g, ' ').trim()
   if (text.length <= 80) return text
@@ -114,13 +117,13 @@ const previewText = computed(() => {
 
 <template>
   <details class="group rounded-lg border" :class="[roleAlignClass, roleCardClass]">
-    <summary class="cursor-pointer list-none p-3 group-open:border-b group-open:border-slate-200 dark:group-open:border-slate-700">
+    <summary class="summary-row cursor-pointer list-none p-3">
       <div class="flex items-start gap-2">
         <div class="mt-1.5 h-2 w-2 rounded-full bg-slate-400/80 dark:bg-slate-500" />
         <div class="min-w-0">
           <div class="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide" :class="roleLabelClass">
             <ChevronRight class="h-4 w-4 transition-transform group-open:rotate-90" />
-            <span>#{{ index ?? '-' }} {{ message.role }}</span>
+            <span>#{{ index ?? '-' }} {{ t(`trace.role.${message.role}`) }}</span>
             <span v-if="message.name" class="normal-case text-xs font-medium text-slate-500">({{ message.name }})</span>
           </div>
           <p class="preview-text mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
@@ -131,33 +134,32 @@ const previewText = computed(() => {
     </summary>
 
     <div class="space-y-3 px-3 pb-3 pt-2">
-      <details v-if="hasReasoning"
-        class="rounded-md border p-2" :class="reasoningClass">
-        <summary class="cursor-pointer text-xs font-semibold">Reasoning</summary>
+      <details v-if="hasReasoning" class="rounded-md border p-2" :class="reasoningClass">
+        <summary class="cursor-pointer text-xs font-semibold">{{ t('trace.reasoning') }}</summary>
         <div class="mt-2">
           <MarkdownContent :markdown="message.reasoning_content as string" />
         </div>
       </details>
 
       <div v-if="parsedParts.length === 0" class="text-xs text-slate-500 dark:text-slate-400">
-        Empty content
+        {{ t('trace.emptyContent') }}
       </div>
 
       <div class="space-y-3">
         <template v-for="(part, index2) in parsedParts" :key="index2">
           <MarkdownContent v-if="part.type === 'text'" :markdown="part.text" />
           <div v-else class="space-y-2">
-            <img :src="part.url" alt="VLM content" loading="lazy"
+            <img :src="part.url" :alt="t('trace.vlmImageAlt')" loading="lazy"
               class="max-h-80 w-auto rounded border border-slate-200 bg-white object-contain dark:border-slate-700 dark:bg-slate-900" />
             <a :href="part.url" target="_blank" rel="noreferrer"
               class="text-xs text-sky-700 underline dark:text-sky-300">
-              Open image
+              {{ t('trace.openImage') }}
             </a>
           </div>
         </template>
       </div>
 
-      <JsonPanel title="Raw message JSON" :value="message" pre-wrap />
+      <JsonPanel :title="t('trace.rawMessageJson')" :value="message" pre-wrap />
     </div>
   </details>
 </template>
@@ -165,5 +167,17 @@ const previewText = computed(() => {
 <style scoped>
 .group[open] .preview-text {
   display: none;
+}
+
+.summary-row {
+  border-bottom: 1px solid transparent;
+}
+
+.group[open] .summary-row {
+  border-bottom-color: rgb(226 232 240);
+}
+
+.dark .group[open] .summary-row {
+  border-bottom-color: rgb(51 65 85);
 }
 </style>

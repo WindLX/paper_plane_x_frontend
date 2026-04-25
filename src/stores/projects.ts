@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { translate } from '../i18n'
 import { api } from '../api/client'
 import type { PaperResponse, ProjectResponse } from '../types/api'
 
@@ -20,7 +21,7 @@ export const useProjectStore = defineStore('projects', () => {
       const payload = await api.listProjects()
       projects.value = payload.items
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch projects'
+      error.value = err instanceof Error ? err.message : translate('errors.fetchProjects')
     } finally {
       loading.value = false
     }
@@ -56,7 +57,7 @@ export const useProjectStore = defineStore('projects', () => {
         limit: payload.limit,
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch project papers'
+      error.value = err instanceof Error ? err.message : translate('errors.fetchProjectPapers')
     } finally {
       loading.value = false
     }

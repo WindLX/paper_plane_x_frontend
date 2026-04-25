@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { AlertTriangle, ArrowLeft, Ban, RotateCcw, Trash2 } from 'lucide-vue-next'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 import AppButton from '../components/AppButton.vue'
 import CopyableText from '../components/CopyableText.vue'
@@ -22,6 +23,7 @@ const taskStore = useTaskStore()
 const traceStore = useTraceStore()
 const dialog = useDialog()
 const notify = useNotify()
+const { t } = useI18n()
 const fallbackTask = ref<DataProcessTaskResponse | null>(null)
 const retrySourceFallback = ref<DataProcessTaskResponse | null>(null)
 const retryChildren = ref<DataProcessTaskResponse[]>([])
@@ -69,25 +71,25 @@ const traceSections = computed(() => {
   return [
     {
       key: 'extraction',
-      title: 'Extraction Loop',
+      title: t('taskDetail.traceSections.extraction'),
       ids: current.extraction_trace_ids,
       entries: buildEntries(current.extraction_trace_ids),
     },
     {
       key: 'extraction_fact_check',
-      title: 'Extraction Fact Check Loop',
+      title: t('taskDetail.traceSections.extractionFactCheck'),
       ids: current.extraction_fact_check_trace_ids,
       entries: buildEntries(current.extraction_fact_check_trace_ids),
     },
     {
       key: 'analysis',
-      title: 'Analysis Loop',
+      title: t('taskDetail.traceSections.analysis'),
       ids: current.analysis_trace_ids,
       entries: buildEntries(current.analysis_trace_ids),
     },
     {
       key: 'analysis_fact_check',
-      title: 'Analysis Fact Check Loop',
+      title: t('taskDetail.traceSections.analysisFactCheck'),
       ids: current.analysis_fact_check_trace_ids,
       entries: buildEntries(current.analysis_fact_check_trace_ids),
     },
@@ -108,9 +110,9 @@ function canDelete(status: string): boolean {
 
 async function deleteTaskWithConfirm(taskIdToDelete: string): Promise<void> {
   const confirmed = await dialog.confirm({
-    title: 'Delete Task Record',
-    message: `Delete task record ${taskIdToDelete}? This only removes this task row.`,
-    confirmText: 'Delete',
+    title: t('tasks.deleteTitle'),
+    message: t('tasks.deleteConfirm', { taskId: taskIdToDelete }),
+    confirmText: t('actions.delete'),
     tone: 'danger',
   })
   if (!confirmed) {
@@ -118,18 +120,18 @@ async function deleteTaskWithConfirm(taskIdToDelete: string): Promise<void> {
   }
   try {
     await taskStore.deleteTask(taskIdToDelete)
-    notify.push(`Task ${taskIdToDelete} deleted`, 'success')
+    notify.push(t('tasks.deleted', { taskId: taskIdToDelete }), 'success')
     await router.push('/tasks')
   } catch (error) {
-    notify.push(error instanceof Error ? error.message : 'Failed to delete task', 'error', 3600)
+    notify.push(error instanceof Error ? error.message : t('errors.deleteTask'), 'error', 3600)
   }
 }
 
 async function deleteTraceWithConfirm(traceId: string): Promise<void> {
   const confirmed = await dialog.confirm({
-    title: 'Delete Trace',
-    message: `Delete trace ${traceId}? Task trace ids will keep this id and show as missing.`,
-    confirmText: 'Delete',
+    title: t('taskDetail.traceDeleteTitle'),
+    message: t('taskDetail.traceDeleteConfirm', { traceId }),
+    confirmText: t('actions.delete'),
     tone: 'danger',
   })
   if (!confirmed) {
@@ -137,9 +139,9 @@ async function deleteTraceWithConfirm(traceId: string): Promise<void> {
   }
   try {
     await traceStore.deleteById(traceId)
-    notify.push(`Trace ${traceId} deleted`, 'success')
+    notify.push(t('taskDetail.traceDeleted', { traceId }), 'success')
   } catch (error) {
-    notify.push(error instanceof Error ? error.message : 'Failed to delete trace', 'error', 3600)
+    notify.push(error instanceof Error ? error.message : t('errors.deleteTrace'), 'error', 3600)
   }
 }
 
@@ -206,7 +208,7 @@ async function loadRetryRelations(): Promise<void> {
   } catch (error) {
     retryChildren.value = []
     notify.push(
-      error instanceof Error ? error.message : 'Failed to load retry children',
+      error instanceof Error ? error.message : t('errors.loadRetryChildren'),
       'warning',
       2600,
     )
@@ -235,7 +237,7 @@ watch(taskId, () => {
     <header class="flex flex-wrap items-start justify-between gap-3">
       <div>
         <div class="flex items-center gap-2">
-          <h2 class="text-xl font-semibold">Task Detail</h2>
+          <h2 class="text-xl font-semibold">{{ t('taskDetail.title') }}</h2>
           <TaskStatusBadge v-if="task" :status="task.status" />
         </div>
         <p class="mt-1 font-mono text-xs text-slate-500 dark:text-slate-400">{{ taskId }}</p>
@@ -244,65 +246,65 @@ watch(taskId, () => {
         <RouterLink to="/tasks"
           class="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
           <ArrowLeft class="h-4 w-4" />
-          <span>Back</span>
+          <span>{{ t('actions.back') }}</span>
         </RouterLink>
         <AppButton v-if="task" tone="amber" size="md" :disabled="!canCancel(task.status)"
           @click="taskStore.cancelTask(task.task_id)">
           <Ban class="h-4 w-4" />
-          <span>Cancel</span>
+          <span>{{ t('actions.cancel') }}</span>
         </AppButton>
         <AppButton v-if="task" tone="sky" size="md" :disabled="!canRetry(task.status)"
           @click="taskStore.retryTask(task.task_id)">
           <RotateCcw class="h-4 w-4" />
-          <span>Retry</span>
+          <span>{{ t('actions.retry') }}</span>
         </AppButton>
         <AppButton v-if="task" tone="rose" size="md" :disabled="!canDelete(task.status)"
           @click="deleteTaskWithConfirm(task.task_id)">
           <Trash2 class="h-4 w-4" />
-          <span>Delete</span>
+          <span>{{ t('actions.delete') }}</span>
         </AppButton>
       </div>
     </header>
 
     <div v-if="!task"
       class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
-      Task not found in current list.
+      {{ t('taskDetail.notFound') }}
     </div>
 
     <template v-else>
       <section
         class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-2 lg:grid-cols-3">
-        <div><span class="text-xs text-slate-500">Task ID</span>
+        <div><span class="text-xs text-slate-500">{{ t('tasks.table.taskId') }}</span>
           <div class="font-mono text-xs">{{ task.task_id }}</div>
         </div>
-        <div><span class="text-xs text-slate-500">Paper ID</span>
+        <div><span class="text-xs text-slate-500">{{ t('tasks.table.paperId') }}</span>
           <div class="text-xs">
             <CopyableText :text="task.paper_id" mono />
           </div>
         </div>
-        <div><span class="text-xs text-slate-500">Status</span>
+        <div><span class="text-xs text-slate-500">{{ t('tasks.table.status') }}</span>
           <div>
             <TaskStatusBadge :status="task.status" />
           </div>
         </div>
-        <div><span class="text-xs text-slate-500">Created</span>
+        <div><span class="text-xs text-slate-500">{{ t('tasks.table.created') }}</span>
           <div class="text-sm">{{ formatDateTime(task.created_at) }}</div>
         </div>
-        <div><span class="text-xs text-slate-500">Started</span>
+        <div><span class="text-xs text-slate-500">{{ t('tasks.detail.started') }}</span>
           <div class="text-sm">{{ formatDateTime(task.started_at) }}</div>
         </div>
-        <div><span class="text-xs text-slate-500">Finished</span>
+        <div><span class="text-xs text-slate-500">{{ t('tasks.detail.finished') }}</span>
           <div class="text-sm">{{ formatDateTime(task.finished_at) }}</div>
         </div>
         <div class="md:col-span-2 lg:col-span-3">
-          <span class="text-xs text-slate-500">Error</span>
+          <span class="text-xs text-slate-500">{{ t('tasks.detail.error') }}</span>
           <div class="text-sm text-rose-700 dark:text-rose-300">{{ task.error ?? '-' }}</div>
         </div>
       </section>
 
       <section class="grid gap-3 md:grid-cols-2">
         <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-          <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">Retry Source</h3>
+          <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ t('taskDetail.retrySource') }}</h3>
           <div v-if="task.retry_of_task_id" class="mt-2">
             <RouterLink :to="`/tasks/${task.retry_of_task_id}`"
               class="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:bg-slate-800">
@@ -310,12 +312,12 @@ watch(taskId, () => {
               <TaskStatusBadge v-if="retrySourceTask" :status="retrySourceTask.status" />
             </RouterLink>
           </div>
-          <div v-else class="mt-2 text-sm text-slate-500 dark:text-slate-400">None</div>
+          <div v-else class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ t('common.none') }}</div>
         </div>
         <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-          <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">Retry Children</h3>
-          <div v-if="retryChildrenLoading" class="mt-2 text-sm text-slate-500 dark:text-slate-400">Loading...</div>
-          <div v-else-if="retryChildren.length === 0" class="mt-2 text-sm text-slate-500 dark:text-slate-400">None</div>
+          <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ t('taskDetail.retryChildren') }}</h3>
+          <div v-if="retryChildrenLoading" class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ t('common.loading') }}</div>
+          <div v-else-if="retryChildren.length === 0" class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ t('common.none') }}</div>
           <div v-else class="mt-2 space-y-1">
             <RouterLink v-for="child in retryChildren" :key="child.task_id" :to="`/tasks/${child.task_id}`"
               class="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:hover:bg-slate-800">
@@ -328,9 +330,9 @@ watch(taskId, () => {
 
       <section class="space-y-4">
         <header class="space-y-1">
-          <h3 class="text-base font-semibold">Agent Traces</h3>
+          <h3 class="text-base font-semibold">{{ t('taskDetail.agentTraces') }}</h3>
           <p class="text-sm text-slate-500 dark:text-slate-400">
-            Showing all task-level trace ids grouped by processing loop.
+            {{ t('taskDetail.agentTraceHint') }}
           </p>
         </header>
 
@@ -345,7 +347,10 @@ watch(taskId, () => {
             <div class="flex items-center justify-between">
               <h4 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ section.title }}</h4>
               <span class="text-xs text-slate-500 dark:text-slate-400">
-                traces {{ section.entries.filter((item) => item.trace !== null).length }}/{{ section.ids.length }}
+                {{ t('taskDetail.traceCounter', {
+                  loaded: section.entries.filter((item) => item.trace !== null).length,
+                  total: section.ids.length,
+                }) }}
               </span>
             </div>
           </summary>
@@ -355,9 +360,9 @@ watch(taskId, () => {
               []
             </div>
             <template v-else>
-              <JsonPanel :title="`${section.title} Trace IDs`" :value="section.ids" pre-wrap />
+              <JsonPanel :title="t('taskDetail.traceIdsTitle', { sectionTitle: section.title })" :value="section.ids" pre-wrap />
               <div v-if="section.entries.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
-                No trace payload loaded yet.
+                {{ t('taskDetail.noTracePayload') }}
               </div>
               <template v-for="(entry, traceIndex) in section.entries" :key="entry.traceId">
                 <TraceCard v-if="entry.trace" :trace="entry.trace" :default-open="traceIndex === 0"
@@ -366,11 +371,11 @@ watch(taskId, () => {
                   class="rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
                   <div class="mb-1 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide">
                     <AlertTriangle class="h-3.5 w-3.5" />
-                    <span>Missing Trace</span>
+                    <span>{{ t('taskDetail.missingTrace') }}</span>
                   </div>
                   <div class="font-mono text-xs">{{ entry.traceId }}</div>
                   <p class="mt-1 text-xs opacity-90">
-                    This trace id exists on the task, but no corresponding record was found.
+                    {{ t('taskDetail.missingTraceHint') }}
                   </p>
                 </div>
               </template>
@@ -379,7 +384,7 @@ watch(taskId, () => {
         </details>
       </section>
 
-      <JsonPanel title="Raw Task JSON" :value="task" pre-wrap />
+      <JsonPanel :title="t('tasks.detail.rawTaskJson')" :value="task" pre-wrap />
     </template>
   </section>
 </template>

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
+import { translate } from '../i18n'
 import { api } from '../api/client'
 import type { AgentTraceResponse } from '../types/api'
 
@@ -22,7 +23,7 @@ export const useTraceStore = defineStore('traces', () => {
         traces.value[trace.trace_id] = trace
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch traces'
+      error.value = err instanceof Error ? err.message : translate('errors.fetchTraces')
     } finally {
       loading.value = false
     }

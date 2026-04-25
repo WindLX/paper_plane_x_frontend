@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ChevronDown, ChevronRight, Copy } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 import { safePrettyJson } from '../utils/format'
 
@@ -12,6 +13,7 @@ const props = defineProps<{
   maxHeight?: string
 }>()
 
+const { t } = useI18n()
 const open = ref(Boolean(props.defaultOpen))
 const text = computed(() => safePrettyJson(props.value))
 
@@ -35,7 +37,7 @@ async function copyToClipboard(): Promise<void> {
           class="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800 cursor-pointer"
           @click="copyToClipboard">
           <Copy class="h-3.5 w-3.5" />
-          <span>Copy</span>
+          <span>{{ t('actions.copy') }}</span>
         </button>
       </div>
     </div>

@@ -22,6 +22,31 @@ export interface ProjectListResponse {
   limit: number
 }
 
+export type ProjectExportField =
+  | 'paper_id'
+  | 'project_ids'
+  | 'title'
+  | 'authors'
+  | 'year'
+  | 'publication'
+  | 'doi'
+  | 'custom_meta'
+  | 'raw_pdf_path'
+  | 'raw_pdf_sha256'
+  | 'images_paths'
+  | 'extraction_status'
+  | 'extraction_fact_check_status'
+  | 'analysis_fact_check_status'
+  | 'extraction_retry_count'
+  | 'analysis_retry_count'
+  | 'created_at'
+  | 'updated_at'
+  | 'quick_scan'
+  | 'synthesis_data'
+  | 'analysis_report'
+  | 'extraction_fact_check_result'
+  | 'analysis_fact_check_result'
+
 export interface PaperResponse {
   paper_id: string
   project_ids: string[]
@@ -41,6 +66,68 @@ export interface PaperResponse {
   analysis_retry_count: number
   created_at: string
   updated_at: string
+}
+
+export interface RelatedReference {
+  title?: string
+  reason?: string
+}
+
+export interface AnalysisReport {
+  prerequisites?: Array<{
+    concept_name?: string
+    brief_explanation?: string
+    relevance_to_paper?: {
+      text: string
+      citations: Array<{
+        quote: string
+        source_header: string
+      }>
+    }
+  }>
+  core_formulation?: {
+    problem_definition?: {
+      text: string
+      citations: Array<{
+        quote: string
+        source_header: string
+      }>
+    }
+    objective_function?: {
+      text: string
+      citations: Array<{
+        quote: string
+        source_header: string
+      }>
+    }
+    algorithm_flow?: {
+      text: string
+      citations: Array<{
+        quote: string
+        source_header: string
+      }>
+    }
+  }
+  derivation_steps?: Array<{
+    step_order?: number
+    step_name?: string
+    detail_explanation?: {
+      text: string
+      citations: Array<{
+        quote: string
+        source_header: string
+      }>
+    }
+  }>
+  related_references?: RelatedReference[]
+}
+
+export interface PaperDetailResponse extends PaperResponse {
+  quick_scan?: Record<string, unknown> | null
+  synthesis_data?: Record<string, unknown> | null
+  analysis_report?: AnalysisReport | null
+  extraction_fact_check_result?: Record<string, unknown> | null
+  analysis_fact_check_result?: Record<string, unknown> | null
 }
 
 export interface PaperListResponse {

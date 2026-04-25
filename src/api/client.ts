@@ -3,11 +3,14 @@ import type {
   DataProcessTaskListResponse,
   DataProcessTaskResponse,
   PaperListResponse,
+  ProjectExportField,
   ProjectListResponse,
   ProjectResponse,
 } from '../types/api'
+import { appConfig } from '../config'
+import { translate } from '../i18n'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api/v1'
+const API_BASE_URL = appConfig.apiBaseUrl
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -19,9 +22,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!response.ok) {
     const text = await response.text()
-    throw new Error(text || `Request failed: ${response.status}`)
+    throw new Error(text || translate('errors.requestFailed', { status: response.status }))
   }
   return (await response.json()) as T
+}
+
+async function requestBlob(path: string, init?: RequestInit): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers ?? {}),
+    },
+    ...init,
+  })
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || translate('errors.requestFailed', { status: response.status }))
+  }
+  return await response.blob()
 }
 
 export const api = {
@@ -42,6 +60,15 @@ export const api = {
   },
   unlinkProjectPaper(projectId: string, paperId: string): Promise<{ message: string }> {
     return request(`/projects/${projectId}/papers/${paperId}`, { method: 'DELETE' })
+  },
+  exportProject(
+    projectId: string,
+    payload: { fields: ProjectExportField[]; citations_mode: 'keep' | 'strip' },
+  ): Promise<Blob> {
+    return requestBlob(`/projects/${projectId}/export`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
   },
   listTasks(
     offset = 0,

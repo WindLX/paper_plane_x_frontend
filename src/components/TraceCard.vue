@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { MessageSquareText, Trash2 } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 import AppButton from './AppButton.vue'
 import TraceMessageRenderer from './TraceMessageRenderer.vue'
@@ -12,6 +13,7 @@ const props = defineProps<{
   defaultOpen?: boolean
 }>()
 
+const { t } = useI18n()
 const emit = defineEmits<{
   delete: [traceId: string]
 }>()
@@ -19,8 +21,8 @@ const emit = defineEmits<{
 
 <template>
   <details :open="Boolean(defaultOpen)"
-    class="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-950/40">
-    <summary class="block cursor-pointer list-none border-b border-slate-200 pb-2 dark:border-slate-700">
+    class="trace-card rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-950/40">
+    <summary class="trace-card-summary block cursor-pointer list-none pb-2">
       <div class="space-y-2">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div class="flex min-w-0 items-center gap-2">
@@ -36,11 +38,11 @@ const emit = defineEmits<{
           </div>
         </div>
         <div class="grid gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-2 lg:grid-cols-5">
-          <div>Model: {{ trace.llm_model ?? '-' }}</div>
-          <div>Prompt: {{ trace.prompt_tokens ?? '-' }}</div>
-          <div>Completion: {{ trace.completion_tokens ?? '-' }}</div>
-          <div>Total: {{ trace.total_tokens ?? '-' }}</div>
-          <div>Created: {{ formatDateTime(trace.created_at) }}</div>
+          <div>{{ t('trace.model') }}: {{ trace.llm_model ?? '-' }}</div>
+          <div>{{ t('trace.promptTokens') }}: {{ trace.prompt_tokens ?? '-' }}</div>
+          <div>{{ t('trace.completionTokens') }}: {{ trace.completion_tokens ?? '-' }}</div>
+          <div>{{ t('trace.totalTokens') }}: {{ trace.total_tokens ?? '-' }}</div>
+          <div>{{ t('trace.created') }}: {{ formatDateTime(trace.created_at) }}</div>
         </div>
       </div>
     </summary>
@@ -53,13 +55,27 @@ const emit = defineEmits<{
 
       <div class="flex items-center gap-2">
         <div class="min-w-0 flex-1">
-          <JsonPanel title="Raw usage payload" :value="trace.usage_payload" pre-wrap />
+          <JsonPanel :title="t('trace.rawUsagePayload')" :value="trace.usage_payload" pre-wrap />
         </div>
         <AppButton tone="rose" size="md" @click="emit('delete', props.trace.trace_id)">
           <Trash2 class="h-3.5 w-3.5" />
-          <span>Delete</span>
+          <span>{{ t('actions.delete') }}</span>
         </AppButton>
       </div>
     </div>
   </details>
 </template>
+
+<style scoped>
+.trace-card-summary {
+  border-bottom: 1px solid transparent;
+}
+
+.trace-card[open] .trace-card-summary {
+  border-bottom-color: rgb(226 232 240);
+}
+
+.dark .trace-card[open] .trace-card-summary {
+  border-bottom-color: rgb(51 65 85);
+}
+</style>

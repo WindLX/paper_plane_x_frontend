@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { translate } from '../i18n'
 import { api } from '../api/client'
 import type { DataProcessTaskResponse } from '../types/api'
 
@@ -63,7 +64,7 @@ export const useTaskStore = defineStore('tasks', () => {
       sortOrder.value = nextSortOrder
       lastUpdatedAt.value = new Date().toISOString()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch tasks'
+      error.value = err instanceof Error ? err.message : translate('errors.fetchTasks')
     } finally {
       loading.value = false
     }

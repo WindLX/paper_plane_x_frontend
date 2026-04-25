@@ -1,5 +1,7 @@
 import { reactive } from 'vue'
 
+import { translate } from '../i18n'
+
 type DialogTone = 'default' | 'danger'
 
 type DialogState = {
@@ -15,8 +17,8 @@ const state = reactive<DialogState>({
   open: false,
   title: '',
   message: '',
-  confirmText: 'Confirm',
-  cancelText: 'Cancel',
+  confirmText: translate('dialog.confirm'),
+  cancelText: translate('dialog.cancel'),
   tone: 'default',
 })
 
@@ -33,8 +35,8 @@ export function useDialog() {
     state.open = true
     state.title = options.title
     state.message = options.message
-    state.confirmText = options.confirmText ?? 'Confirm'
-    state.cancelText = options.cancelText ?? 'Cancel'
+    state.confirmText = options.confirmText ?? translate('dialog.confirm')
+    state.cancelText = options.cancelText ?? translate('dialog.cancel')
     state.tone = options.tone ?? 'default'
     return new Promise<boolean>((resolve) => {
       resolver = resolve

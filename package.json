@@ -1,11 +1,13 @@
 {
   "name": "paper_plane_x_frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vue-tsc -b && vite build --base=/",
+    "build:console": "vue-tsc -b && vite build --base=/ --outDir ../paper_plane_x_backend/data/console --emptyOutDir",
+    "build:console:fast": "vite build --base=/ --outDir ../paper_plane_x_backend/data/console --emptyOutDir",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -15,6 +17,7 @@
     "markdown-it": "^14.1.0",
     "pinia": "^3.0.3",
     "vue": "^3.5.32",
+    "vue-i18n": "^11.4.0",
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
