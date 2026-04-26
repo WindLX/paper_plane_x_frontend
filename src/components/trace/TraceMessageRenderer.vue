@@ -3,9 +3,9 @@ import { computed } from 'vue'
 import { ChevronRight } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
-import MarkdownContent from './MarkdownContent.vue'
-import JsonPanel from './JsonPanel.vue'
-import type { TraceMessage } from '../types/api'
+import MarkdownContent from '../MarkdownContent.vue'
+import JsonPanel from '../JsonPanel.vue'
+import type { TraceMessage } from '../../types/api'
 
 const props = defineProps<{
   message: TraceMessage
@@ -159,7 +159,7 @@ const previewText = computed(() => {
         </template>
       </div>
 
-      <JsonPanel :title="t('trace.rawMessageJson')" :value="message" pre-wrap />
+      <JsonPanel :title="t('trace.rawMessageJson')" :value="message" />
     </div>
   </details>
 </template>

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { DataProcessTaskStatus } from '../types/api'
+import type { DataProcessTaskStatus } from '../../types/api'
 
 const props = defineProps<{
   status: DataProcessTaskStatus

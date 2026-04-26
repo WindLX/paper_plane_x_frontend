@@ -2,11 +2,11 @@
 import { MessageSquareText, Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
-import AppButton from './AppButton.vue'
+import AppButton from '../AppButton.vue'
 import TraceMessageRenderer from './TraceMessageRenderer.vue'
-import JsonPanel from './JsonPanel.vue'
-import type { AgentTraceResponse } from '../types/api'
-import { formatDateTime } from '../utils/format'
+import JsonPanel from '../JsonPanel.vue'
+import type { AgentTraceResponse } from '../../types/api'
+import { formatDateTime } from '../../utils/format'
 
 const props = defineProps<{
   trace: AgentTraceResponse
@@ -55,7 +55,7 @@ const emit = defineEmits<{
 
       <div class="flex items-center gap-2">
         <div class="min-w-0 flex-1">
-          <JsonPanel :title="t('trace.rawUsagePayload')" :value="trace.usage_payload" pre-wrap />
+          <JsonPanel :title="t('trace.rawUsagePayload')" :value="trace.usage_payload" />
         </div>
         <AppButton tone="rose" size="md" @click="emit('delete', props.trace.trace_id)">
           <Trash2 class="h-3.5 w-3.5" />

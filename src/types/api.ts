@@ -1,3 +1,5 @@
+import type { SortOrder, PaperSortKey } from "./sort"
+
 export type DataProcessTaskStatus =
   | 'QUEUED'
   | 'RUNNING'
@@ -178,6 +180,94 @@ export interface AgentTraceResponse {
 
 export interface AgentTraceQueryResponse {
   items: AgentTraceResponse[]
+}
+
+export interface LibrarianProjectionResponse {
+  paper_id: string
+  field_path: string
+  value: unknown | null
+}
+
+export interface LibrarianMatrixResponse {
+  paper_ids: string[]
+  field_paths: string[]
+  items: Record<string, Record<string, unknown | null>>
+}
+
+export interface LibrarianUnifiedSearchRequest {
+  project_id?: string | null
+  paper_id?: string | null
+  query_expr?: string | null
+  limit?: number
+  offset?: number
+  sort_by?: PaperSortKey
+  sort_order?: SortOrder
+}
+
+export interface LibrarianUnifiedSearchResponse {
+  project_id: string | null
+  limit: number
+  offset: number
+  total: number
+  paper_ids: string[]
+}
+
+export interface LibrarianGlobalFinderQuickScanSummary {
+  tags: string[]
+  verdict: string | null
+  reason: string | null
+  quick_summary: string | null
+}
+
+export interface LibrarianGlobalFinderPaperSummary {
+  paper_id: string
+  title: string | null
+  authors: string[]
+  year: number | null
+  quick_scan: LibrarianGlobalFinderQuickScanSummary | null
+}
+
+export interface LibrarianGlobalFinderYearDistribution {
+  available_count: number
+  missing_count: number
+  mean: number | null
+  variance: number | null
+  median: number | null
+  mode_years: number[]
+  q25: number | null
+  q75: number | null
+  outlier_count: number
+  low_outlier_count: number
+  high_outlier_count: number
+}
+
+export interface LibrarianTagCount {
+  tag: string
+  count: number
+}
+
+export interface LibrarianGlobalFinderResponse {
+  project_id: string
+  papers: LibrarianGlobalFinderPaperSummary[]
+  stats: {
+    paper_count: number
+    top_tags_limit: number
+    year_distribution: LibrarianGlobalFinderYearDistribution
+    top_tags: LibrarianTagCount[]
+  }
+}
+
+export interface LibrarianGuideResponse {
+  field_paths_guide: string
+  global_finder_schema: Record<string, unknown>
+  query_schema: Record<string, unknown>
+  projection_schema: Record<string, unknown>
+  matrix_schema: Record<string, unknown>
+  query_examples: string[]
+  projection_examples: string[]
+  matrix_tips: string[]
+  project_query_tips: string[]
+  global_finder_tips: string[]
 }
 
 export type TraceMessage = {
