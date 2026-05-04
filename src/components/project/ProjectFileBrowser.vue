@@ -1,11 +1,24 @@
 <script setup lang="ts">
-import { Download, FileText, FolderOpen, Pencil, Plus, Save, Trash2, X } from 'lucide-vue-next'
+import {
+  Download,
+  FileText,
+  FolderOpen,
+  FolderPlus,
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
+  X,
+} from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '@/components/AppButton.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
 import { useNotify } from '@/composables/useNotify'
+import { useDialog } from '@/composables/useDialog'
+import { useConversationStore } from '@/stores/conversation'
+import { useUiStore } from '@/stores/ui'
 import { api } from '@/api'
 import type { ProjectFileItem } from '@/types/api'
 
@@ -15,6 +28,9 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const notify = useNotify()
+const dialog = useDialog()
+const conversationStore = useConversationStore()
+const uiStore = useUiStore()
 
 const currentDir = ref('/')
 const items = ref<ProjectFileItem[]>([])
@@ -30,8 +46,10 @@ const editMode = ref(false)
 const editContent = ref('')
 const editFilePath = ref('')
 const createMode = ref(false)
+const createDirMode = ref(false)
 const newFileName = ref('')
 const newFileContent = ref('')
+const newDirName = ref('')
 const exportLoading = ref(false)
 const exportMenuOpen = ref(false)
 
@@ -105,6 +123,7 @@ function enterDir(item: ProjectFileItem): void {
 
 function startCreate(): void {
   createMode.value = true
+  createDirMode.value = false
   newFileName.value = ''
   newFileContent.value = ''
   editMode.value = false
@@ -126,6 +145,36 @@ async function confirmCreate(): Promise<void> {
     })
     notify.push(t('projectDetail.fileCreated', { name }), 'success', 2000)
     createMode.value = false
+    await loadFiles()
+  } catch (err) {
+    notify.push(err instanceof Error ? err.message : t('errors.requestFailed'), 'error', 3600)
+  }
+}
+
+function startCreateDir(): void {
+  createDirMode.value = true
+  createMode.value = false
+  newDirName.value = ''
+  editMode.value = false
+  selectedFile.value = null
+}
+
+function cancelCreateDir(): void {
+  createDirMode.value = false
+}
+
+async function confirmCreateDir(): Promise<void> {
+  const name = newDirName.value.trim()
+  if (!name) return
+  const dirPath = `${currentDir.value === '/' ? '' : currentDir.value}/${name}`
+  try {
+    await api.writeProjectFile(props.projectId, {
+      file_path: dirPath,
+      content: '',
+      is_dir: true,
+    })
+    notify.push(t('projectDetail.dirCreated', { name }), 'success', 2000)
+    createDirMode.value = false
     await loadFiles()
   } catch (err) {
     notify.push(err instanceof Error ? err.message : t('errors.requestFailed'), 'error', 3600)
@@ -165,10 +214,19 @@ async function confirmEdit(): Promise<void> {
 
 async function deleteFile(item: ProjectFileItem): Promise<void> {
   const filePath = `${currentDir.value === '/' ? '' : currentDir.value}/${item.name}`
-  if (!confirm(t('projectDetail.confirmDeleteFile', { name: item.name }))) return
+  const confirmKey = item.is_dir
+    ? 'projectDetail.confirmDeleteDir'
+    : 'projectDetail.confirmDeleteFile'
+  const successKey = item.is_dir ? 'projectDetail.dirDeleted' : 'projectDetail.fileDeleted'
+  const confirmed = await dialog.confirm({
+    title: t('actions.delete'),
+    message: t(confirmKey, { name: item.name }),
+    tone: 'danger',
+  })
+  if (!confirmed) return
   try {
-    await api.deleteProjectFile(props.projectId, filePath)
-    notify.push(t('projectDetail.fileDeleted', { name: item.name }), 'success', 2000)
+    await api.deleteProjectFile(props.projectId, filePath, item.is_dir)
+    notify.push(t(successKey, { name: item.name }), 'success', 2000)
     if (selectedFile.value?.filePath === filePath) {
       selectedFile.value = null
       editMode.value = false
@@ -204,6 +262,17 @@ async function exportFile(format: ExportFormat): Promise<void> {
   }
 }
 
+function openPaperReference(paperId: string): void {
+  const currentConv = conversationStore.currentConversation
+  if (currentConv) {
+    uiStore.openRightDrawer(
+      'conversation',
+      { conversationId: currentConv.conversation_id },
+      'local',
+    )
+  }
+  uiStore.setConversationDrawerPaperTarget(paperId)
+}
 watch(() => props.projectId, loadFiles, { immediate: true })
 </script>
 
@@ -228,9 +297,13 @@ watch(() => props.projectId, loadFiles, { immediate: true })
     <div class="flex items-center justify-between gap-2">
       <h3 class="workspace-section-title text-sm">{{ t('projectDetail.projectFiles') }}</h3>
       <div class="flex items-center gap-1.5">
+        <AppButton size="xs" variant="outline" @click="startCreateDir">
+          <FolderPlus class="h-4 w-4" />
+          <span>{{ t('projectDetail.createDir') }}</span>
+        </AppButton>
         <AppButton size="xs" variant="outline" @click="startCreate">
           <Plus class="h-4 w-4" />
-          <span>{{ t('actions.create') }}</span>
+          <span>{{ t('projectDetail.createFile') }}</span>
         </AppButton>
       </div>
     </div>
@@ -276,8 +349,38 @@ watch(() => props.projectId, loadFiles, { immediate: true })
       </div>
     </div>
 
+    <!-- Create dir form -->
+    <div v-if="createDirMode" class="workspace-panel space-y-3 p-3.5">
+      <div class="flex items-center justify-between">
+        <h4 class="workspace-section-title text-sm">{{ t('projectDetail.createDir') }}</h4>
+        <button type="button" class="workspace-icon-button h-7 w-7" @click="cancelCreateDir">
+          <X class="h-4 w-4" />
+        </button>
+      </div>
+      <div>
+        <label class="workspace-label mb-1">{{ t('projectDetail.dirName') }}</label>
+        <input
+          v-model="newDirName"
+          type="text"
+          class="workspace-input w-full"
+          :placeholder="t('projectDetail.dirNamePlaceholder')"
+        />
+      </div>
+      <div class="flex justify-end gap-2">
+        <AppButton size="sm" variant="outline" @click="cancelCreateDir">{{
+          t('actions.cancel')
+        }}</AppButton>
+        <AppButton size="sm" variant="solid" @click="confirmCreateDir">{{
+          t('actions.save')
+        }}</AppButton>
+      </div>
+    </div>
+
     <!-- File list -->
-    <div v-if="!selectedFile && !createMode" class="workspace-panel overflow-hidden p-0">
+    <div
+      v-if="!selectedFile && !createMode && !createDirMode"
+      class="workspace-panel overflow-hidden p-0"
+    >
       <div v-if="loading && items.length === 0" class="flex items-center justify-center p-6">
         <div class="text-ppx-text-muted text-sm">{{ t('common.loading') }}</div>
       </div>
@@ -302,9 +405,8 @@ watch(() => props.projectId, loadFiles, { immediate: true })
           </div>
           <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             <button
-              v-if="!item.is_dir"
               type="button"
-              class="workspace-icon-button h-8 w-8 cursor-pointer"
+              class="workspace-icon-button text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft h-8 w-8 cursor-pointer focus-visible:ring-3"
               :title="t('actions.delete')"
               @click.stop="deleteFile(item)"
             >
@@ -384,7 +486,9 @@ watch(() => props.projectId, loadFiles, { immediate: true })
               })
             "
           >
-            <Trash2 class="h-4 w-4" />
+            <Trash2
+              class="text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft h-4 w-4 focus-visible:ring-3"
+            />
           </button>
           <button
             type="button"
@@ -399,7 +503,11 @@ watch(() => props.projectId, loadFiles, { immediate: true })
 
       <!-- View mode -->
       <div v-if="!editMode" class="max-h-[50vh] overflow-y-auto">
-        <MarkdownContent v-if="selectedFile.isMarkdown" :markdown="selectedFile.content" />
+        <MarkdownContent
+          v-if="selectedFile.isMarkdown"
+          :markdown="selectedFile.content"
+          @paper-click="openPaperReference($event)"
+        />
         <pre
           v-else
           class="workspace-code bg-ppx-bg-subtle/50 overflow-x-auto rounded-lg p-3 text-sm"

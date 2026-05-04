@@ -115,13 +115,20 @@ export const projectsApi = {
     })
   },
 
-  deleteProjectFile(projectId: string, filePath: string): Promise<ProjectFileDeleteResponse> {
-    return request(
-      `/projects/${projectId}/files/content?file_path=${encodeURIComponent(filePath)}`,
-      {
-        method: 'DELETE',
-      },
-    )
+  deleteProjectFile(
+    projectId: string,
+    filePath: string,
+    recursive?: boolean,
+  ): Promise<ProjectFileDeleteResponse> {
+    const params = new URLSearchParams({
+      file_path: filePath,
+    })
+    if (recursive) {
+      params.set('recursive', 'true')
+    }
+    return request(`/projects/${projectId}/files/content?${params.toString()}`, {
+      method: 'DELETE',
+    })
   },
 
   exportProjectFile(projectId: string, payload: ProjectFileExportRequest): Promise<Blob> {

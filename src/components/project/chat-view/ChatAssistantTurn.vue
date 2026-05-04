@@ -193,6 +193,13 @@ function openPaperReference(paperId: string): void {
                 :markdown="event.content ?? ''"
                 @paper-click="openPaperReference($event)"
               />
+              <div
+                v-if="isStreaming && !isToolCalling && event === events[events.length - 1]"
+                class="mt-2 flex items-center gap-1.5"
+              >
+                <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
+                <span class="text-xs">{{ t('chat.generating') }}</span>
+              </div>
             </template>
           </div>
         </template>

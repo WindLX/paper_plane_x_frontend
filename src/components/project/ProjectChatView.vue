@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import HitlQuestionPanel from './HitlQuestionPanel.vue'
@@ -127,10 +127,18 @@ watch(
   () => chatStore.currentConversationId,
   (newId, oldId) => {
     if (newId && newId !== oldId) {
-      socket.value?.disconnect()
-      const newSocket = useConversationSocket(newId)
-      socket.value = newSocket
-      newSocket.connect()
+      // Try to reuse existing socket from store to avoid interrupting streaming on page switch
+      const existing = chatStore.getSocket(newId)
+      if (existing) {
+        socket.value = existing as ReturnType<typeof useConversationSocket>
+      } else {
+        socket.value?.disconnect()
+        chatStore.unregisterSocket(oldId ?? '')
+        const newSocket = useConversationSocket(newId)
+        socket.value = newSocket
+        chatStore.registerSocket(newId, newSocket)
+        newSocket.connect()
+      }
       // Clear input state when switching conversations
       inputValue.value = ''
       inputImages.value = []
@@ -138,6 +146,7 @@ watch(
       inputExpanded.value = false
     } else if (!newId) {
       socket.value?.disconnect()
+      if (oldId) chatStore.unregisterSocket(oldId)
       socket.value = null
     }
   },
@@ -153,9 +162,9 @@ watch(
   },
 )
 
-onUnmounted(() => {
-  socket.value?.disconnect()
-})
+// Note: we intentionally do NOT disconnect the socket on unmount
+// so that streaming continues when the user navigates away from this page.
+// The socket is kept alive via the conversation store's activeSockets map.
 
 async function handleSend(): Promise<void> {
   const text = inputValue.value.trim()
@@ -183,10 +192,16 @@ async function handleSend(): Promise<void> {
 
 async function ensureSocketReady(convId: string): Promise<void> {
   if (convId && (!socket.value || socket.value.status === 'idle')) {
-    socket.value?.disconnect()
-    const newSocket = useConversationSocket(convId)
-    socket.value = newSocket
-    newSocket.connect()
+    const existing = chatStore.getSocket(convId)
+    if (existing) {
+      socket.value = existing as ReturnType<typeof useConversationSocket>
+    } else {
+      socket.value?.disconnect()
+      const newSocket = useConversationSocket(convId)
+      socket.value = newSocket
+      chatStore.registerSocket(convId, newSocket)
+      newSocket.connect()
+    }
   }
 
   const currentSocket = socket.value

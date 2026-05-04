@@ -353,7 +353,7 @@ function toggleExpanded(): void {
             </button>
             <button
               type="button"
-              class="duration-ppx-fast flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all"
+              class="duration-ppx-fast flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all"
               :class="
                 modelValue.trim() && !disabled
                   ? 'bg-ppx-text text-white hover:opacity-90'

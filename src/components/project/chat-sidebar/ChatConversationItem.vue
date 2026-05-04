@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { MessageSquare } from 'lucide-vue-next'
+import { computed } from 'vue'
+import { LoaderCircle, MessageSquare } from 'lucide-vue-next'
+import { useConversationStore } from '@/stores/conversation'
 import type { ConversationResponse } from '@/types/api'
 
 const props = defineProps<{
@@ -11,9 +13,15 @@ const emit = defineEmits<{
   select: [conversationId: string]
 }>()
 
+const chatStore = useConversationStore()
+
 function onSelect(): void {
   emit('select', props.conversation.conversation_id)
 }
+
+const isStreaming = computed(
+  () => chatStore.streamingConversationId === props.conversation.conversation_id,
+)
 </script>
 
 <template>
@@ -31,5 +39,6 @@ function onSelect(): void {
     <div class="min-w-0 flex-1 truncate text-sm font-medium">
       {{ conversation.title }}
     </div>
+    <LoaderCircle v-if="isStreaming" class="text-ppx-accent h-3.5 w-3.5 shrink-0 animate-spin" />
   </button>
 </template>

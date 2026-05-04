@@ -122,7 +122,7 @@ const previewText = computed(() => {
               >({{ message.name }})</span
             >
           </div>
-          <p class="preview-text text-ppx-text-muted mt-1 truncate text-xs">
+          <p class="preview-text text-ppx-text-muted m-1 max-w-100 truncate text-xs">
             {{ previewText }}
           </p>
         </div>

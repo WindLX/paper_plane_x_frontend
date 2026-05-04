@@ -27,7 +27,7 @@ function escapeHtml(text: string): string {
 
 function preprocessPapers(markdown: string): string {
   return markdown.replace(
-    /^(?:[-*]\s*)?(pap-[a-f0-9]{32})(?:\s*\|\s*([^\n]*))?$/gm,
+    /\[\[(pap-[a-f0-9]{32})(?:\s*\|\s*([^\]\n]+?))?\s*\]\]/g,
     (_match, paperId: string, label: string | undefined) => {
       const displayText = label ? `${paperId} | ${label.trim()}` : paperId
       return `<a href="#paper/${paperId}" class="paper-link">${displayText}</a>`

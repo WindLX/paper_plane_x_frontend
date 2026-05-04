@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { api } from '@/api'
 import type {
@@ -14,6 +14,20 @@ export const useConversationStore = defineStore('conversation', () => {
   const messages = ref<ConversationMessageResponse[]>([])
   const turns = ref<ConversationTurnResponse[]>([])
   const loading = ref(false)
+  const streamingConversationId = ref<string | null>(null)
+  const activeSockets = shallowRef<Map<string, unknown>>(new Map())
+
+  function registerSocket(conversationId: string, socket: unknown): void {
+    activeSockets.value.set(conversationId, socket)
+  }
+
+  function unregisterSocket(conversationId: string): void {
+    activeSockets.value.delete(conversationId)
+  }
+
+  function getSocket(conversationId: string): unknown {
+    return activeSockets.value.get(conversationId)
+  }
 
   const currentConversation = computed<ConversationResponse | undefined>(() =>
     conversations.value.find((c) => c.conversation_id === currentConversationId.value),
@@ -229,6 +243,8 @@ export const useConversationStore = defineStore('conversation', () => {
     messages,
     turns,
     loading,
+    streamingConversationId,
+    activeSockets,
     projectConversations,
     loadConversations,
     createConversation,
@@ -246,5 +262,8 @@ export const useConversationStore = defineStore('conversation', () => {
     upsertTurn,
     removeMessagesAfter,
     prepareTurnReplay,
+    registerSocket,
+    unregisterSocket,
+    getSocket,
   }
 })

@@ -73,11 +73,13 @@ export interface ProjectFileContentResponse {
 export interface ProjectFileWriteRequest {
   file_path: string
   content: string
+  is_dir?: boolean
 }
 
 export interface ProjectFileWriteResponse {
   file_path: string
   bytes_written: number
+  is_dir: boolean
 }
 
 export interface ProjectFileDeleteResponse {
