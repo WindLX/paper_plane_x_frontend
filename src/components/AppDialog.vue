@@ -2,25 +2,37 @@
 import { AlertTriangle } from 'lucide-vue-next'
 
 import AppButton from './AppButton.vue'
-import { useDialog } from '../composables/dialog'
+import { useDialog } from '@/composables/useDialog'
 
 const dialog = useDialog()
 </script>
 
 <template>
-  <div v-if="dialog.state.open" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-    @click="dialog.resolveDialog(false)">
+  <div
+    v-if="dialog.state.open"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+    @click="dialog.resolveDialog(false)"
+  >
     <section
-      class="w-full max-w-md rounded-xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900"
-      @click.stop>
+      class="workspace-page w-full max-w-md p-5"
+      role="alertdialog"
+      aria-modal="true"
+      @click.stop
+    >
       <header class="mb-3 flex items-start gap-2">
-        <AlertTriangle class="mt-0.5 h-8 w-8"
-          :class="dialog.state.tone === 'danger' ? 'text-rose-600 dark:text-rose-300' : 'text-sky-600 dark:text-sky-300'" />
+        <AlertTriangle
+          class="mt-0.5 h-8 w-8"
+          :class="
+            dialog.state.tone === 'danger'
+              ? 'text-rose-600 dark:text-rose-300'
+              : 'text-sky-600 dark:text-sky-300'
+          "
+        />
         <div>
-          <h3 class="text-m font-semibold text-slate-800 dark:text-slate-200">
+          <h3 class="workspace-section-title">
             {{ dialog.state.title }}
           </h3>
-          <p class="mt-1 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">
+          <p class="workspace-body mt-1 whitespace-pre-wrap">
             {{ dialog.state.message }}
           </p>
         </div>
@@ -30,8 +42,12 @@ const dialog = useDialog()
         <AppButton size="sm" @click="dialog.resolveDialog(false)">
           {{ dialog.state.cancelText }}
         </AppButton>
-        <AppButton size="sm" :tone="dialog.state.tone === 'danger' ? 'rose' : 'sky'" variant="solid"
-          @click="dialog.resolveDialog(true)">
+        <AppButton
+          size="sm"
+          :tone="dialog.state.tone === 'danger' ? 'rose' : 'sky'"
+          variant="solid"
+          @click="dialog.resolveDialog(true)"
+        >
           {{ dialog.state.confirmText }}
         </AppButton>
       </div>

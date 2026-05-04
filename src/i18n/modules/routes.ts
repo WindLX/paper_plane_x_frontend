@@ -1,0 +1,26 @@
+export const routes = {
+  'zh-CN': {
+    projects: '项目',
+    projectDetail: '项目详情',
+    library: '文献库',
+    tasks: '任务',
+    taskDetail: '任务详情',
+    traces: 'Agent Trace',
+    librarian: 'Librarian 工作台',
+    settings: '设置',
+    notFound: '页面未找到',
+    console: '控制台',
+  },
+  'en-US': {
+    projects: 'Projects',
+    projectDetail: 'Project Detail',
+    library: 'Library',
+    tasks: 'Tasks',
+    taskDetail: 'Task Detail',
+    traces: 'Agent Trace',
+    librarian: 'Librarian Workspace',
+    settings: 'Settings',
+    notFound: 'Not Found',
+    console: 'Control Console',
+  },
+} as const

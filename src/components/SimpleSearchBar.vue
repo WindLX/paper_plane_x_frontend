@@ -1,18 +1,31 @@
 <script setup lang="ts">
 import { Search } from 'lucide-vue-next'
 
-const props = defineProps<{
+const props = withDefaults(
+  defineProps<{
     placeholder: string
-}>();
-const keyword = defineModel<string>({ required: true });
+    variant?: 'subtle' | 'elevated'
+  }>(),
+  {
+    variant: 'subtle',
+  },
+)
+
+const keyword = defineModel<string>({ required: true })
 </script>
 
 <template>
-
-    <div
-        class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900">
-        <Search class="h-4 w-4 text-slate-500 dark:text-slate-400" />
-        <input v-model="keyword" :placeholder="props.placeholder"
-            class="w-full bg-transparent text-sm outline-none placeholder:text-slate-400 dark:placeholder:text-slate-500" />
-    </div>
+  <label class="relative block">
+    <Search
+      class="text-ppx-text-muted pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2"
+    />
+    <input
+      v-model="keyword"
+      :placeholder="props.placeholder"
+      :class="[
+        'workspace-input w-full py-3 pr-4 pl-11',
+        props.variant === 'subtle' ? 'bg-ppx-bg-subtle' : '',
+      ]"
+    />
+  </label>
 </template>

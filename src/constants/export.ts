@@ -1,0 +1,27 @@
+import type { ProjectExportField } from '@/types/api'
+
+export const ALL_FIELDS: ProjectExportField[] = [
+  'paper_id',
+  'project_ids',
+  'title',
+  'authors',
+  'year',
+  'publication',
+  'doi',
+  'custom_meta',
+  'raw_pdf_path',
+  'raw_pdf_sha256',
+  'images_paths',
+  'extraction_status',
+  'extraction_fact_check_status',
+  'analysis_fact_check_status',
+  'extraction_retry_count',
+  'analysis_retry_count',
+  'created_at',
+  'updated_at',
+  'quick_scan',
+  'synthesis_data',
+  'analysis_report',
+  'extraction_fact_check_result',
+  'analysis_fact_check_result',
+]

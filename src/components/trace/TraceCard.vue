@@ -3,61 +3,89 @@ import { MessageSquareText, Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '../AppButton.vue'
+import CopyableText from '../CopyableText.vue'
 import TraceMessageRenderer from './TraceMessageRenderer.vue'
 import JsonPanel from '../JsonPanel.vue'
 import type { AgentTraceResponse } from '../../types/api'
 import { formatDateTime } from '../../utils/format'
 
-const props = defineProps<{
+defineProps<{
   trace: AgentTraceResponse
   defaultOpen?: boolean
 }>()
 
-const { t } = useI18n()
 const emit = defineEmits<{
   delete: [traceId: string]
 }>()
+
+const { t } = useI18n()
 </script>
 
 <template>
-  <details :open="Boolean(defaultOpen)"
-    class="trace-card rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-700 dark:bg-slate-950/40">
-    <summary class="trace-card-summary block cursor-pointer list-none pb-2">
+  <details
+    :open="Boolean(defaultOpen)"
+    class="trace-card workspace-panel animate-fade-in-up overflow-hidden p-0"
+  >
+    <summary class="trace-card-summary block cursor-pointer list-none px-4 py-3">
       <div class="space-y-2">
-        <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center justify-between gap-2">
           <div class="flex min-w-0 items-center gap-2">
-            <h4 class="truncate text-sm font-semibold text-slate-900 dark:text-slate-200">{{ trace.trace_id }}</h4>
-            <span
-              class="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            <span class="workspace-badge workspace-badge--neutral shrink-0 text-xs">
               {{ trace.agent_name }}
             </span>
+            <CopyableText :text="trace.trace_id" mono class="min-w-0" />
           </div>
-          <div class="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+          <div class="text-ppx-text-muted inline-flex shrink-0 items-center gap-1 text-xs">
             <MessageSquareText class="h-3.5 w-3.5" />
             <span>{{ trace.messages.length }}</span>
           </div>
         </div>
-        <div class="grid gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300 sm:grid-cols-2 lg:grid-cols-5">
-          <div>{{ t('trace.model') }}: {{ trace.llm_model ?? '-' }}</div>
-          <div>{{ t('trace.promptTokens') }}: {{ trace.prompt_tokens ?? '-' }}</div>
-          <div>{{ t('trace.completionTokens') }}: {{ trace.completion_tokens ?? '-' }}</div>
-          <div>{{ t('trace.totalTokens') }}: {{ trace.total_tokens ?? '-' }}</div>
-          <div>{{ t('trace.created') }}: {{ formatDateTime(trace.created_at) }}</div>
+        <div class="text-ppx-text-muted grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3">
+          <div class="min-w-0 truncate">
+            <span class="text-ppx-text-muted font-semibold">{{ t('trace.model') }}:</span>
+            {{ trace.llm_model ?? '-' }}
+          </div>
+          <div class="min-w-0 truncate">
+            <span class="text-ppx-text-muted font-semibold">{{ t('trace.promptTokens') }}:</span>
+            {{ trace.prompt_tokens ?? '-' }}
+          </div>
+          <div class="min-w-0 truncate">
+            <span class="text-ppx-text-muted font-semibold"
+              >{{ t('trace.completionTokens') }}:</span
+            >
+            {{ trace.completion_tokens ?? '-' }}
+          </div>
+          <div class="min-w-0 truncate">
+            <span class="text-ppx-text-muted font-semibold">{{ t('trace.totalTokens') }}:</span>
+            {{ trace.total_tokens ?? '-' }}
+          </div>
+          <div class="min-w-0 truncate">
+            <span class="text-ppx-text-muted font-semibold">{{ t('trace.created') }}:</span>
+            {{ formatDateTime(trace.created_at) }}
+          </div>
         </div>
       </div>
     </summary>
 
-    <div class="mt-3 space-y-3">
+    <div class="border-ppx-border space-y-3 border-t px-4 pt-3 pb-4">
+      <div class="animate-stagger space-y-3">
+        <template v-for="(message, index) in trace.messages" :key="`${trace.trace_id}-${index}`">
+          <TraceMessageRenderer :message="message" :index="index + 1" />
+        </template>
+      </div>
+
       <div class="space-y-3">
-        <TraceMessageRenderer v-for="(message, index) in trace.messages" :key="`${trace.trace_id}-${index}`"
-          :message="message" :index="index + 1" />
+        <JsonPanel
+          v-if="trace.tools && trace.tools.length > 0"
+          :title="t('trace.tools')"
+          :value="trace.tools"
+        />
+        <JsonPanel :title="t('trace.rawUsagePayload')" :value="trace.usage_payload" />
       </div>
 
       <div class="flex items-center gap-2">
-        <div class="min-w-0 flex-1">
-          <JsonPanel :title="t('trace.rawUsagePayload')" :value="trace.usage_payload" />
-        </div>
-        <AppButton tone="rose" size="md" @click="emit('delete', props.trace.trace_id)">
+        <div class="min-w-0 flex-1"></div>
+        <AppButton variant="outline" tone="rose" size="md" @click="emit('delete', trace.trace_id)">
           <Trash2 class="h-3.5 w-3.5" />
           <span>{{ t('actions.delete') }}</span>
         </AppButton>
@@ -72,10 +100,6 @@ const emit = defineEmits<{
 }
 
 .trace-card[open] .trace-card-summary {
-  border-bottom-color: rgb(226 232 240);
-}
-
-.dark .trace-card[open] .trace-card-summary {
-  border-bottom-color: rgb(51 65 85);
+  border-bottom-color: var(--ppx-border);
 }
 </style>

@@ -14,39 +14,22 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
-const roleCardClass = computed(() => {
+const roleAccent = computed(() => {
   switch (props.message.role) {
     case 'system':
-      return 'border-indigo-200 bg-indigo-50 dark:border-indigo-700 dark:bg-indigo-900/20'
+      return 'var(--ppx-info)'
     case 'assistant':
-      return 'border-sky-200 bg-sky-50 dark:border-sky-700 dark:bg-sky-900/20'
+      return 'var(--ppx-accent)'
     case 'tool':
-      return 'border-emerald-200 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20'
+      return 'var(--ppx-success)'
     default:
-      return 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800'
+      return 'var(--ppx-warning)'
   }
 })
 
 const roleAlignClass = computed(() => {
   if (props.message.role === 'assistant') return 'mr-auto max-w-[78%]'
   return 'ml-auto max-w-[78%]'
-})
-
-const roleLabelClass = computed(() => {
-  if (props.message.role === 'system') return 'text-indigo-700 dark:text-indigo-300'
-  if (props.message.role === 'assistant') return 'text-sky-700 dark:text-sky-300'
-  if (props.message.role === 'tool') return 'text-emerald-700 dark:text-emerald-300'
-  return 'text-slate-700 dark:text-slate-200'
-})
-
-const reasoningClass = computed(() => {
-  if (props.message.role === 'assistant') {
-    return 'border-sky-300 bg-sky-100/80 dark:border-sky-700 dark:bg-sky-900/30'
-  }
-  if (props.message.role === 'system') {
-    return 'border-indigo-300 bg-indigo-100/80 dark:border-indigo-700 dark:bg-indigo-900/30'
-  }
-  return 'border-slate-300 bg-slate-100/80 dark:border-slate-600 dark:bg-slate-800/70'
 })
 
 type TextPart = { type: 'text'; text: string }
@@ -101,7 +84,9 @@ const parsedParts = computed<(TextPart | ImagePart)[]>(() => {
 })
 
 const hasReasoning = computed(
-  () => typeof props.message.reasoning_content === 'string' && props.message.reasoning_content.length > 0,
+  () =>
+    typeof props.message.reasoning_content === 'string' &&
+    props.message.reasoning_content.length > 0,
 )
 
 const previewText = computed(() => {
@@ -116,43 +101,66 @@ const previewText = computed(() => {
 </script>
 
 <template>
-  <details class="group rounded-lg border" :class="[roleAlignClass, roleCardClass]">
+  <details
+    class="group workspace-panel animate-fade-in-up overflow-hidden p-0"
+    :class="roleAlignClass"
+    :style="{ borderLeftColor: roleAccent, borderLeftWidth: '3px' }"
+  >
     <summary class="summary-row cursor-pointer list-none p-3">
-      <div class="flex items-start gap-2">
-        <div class="mt-1.5 h-2 w-2 rounded-full bg-slate-400/80 dark:bg-slate-500" />
+      <div class="flex items-start gap-2.5">
+        <div
+          class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+          :style="{ backgroundColor: roleAccent }"
+        />
         <div class="min-w-0">
-          <div class="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide" :class="roleLabelClass">
+          <div class="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
             <ChevronRight class="h-4 w-4 transition-transform group-open:rotate-90" />
-            <span>#{{ index ?? '-' }} {{ t(`trace.role.${message.role}`) }}</span>
-            <span v-if="message.name" class="normal-case text-xs font-medium text-slate-500">({{ message.name }})</span>
+            <span class="text-ppx-text"
+              >#{{ index ?? '-' }} {{ t(`trace.role.${message.role}`) }}</span
+            >
+            <span v-if="message.name" class="workspace-body text-xs font-medium normal-case"
+              >({{ message.name }})</span
+            >
           </div>
-          <p class="preview-text mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+          <p class="preview-text text-ppx-text-muted mt-1 truncate text-xs">
             {{ previewText }}
           </p>
         </div>
       </div>
     </summary>
 
-    <div class="space-y-3 px-3 pb-3 pt-2">
-      <details v-if="hasReasoning" class="rounded-md border p-2" :class="reasoningClass">
-        <summary class="cursor-pointer text-xs font-semibold">{{ t('trace.reasoning') }}</summary>
-        <div class="mt-2">
+    <div class="border-ppx-border space-y-3 border-t px-3 pt-2 pb-3">
+      <details v-if="hasReasoning" class="workspace-subpanel overflow-hidden p-0">
+        <summary class="text-ppx-text-soft cursor-pointer px-2.5 py-2 text-xs font-semibold">
+          {{ t('trace.reasoning') }}
+        </summary>
+        <div class="px-2.5 pb-2.5">
           <MarkdownContent :markdown="message.reasoning_content as string" />
         </div>
       </details>
 
-      <div v-if="parsedParts.length === 0" class="text-xs text-slate-500 dark:text-slate-400">
+      <div v-if="parsedParts.length === 0" class="workspace-body text-ppx-text-muted text-xs">
         {{ t('trace.emptyContent') }}
       </div>
 
       <div class="space-y-3">
         <template v-for="(part, index2) in parsedParts" :key="index2">
-          <MarkdownContent v-if="part.type === 'text'" :markdown="part.text" />
-          <div v-else class="space-y-2">
-            <img :src="part.url" :alt="t('trace.vlmImageAlt')" loading="lazy"
-              class="max-h-80 w-auto rounded border border-slate-200 bg-white object-contain dark:border-slate-700 dark:bg-slate-900" />
-            <a :href="part.url" target="_blank" rel="noreferrer"
-              class="text-xs text-sky-700 underline dark:text-sky-300">
+          <div v-if="part.type === 'text'" class="workspace-subpanel px-3 py-2.5">
+            <MarkdownContent :markdown="part.text" />
+          </div>
+          <div v-else class="space-y-1.5">
+            <img
+              :src="part.url"
+              :alt="t('trace.vlmImageAlt')"
+              loading="lazy"
+              class="border-ppx-border rounded-ppx-interactive max-h-80 w-auto border object-contain"
+            />
+            <a
+              :href="part.url"
+              target="_blank"
+              rel="noreferrer"
+              class="text-ppx-text-soft hover:text-ppx-text inline-flex items-center gap-1 text-xs underline underline-offset-2 transition-colors"
+            >
               {{ t('trace.openImage') }}
             </a>
           </div>
@@ -165,6 +173,21 @@ const previewText = computed(() => {
 </template>
 
 <style scoped>
+/* 外层 message card 展开收起过渡 */
+.group {
+  display: grid;
+  grid-template-rows: auto 0fr;
+  transition: grid-template-rows 0.35s var(--ppx-ease-smooth);
+}
+
+.group[open] {
+  grid-template-rows: auto 1fr;
+}
+
+.group > :not(summary) {
+  overflow: hidden;
+}
+
 .group[open] .preview-text {
   display: none;
 }
@@ -174,10 +197,21 @@ const previewText = computed(() => {
 }
 
 .group[open] .summary-row {
-  border-bottom-color: rgb(226 232 240);
+  border-bottom-color: var(--ppx-border);
 }
 
-.dark .group[open] .summary-row {
-  border-bottom-color: rgb(51 65 85);
+/* reasoning 内层展开收起过渡 */
+.workspace-subpanel {
+  display: grid;
+  grid-template-rows: auto 0fr;
+  transition: grid-template-rows 0.3s var(--ppx-ease-smooth);
+}
+
+.workspace-subpanel[open] {
+  grid-template-rows: auto 1fr;
+}
+
+.workspace-subpanel > :not(summary) {
+  overflow: hidden;
 }
 </style>

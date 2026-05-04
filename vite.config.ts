@@ -13,6 +13,11 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(appVersion),
   },
   plugins: [vue(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   server: {
     host: '0.0.0.0',
   },

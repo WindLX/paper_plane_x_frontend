@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { translate } from '../i18n'
-import { api } from '../api/client'
-import { usePagination } from '../composables/pagination'
-import type { ProjectSortKey } from '../types/sort'
-import type { ProjectResponse } from '../types/api'
+import { api } from '@/api'
+import { usePagination } from '@/composables/usePagination'
+import type { ProjectSortKey } from '@/types/sort'
+import type { ProjectResponse } from '@/types/api'
 
 export const useProjectStore = defineStore('projects', () => {
   const loading = ref(false)

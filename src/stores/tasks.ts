@@ -2,10 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { translate } from '../i18n'
-import { api } from '../api/client'
-import { usePagination } from '../composables/pagination'
-import type { TaskSortKey } from '../types/sort'
-import type { DataProcessTaskListResponse, DataProcessTaskResponse } from '../types/api'
+import { api } from '@/api'
+import { usePagination } from '@/composables/usePagination'
+import type { TaskSortKey } from '@/types/sort'
+import type { DataProcessTaskListResponse, DataProcessTaskResponse } from '@/types/api'
 
 export const useTaskStore = defineStore('tasks', () => {
   const loading = ref(false)
@@ -17,7 +17,11 @@ export const useTaskStore = defineStore('tasks', () => {
   const canceled = ref(0)
   const lastUpdatedAt = ref<string | null>(null)
 
-  const paginated = usePagination<DataProcessTaskResponse, TaskSortKey, DataProcessTaskListResponse>({
+  const paginated = usePagination<
+    DataProcessTaskResponse,
+    TaskSortKey,
+    DataProcessTaskListResponse
+  >({
     fetcher: ({ offset, limit, sortOrder, sortBy }) =>
       api.listTasks(offset, limit, sortOrder, sortBy),
     defaultLimit: 20,

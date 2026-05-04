@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, ArrowRightToLine } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from './AppButton.vue'
+import AppSelect from './AppSelect.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -46,18 +47,19 @@ function jumpToPage(): void {
 </script>
 
 <template>
-  <div
-    class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
-    <div class="text-slate-600 dark:text-slate-300">
+  <div class="workspace-panel flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+    <div class="workspace-body">
       {{ t('common.pageSummary', { current: currentPage, total: totalPages, count: totalCount }) }}
     </div>
     <div class="flex items-center gap-2">
-      <label class="text-xs text-slate-500 dark:text-slate-400">{{ t('common.rows') }}</label>
-      <select
-        class="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
-        :value="rowsPerPage" @change="emit('set-limit', Number(($event.target as HTMLSelectElement).value))">
-        <option v-for="option in rowsOptions" :key="option" :value="option">{{ option }}</option>
-      </select>
+      <label class="workspace-muted text-xs">{{ t('common.rows') }}</label>
+      <AppSelect
+        :model-value="rowsPerPage"
+        :options="rowsOptions.map((o) => ({ label: String(o), value: o }))"
+        size="sm"
+        class="w-auto"
+        @update:model-value="$event != null && emit('set-limit', $event)"
+      />
       <AppButton size="xs" :disabled="!hasPrevPage" @click="emit('prev-page')">
         <ChevronLeft class="h-3.5 w-3.5" />
         <span>{{ t('actions.prev') }}</span>
@@ -67,9 +69,15 @@ function jumpToPage(): void {
         <ChevronRight class="h-3.5 w-3.5" />
       </AppButton>
       <div class="ml-1 inline-flex items-center gap-1.5">
-        <input v-model="jumpInput" type="number" min="1" :max="totalPages" :placeholder="t('common.page')"
-          class="w-16 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900"
-          @keydown.enter.prevent="jumpToPage" />
+        <input
+          v-model="jumpInput"
+          type="number"
+          min="1"
+          :max="totalPages"
+          :placeholder="t('common.page')"
+          class="workspace-input w-16 px-2 py-1 text-xs"
+          @keydown.enter.prevent="jumpToPage"
+        />
         <AppButton size="xs" @click="jumpToPage">
           <ArrowRightToLine class="h-3.5 w-3.5" />
           <span>{{ t('actions.go') }}</span>

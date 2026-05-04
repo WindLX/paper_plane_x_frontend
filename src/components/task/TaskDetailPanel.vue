@@ -1,91 +1,144 @@
 <script setup lang="ts">
-import {
-    Ban,
-    ExternalLink,
-    RotateCcw,
-    Trash2,
-} from 'lucide-vue-next'
-import { RouterLink } from 'vue-router'
+import { Ban, RotateCcw, Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '../AppButton.vue'
+import CopyableText from '../CopyableText.vue'
 import JsonPanel from '../JsonPanel.vue'
 import type { DataProcessTaskResponse } from '../../types/api'
 import { formatDateTime } from '../../utils/format'
 
 const props = defineProps<{
-    task: DataProcessTaskResponse
-    canCancel: boolean
-    canRetry: boolean
-    canDelete: boolean
+  task: DataProcessTaskResponse
+  canCancel: boolean
+  canRetry: boolean
+  canDelete: boolean
 }>()
 
 const emit = defineEmits<{
-    cancel: [taskId: string]
-    retry: [taskId: string]
-    delete: [taskId: string]
+  cancel: [taskId: string]
+  retry: [taskId: string]
+  delete: [taskId: string]
 }>()
 
 const { t } = useI18n()
 </script>
 
 <template>
-    <aside
-        class="self-start rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-auto">
-        <header class="mb-3 flex items-center justify-between gap-2">
-            <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ t('tasks.detail.title') }}</h3>
-            <RouterLink :to="`/tasks/${props.task.task_id}`"
-                class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-slate-100 px-2 py-1 text-xs text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-                <ExternalLink class="h-3.5 w-3.5" />
-                <span>{{ t('actions.open') }}</span>
-            </RouterLink>
-        </header>
-        <div class="mb-3 flex flex-wrap gap-2">
-            <AppButton tone="amber" size="xs" :disabled="!props.canCancel" @click="emit('cancel', props.task.task_id)">
-                <Ban class="h-3.5 w-3.5" />
-                <span>{{ t('actions.cancel') }}</span>
-            </AppButton>
-            <AppButton tone="sky" size="xs" :disabled="!props.canRetry" @click="emit('retry', props.task.task_id)">
-                <RotateCcw class="h-3.5 w-3.5" />
-                <span>{{ t('actions.retry') }}</span>
-            </AppButton>
-            <AppButton tone="rose" size="xs" :disabled="!props.canDelete" @click="emit('delete', props.task.task_id)">
-                <Trash2 class="h-3.5 w-3.5" />
-                <span>{{ t('actions.delete') }}</span>
-            </AppButton>
+  <div class="animate-fade-in-up space-y-3">
+    <header class="workspace-panel space-y-3 p-3.5">
+      <div class="text-ppx-text-soft space-y-2 text-xs">
+        <div class="flex flex-col items-start gap-2">
+          <span class="text-ppx-text-muted shrink-0 font-semibold">{{
+            t('tasks.detail.taskId')
+          }}</span>
+          <CopyableText :text="props.task.task_id" mono />
         </div>
-        <div class="space-y-1 text-xs text-slate-600 dark:text-slate-300">
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.taskId') }}:</span>
-                {{ props.task.task_id }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.paperId') }}:</span>
-                {{ props.task.paper_id }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.status') }}:</span>
-                {{ t(`status.${props.task.status}`) }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.retryOf') }}:</span>
-                {{ props.task.retry_of_task_id ?? '-' }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.created') }}:</span>
-                {{ formatDateTime(props.task.created_at) }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.started') }}:</span>
-                {{ formatDateTime(props.task.started_at) }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.finished') }}:</span>
-                {{ formatDateTime(props.task.finished_at) }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.error') }}:</span>
-                {{ props.task.error ?? '-' }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{
-                t('tasks.detail.extractionTraceCount') }}:</span> {{
-                        props.task.extraction_trace_ids.length }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('tasks.detail.analysisTraceCount')
-            }}:</span> {{
-                        props.task.analysis_trace_ids.length }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{
-                t('tasks.detail.extractionFactCheckTraceCount') }}:</span> {{
-                        props.task.extraction_fact_check_trace_ids.length }}</div>
-            <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{
-                t('tasks.detail.analysisFactCheckTraceCount') }}:</span> {{
-                        props.task.analysis_fact_check_trace_ids.length }}</div>
+        <div class="flex flex-col items-start gap-2">
+          <span class="text-ppx-text-muted shrink-0 font-semibold">{{
+            t('tasks.detail.paperId')
+          }}</span>
+          <CopyableText :text="props.task.paper_id" mono />
         </div>
-        <div class="mt-3">
-            <JsonPanel :title="t('tasks.detail.rawTaskJson')" :value="props.task" max-height="36vh" defaultOpen />
+        <div class="flex items-center gap-2">
+          <span class="text-ppx-text-muted shrink-0 font-semibold">{{
+            t('tasks.detail.status')
+          }}</span>
+          <span>{{ t(`status.${props.task.status}`) }}</span>
         </div>
-    </aside>
+        <div class="flex items-center gap-2">
+          <span class="text-ppx-text-muted shrink-0 font-semibold">{{
+            t('tasks.detail.retryOf')
+          }}</span>
+          <CopyableText
+            v-if="props.task.retry_of_task_id"
+            :text="props.task.retry_of_task_id"
+            mono
+            class="ml-1"
+          />
+          <span v-else class="text-ppx-text-muted">-</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 overflow-x-auto">
+        <AppButton
+          variant="outline"
+          size="xs"
+          :disabled="!props.canCancel"
+          @click="emit('cancel', props.task.task_id)"
+        >
+          <Ban class="h-3.5 w-3.5" />
+          <span>{{ t('actions.cancel') }}</span>
+        </AppButton>
+        <AppButton
+          variant="outline"
+          size="xs"
+          :disabled="!props.canRetry"
+          @click="emit('retry', props.task.task_id)"
+        >
+          <RotateCcw class="h-3.5 w-3.5" />
+          <span>{{ t('actions.retry') }}</span>
+        </AppButton>
+        <AppButton
+          variant="outline"
+          tone="rose"
+          size="xs"
+          :disabled="!props.canDelete"
+          @click="emit('delete', props.task.task_id)"
+        >
+          <Trash2 class="h-3.5 w-3.5" />
+          <span>{{ t('actions.delete') }}</span>
+        </AppButton>
+      </div>
+    </header>
+
+    <div class="workspace-panel p-3.5">
+      <div class="text-ppx-text-soft grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+        <div class="min-w-0">
+          <span class="text-ppx-text-muted mb-0.5 block font-semibold">{{
+            t('tasks.detail.created')
+          }}</span>
+          <div class="wrap-break-word">{{ formatDateTime(props.task.created_at) }}</div>
+        </div>
+        <div class="min-w-0">
+          <span class="text-ppx-text-muted mb-0.5 block font-semibold">{{
+            t('tasks.detail.started')
+          }}</span>
+          <div class="wrap-break-word">{{ formatDateTime(props.task.started_at) }}</div>
+        </div>
+        <div class="min-w-0">
+          <span class="text-ppx-text-muted mb-0.5 block font-semibold">{{
+            t('tasks.detail.finished')
+          }}</span>
+          <div class="wrap-break-word">{{ formatDateTime(props.task.finished_at) }}</div>
+        </div>
+        <div class="min-w-0">
+          <span class="text-ppx-text-muted mb-0.5 block font-semibold">{{
+            t('taskDetail.totalTraces')
+          }}</span>
+          <div>
+            {{
+              props.task.extraction_trace_ids.length +
+              props.task.analysis_trace_ids.length +
+              props.task.extraction_fact_check_trace_ids.length +
+              props.task.analysis_fact_check_trace_ids.length
+            }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="props.task.error"
+      class="workspace-badge--danger rounded-ppx-interactive px-3 py-2 text-xs"
+    >
+      <span class="wrap-break-word">{{ props.task.error }}</span>
+    </div>
+
+    <JsonPanel
+      :title="t('tasks.detail.rawTaskJson')"
+      :value="props.task"
+      max-height="36vh"
+      :default-open="false"
+    />
+  </div>
 </template>

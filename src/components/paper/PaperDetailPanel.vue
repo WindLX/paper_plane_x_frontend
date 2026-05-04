@@ -1,128 +1,114 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import {
-    Eye,
-    ExternalLink,
-    Link2,
-    Unlink2,
-} from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
-import type { PaperResponse } from '../../types/api'
-import { formatDateTime } from '../../utils/format'
-import AppButton from '../AppButton.vue'
-import CopyableText from '../CopyableText.vue'
+import { usePaperHelpers, useProjectLinkModal } from '@/composables/usePaperHelpers'
+import type { PaperDetailResponse } from '@/types/api'
 import JsonPanel from '../JsonPanel.vue'
+import PaperAgentNote from './PaperAgentNote.vue'
+import PaperAnalysis from './PaperAnalysis.vue'
+import PaperDetailHeader from './PaperDetailHeader.vue'
+import PaperFactCheck from './PaperFactCheck.vue'
+import PaperProjectLinkModal from './PaperProjectLinkModal.vue'
+import PaperQuickScan from './PaperQuickScan.vue'
+import PaperSynthesis from './PaperSynthesis.vue'
 
 const props = defineProps<{
-    paper: PaperResponse | null
-    projectId?: string
-    unlinkingPaperId?: string | null
-    linkingPaperId?: string | null
+  paper: PaperDetailResponse | null
+  projectId?: string
+  unlinkingPaperId?: string | null
+  linkingPaperId?: string | null
 }>()
 
 const emit = defineEmits<{
-    unlink: [paperId: string]
-    link: [paperId: string]
+  unlink: [paperId: string]
+  link: [paperId: string]
+  linkToProject: [projectId: string, paperId: string]
 }>()
-
-const isInProject = computed<boolean>(() => {
-    if (!props.projectId || !props.paper) return false
-    return props.paper.project_ids.includes(props.projectId)
-})
 
 const { t } = useI18n()
 
-const customMeta = computed<Record<string, unknown> | null>(() => {
-    const raw = props.paper?.custom_meta
-    if (!raw) return null
-    try {
-        const parsed = JSON.parse(raw)
-        if (typeof parsed === 'object' && parsed !== null) {
-            return parsed as Record<string, unknown>
-        }
-        return null
-    } catch {
-        return null
-    }
-})
+const helpers = usePaperHelpers(props.paper)
+const linkModal = useProjectLinkModal(props.paper)
 
-const zoteroKey = computed<string | null>(() => {
-    const value = customMeta.value?.zotero_key
-    if (typeof value !== 'string' || value.trim().length === 0) return null
-    return value.trim()
-})
-
-const zoteroUrl = computed<string | null>(() => {
-    if (!zoteroKey.value) return null
-    return `zotero://select/library/items/${zoteroKey.value}`
-})
+async function handleLinkToProject(projectId: string): Promise<void> {
+  if (!props.paper || linkModal.isPaperLinkedToProject(projectId)) return
+  emit('linkToProject', projectId, props.paper.paper_id)
+  linkModal.projectLinkModalOpen.value = false
+}
 </script>
 
 <template>
-    <aside
-        class="self-start rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-auto">
-        <template v-if="paper">
-            <header class="mb-4 flex flex-col space-y-2">
-                <div class="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                    <Eye class="h-3.5 w-3.5" />
-                    <span>{{ t('projectDetail.selectedPaper') }}</span>
-                </div>
-                <div class="flex justify-between gap-2">
-                    <CopyableText :text="paper.paper_id" mono />
-                    <div class="flex items-center gap-2">
-                        <a v-if="zoteroUrl" :href="zoteroUrl"
-                            class="inline-flex items-center justify-center gap-1.5 rounded-md border border-violet-300 bg-violet-50 px-2 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:border-violet-700 dark:bg-violet-900/20 dark:text-violet-300 dark:hover:bg-slate-800">
-                            <ExternalLink class="h-3.5 w-3.5" />
-                            <span>Zotero</span>
-                        </a>
-                        <AppButton v-if="isInProject" tone="rose" size="xs"
-                            :disabled="unlinkingPaperId === paper.paper_id" @click="emit('unlink', paper.paper_id)">
-                            <Unlink2 class="h-3.5 w-3.5" />
-                            <span>{{ t('actions.unlink') }}</span>
-                        </AppButton>
-                        <AppButton v-else-if="projectId" tone="emerald" size="xs"
-                            :disabled="linkingPaperId === paper.paper_id" @click="emit('link', paper.paper_id)">
-                            <Link2 class="h-3.5 w-3.5" />
-                            <span>{{ t('actions.link') }}</span>
-                        </AppButton>
-                    </div>
-                </div>
-                <div class="warp-break-word text-sm font-bold text-slate-700 dark:text-slate-200">{{ paper.title ?? '-'
-                }}</div>
-            </header>
+  <section class="animate-fade-in-up space-y-3.5">
+    <template v-if="paper">
+      <PaperDetailHeader
+        :paper="paper"
+        :project-id="projectId"
+        :unlinking-paper-id="unlinkingPaperId"
+        :linking-paper-id="linkingPaperId"
+        @unlink="emit('unlink', $event)"
+        @link="emit('link', $event)"
+        @open-project-link-modal="linkModal.openProjectLinkModal()"
+      />
 
-            <div class="mb-4 space-y-1 text-xs text-slate-600 dark:text-slate-300">
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('projectDetail.created')
-                }}:</span>
-                    {{ formatDateTime(paper.created_at) }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('projectDetail.updated')
-                }}:</span>
-                    {{ formatDateTime(paper.updated_at) }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('projectDetail.labels.authors')
-                }}:</span> {{ paper.authors.join(', ') || '-' }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('projectDetail.labels.year')
-                }}:</span> {{ paper.year ?? '-' }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{
-                    t('projectDetail.labels.publication')
-                        }}:</span> {{ paper.publication ?? '-' }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('projectDetail.labels.doi')
-                }}:</span> {{ paper.doi ?? '-' }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{
-                    t('projectDetail.labels.projectIds')
-                        }}</span>: {{ paper.project_ids.join(', ') || '-' }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{
-                    t('projectDetail.labels.customMeta')
-                        }}:</span> {{ paper.custom_meta ?? '-' }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{
-                    t('projectDetail.labels.rawPdfPath')
-                        }}:</span> {{ paper.raw_pdf_path ?? '-' }}</div>
-                <div><span class="font-semibold text-slate-700 dark:text-slate-200">{{ t('projectDetail.labels.sha256')
-                }}:</span> {{ paper.raw_pdf_sha256 ?? '-' }}</div>
-            </div>
+      <PaperQuickScan
+        :has-quick-scan="helpers.hasQuickScan.value"
+        :quick-scan-verdict="helpers.quickScanVerdict.value"
+        :quick-scan-reason="helpers.quickScanReason.value"
+        :quick-scan-summary="helpers.quickScanSummary.value"
+        :quick-scan-tags="helpers.quickScanTags.value"
+      />
 
-            <JsonPanel :title="t('projectDetail.rawPaperJson')" :value="paper" max-height="36vh" defaultOpen />
-        </template>
-        <div v-else class="text-sm text-slate-500 dark:text-slate-400">{{ t('projectDetail.noPaperSelected') }}</div>
-    </aside>
+      <PaperSynthesis
+        :has-synthesis="helpers.hasSynthesis.value"
+        :synthesis-summary="helpers.synthesisSummary.value"
+        :synthesis-methodology="helpers.synthesisMethodology.value"
+        :synthesis-key-results="helpers.synthesisKeyResults.value"
+        :synthesis-gaps="helpers.synthesisGaps.value"
+      />
+
+      <PaperAnalysis
+        :has-analysis-report="helpers.hasAnalysisReport.value"
+        :analysis-prerequisites="helpers.analysisPrerequisites.value"
+        :analysis-core-formulation="helpers.analysisCoreFormulation.value"
+        :analysis-derivation-steps="helpers.analysisDerivationSteps.value"
+        :analysis-related-references="helpers.analysisRelatedReferences.value"
+        :analysis-extras="helpers.analysisExtras.value"
+      />
+
+      <PaperFactCheck
+        :has-extraction-fact-check="helpers.hasExtractionFactCheck.value"
+        :has-analysis-fact-check="helpers.hasAnalysisFactCheck.value"
+        :extraction-fact-check-passed="helpers.extractionFactCheckPassed.value"
+        :extraction-fact-check-errors="helpers.extractionFactCheckErrors.value"
+        :analysis-fact-check-passed="helpers.analysisFactCheckPassed.value"
+        :analysis-fact-check-errors="helpers.analysisFactCheckErrors.value"
+      />
+
+      <PaperAgentNote :agent-note="paper.agent_note" />
+
+      <section class="workspace-panel p-3.5">
+        <JsonPanel
+          :title="t('projectDetail.rawPaperJson')"
+          :value="paper"
+          :default-open="false"
+          max-height="34vh"
+        />
+      </section>
+    </template>
+    <div v-else class="workspace-subpanel workspace-body p-4 text-sm">
+      {{ t('projectDetail.noPaperSelected') }}
+    </div>
+
+    <PaperProjectLinkModal
+      v-if="linkModal.projectLinkModalOpen.value && paper"
+      v-model:project-keyword="linkModal.projectKeyword.value"
+      :open="linkModal.projectLinkModalOpen.value"
+      :paper-id="paper.paper_id"
+      :available-projects="linkModal.filteredProjects.value"
+      :project-search-loading="linkModal.projectSearchLoading.value"
+      :is-paper-linked-to-project="linkModal.isPaperLinkedToProject"
+      @link-to-project="handleLinkToProject"
+      @close="linkModal.projectLinkModalOpen.value = false"
+    />
+  </section>
 </template>

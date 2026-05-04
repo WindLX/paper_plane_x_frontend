@@ -3,33 +3,43 @@ import { ref } from 'vue'
 import { Check, Copy } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
+import { useNotify } from '@/composables/useNotify'
+
 const props = defineProps<{
   text: string
   mono?: boolean
 }>()
 
 const { t } = useI18n()
+const { push: notifyPush } = useNotify()
 const copied = ref(false)
 let timer: number | null = null
 
 async function copyText(): Promise<void> {
-  await navigator.clipboard.writeText(props.text)
-  copied.value = true
-  if (timer !== null) {
-    window.clearTimeout(timer)
+  try {
+    await navigator.clipboard.writeText(props.text)
+    copied.value = true
+    if (timer !== null) {
+      window.clearTimeout(timer)
+    }
+    timer = window.setTimeout(() => {
+      copied.value = false
+      timer = null
+    }, 1200)
+  } catch {
+    notifyPush(t('copyable.copyFailed'), 'warning')
   }
-  timer = window.setTimeout(() => {
-    copied.value = false
-    timer = null
-  }, 1200)
 }
 </script>
 
 <template>
-  <button type="button"
-    class="inline-flex min-w-0 items-center gap-1 text-left text-sky-700 underline decoration-dotted underline-offset-2 hover:text-sky-800 dark:text-sky-300 dark:hover:text-sky-200 cursor-pointer"
+  <button
+    type="button"
+    class="text-ppx-accent hover:bg-ppx-accent-soft hover:text-ppx-accent inline-flex w-fit min-w-0 cursor-pointer items-center gap-1 rounded-xl border border-transparent px-1.5 py-1 text-left decoration-dotted underline-offset-2"
     :class="mono ? 'font-mono text-xs' : 'text-sm'"
-    :title="copied ? t('copyable.copied') : t('copyable.clickToCopy')" @click="copyText">
+    :title="copied ? t('copyable.copied') : t('copyable.clickToCopy')"
+    @click="copyText"
+  >
     <span class="break-all">{{ text }}</span>
     <Check v-if="copied" class="h-3.5 w-3.5 shrink-0" />
     <Copy v-else class="h-3.5 w-3.5 shrink-0" />
