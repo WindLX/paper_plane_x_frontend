@@ -40,6 +40,8 @@ export const useUiStore = defineStore('ui', () => {
   const rightDrawerPayload = ref<DrawerPayload | null>(null)
   const rightDrawerSource = ref<'local' | 'route'>('local')
   const rightDrawerActiveTab = ref<DrawerTab>('overview')
+  const conversationDrawerPaperTarget = ref<string | null>(null)
+  const scrollToTurnId = ref<string | null>(null)
   const pageTitle = ref<string | null>(null)
   const pageSubtitle = ref<string | null>(null)
 
@@ -97,6 +99,14 @@ export const useUiStore = defineStore('ui', () => {
     rightDrawerActiveTab.value = tab
   }
 
+  function setConversationDrawerPaperTarget(paperId: string | null): void {
+    conversationDrawerPaperTarget.value = paperId
+  }
+
+  function setScrollToTurnId(turnId: string | null): void {
+    scrollToTurnId.value = turnId
+  }
+
   function setPageTitle(title: string | null): void {
     pageTitle.value = title
   }
@@ -122,6 +132,8 @@ export const useUiStore = defineStore('ui', () => {
     rightDrawerPayload,
     rightDrawerSource,
     rightDrawerActiveTab,
+    conversationDrawerPaperTarget,
+    scrollToTurnId,
     pageTitle,
     pageSubtitle,
     setDarkMode,
@@ -133,6 +145,8 @@ export const useUiStore = defineStore('ui', () => {
     openRightDrawer,
     closeRightDrawer,
     setRightDrawerTab,
+    setConversationDrawerPaperTarget,
+    setScrollToTurnId,
     setPageTitle,
     setPageSubtitle,
     clearPageTitle,

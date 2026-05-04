@@ -227,8 +227,10 @@ function formatTime(iso: string): string {
         </div>
       </template>
     </div>
-  </div>
 
-  <!-- Image Preview -->
-  <ImagePreview v-if="previewSrc" :src="previewSrc" @close="previewSrc = null" />
+    <!-- Image Preview -->
+    <Teleport to="body">
+      <ImagePreview v-if="previewSrc" :src="previewSrc" @close="previewSrc = null" />
+    </Teleport>
+  </div>
 </template>

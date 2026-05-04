@@ -21,7 +21,7 @@ const { t } = useI18n()
   <div
     class="duration-ppx-fast flex items-center gap-1 transition-opacity"
     :class="[
-      visible ? 'opacity-100' : 'opacity-0',
+      visible ? 'opacity-100' : 'pointer-events-none opacity-0',
       align === 'start' ? 'justify-start' : 'justify-end',
     ]"
   >

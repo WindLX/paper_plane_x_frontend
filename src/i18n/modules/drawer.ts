@@ -19,6 +19,7 @@ export const drawer = {
     paperLinkedToProject: '论文 {paperId} 已关联到项目 {projectName}',
     paperUnlinked: '论文 {paperId} 已从当前项目解除关联',
     paperAlreadyLinked: '已关联',
+    turnOutline: '对话节点',
   },
   'en-US': {
     label: 'Right Detail',
@@ -40,5 +41,6 @@ export const drawer = {
     paperLinkedToProject: 'Paper {paperId} linked to project {projectName}',
     paperUnlinked: 'Paper {paperId} unlinked from the current project',
     paperAlreadyLinked: 'Linked',
+    turnOutline: 'Turn Outline',
   },
 } as const

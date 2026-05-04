@@ -264,7 +264,7 @@ watch(
     <Transition name="drawer-panel" appear>
       <aside
         v-if="uiStore.rightDrawerOpen"
-        class="border-ppx-border bg-ppx-bg-elevated shadow-ppx-raised fixed top-0 right-0 z-50 flex h-screen w-full max-w-[min(100vw,44rem)] flex-col border-l xl:w-xl xl:max-w-none"
+        class="border-ppx-border bg-ppx-bg-elevated shadow-ppx-raised fixed top-0 right-0 z-35 flex h-screen w-full max-w-[min(100vw,44rem)] flex-col border-l xl:w-xl xl:max-w-none"
       >
         <header class="workspace-divider flex items-start justify-between gap-3 border-b px-4 py-4">
           <div class="min-w-0">

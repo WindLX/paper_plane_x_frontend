@@ -9,6 +9,7 @@ import ChatTurnActions from './ChatTurnActions.vue'
 import type { ConversationTurnEventResponse, ConversationTurnResponse } from '@/types/api'
 import { Check, X } from 'lucide-vue-next'
 import { useUiStore } from '@/stores/ui'
+import { useConversationStore } from '@/stores/conversation'
 
 const props = defineProps<{
   turn: ConversationTurnResponse
@@ -26,12 +27,12 @@ const emit = defineEmits<{
   fork: []
   confirmEdit: []
   cancelEdit: []
-  openPaper: [paperId: string]
 }>()
 
 const { t } = useI18n()
 const hovered = ref(false)
 const uiStore = useUiStore()
+const conversationStore = useConversationStore()
 
 const events = computed(() =>
   [...props.turn.assistant_events].sort((a, b) => a.sequence_no - b.sequence_no),
@@ -82,54 +83,16 @@ function toolResultValue(event: ConversationTurnEventResponse): Record<string, u
   }
 }
 
-interface AssistantReference {
-  paperId: string
-  label: string
-}
-
-function splitAssistantContent(content: string | null | undefined): {
-  body: string
-  references: AssistantReference[]
-} {
-  const raw = (content ?? '').trim()
-  if (!raw) return { body: '', references: [] }
-
-  const markerMatch = raw.match(/\n(?:参考文献|References)\s*:\s*\n([\s\S]+)$/i)
-  if (!markerMatch) {
-    return { body: raw, references: [] }
-  }
-
-  const refsBlock = markerMatch[1]
-  const references = refsBlock
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.replace(/^[-*]\s*/, ''))
-    .map((line) => {
-      const pipeIdx = line.indexOf('|')
-      const paperId = (pipeIdx === -1 ? line : line.slice(0, pipeIdx)).trim()
-      const label = (pipeIdx === -1 ? line : line.slice(pipeIdx + 1)).trim()
-      if (!paperId.startsWith('pap-')) return null
-      return {
-        paperId,
-        label: label || paperId,
-      }
-    })
-    .filter((item): item is AssistantReference => item !== null)
-
-  if (!references.length) {
-    return { body: raw, references: [] }
-  }
-
-  return {
-    body: raw.slice(0, markerMatch.index).trim(),
-    references,
-  }
-}
-
 function openPaperReference(paperId: string): void {
-  uiStore.openRightDrawer('paper', { paperId }, 'local')
-  emit('openPaper', paperId)
+  const currentConv = conversationStore.currentConversation
+  if (currentConv) {
+    uiStore.openRightDrawer(
+      'conversation',
+      { conversationId: currentConv.conversation_id },
+      'local',
+    )
+  }
+  uiStore.setConversationDrawerPaperTarget(paperId)
 }
 </script>
 
@@ -226,26 +189,10 @@ function openPaperReference(paperId: string): void {
               </div>
             </template>
             <template v-else>
-              <MarkdownContent :markdown="splitAssistantContent(event.content).body" />
-              <div
-                v-if="splitAssistantContent(event.content).references.length > 0"
-                class="mt-3 space-y-2"
-              >
-                <div class="text-ppx-text-soft text-xs font-medium">
-                  {{ t('chat.references') }}
-                </div>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="reference in splitAssistantContent(event.content).references"
-                    :key="reference.paperId"
-                    type="button"
-                    class="workspace-chip cursor-pointer text-left"
-                    @click="openPaperReference(reference.paperId)"
-                  >
-                    {{ reference.paperId }} | {{ reference.label }}
-                  </button>
-                </div>
-              </div>
+              <MarkdownContent
+                :markdown="event.content ?? ''"
+                @paper-click="openPaperReference($event)"
+              />
             </template>
           </div>
         </template>
@@ -264,7 +211,10 @@ function openPaperReference(paperId: string): void {
         v-if="events.length > 0"
         class="text-ppx-text-soft flex items-center justify-end gap-2 text-xs"
       >
-        <span v-if="isStreaming && isToolCalling">{{ t('chat.toolCalling') }}</span>
+        <div v-if="isStreaming && isToolCalling" class="flex items-center gap-1.5">
+          <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
+          <span>{{ t('chat.toolCalling') }}</span>
+        </div>
         <ChatTurnActions
           :visible="hovered && !isStreaming"
           align="end"

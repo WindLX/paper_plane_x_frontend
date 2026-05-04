@@ -13,6 +13,7 @@ import ChatInputBox from './chat-view/ChatInputBox.vue'
 import { useConversationSocket } from '@/composables/useConversationSocket'
 import { useHitl } from '@/composables/useHitl'
 import { useConversationStore } from '@/stores/conversation'
+import { useUiStore } from '@/stores/ui'
 import { useNotify } from '@/composables/useNotify'
 import { useDialog } from '@/composables/useDialog'
 import { useRouter } from 'vue-router'
@@ -30,6 +31,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const router = useRouter()
 const chatStore = useConversationStore()
+const uiStore = useUiStore()
 const notify = useNotify()
 const dialog = useDialog()
 const hitl = useHitl()
@@ -68,6 +70,21 @@ watch(
     } else {
       hitl.disconnect()
     }
+  },
+)
+
+// Scroll to turn from drawer outline click
+watch(
+  () => uiStore.scrollToTurnId,
+  (turnId) => {
+    if (!turnId) return
+    nextTick(() => {
+      const el = document.getElementById(`turn-${turnId}`)
+      if (el && chatContainerRef.value) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      uiStore.setScrollToTurnId(null)
+    })
   },
 )
 
@@ -114,6 +131,11 @@ watch(
       const newSocket = useConversationSocket(newId)
       socket.value = newSocket
       newSocket.connect()
+      // Clear input state when switching conversations
+      inputValue.value = ''
+      inputImages.value = []
+      inputPaperIds.value = []
+      inputExpanded.value = false
     } else if (!newId) {
       socket.value?.disconnect()
       socket.value = null
@@ -409,44 +431,46 @@ async function handleDeleteConversation(): Promise<void> {
           :date="turn.user_message?.created_at ?? turn.assistant_events[0]?.created_at ?? ''"
         />
 
-        <ChatUserMessage
-          v-if="turn.user_message"
-          v-model:edit-content="editingContent"
-          v-model:edit-images="editingImages"
-          :msg="turn.user_message"
-          :hovered="hoveredMessageId === turn.user_message.message_id"
-          :editing="editingMessageId === turn.user_message.message_id"
-          @mouseenter="hoveredMessageId = turn.user_message.message_id"
-          @mouseleave="hoveredMessageId = null"
-          @edit="startEdit(turn.user_message)"
-          @rerun="handleRerunTurn(turn)"
-          @delete="handleDeleteTurn(turn)"
-          @fork="handleForkTurn(turn, turn.user_message?.message_id)"
-          @confirm-edit="confirmEdit(turn.user_message)"
-          @cancel-edit="cancelEdit"
-        />
+        <section :id="`turn-${turn.turn_id}`">
+          <ChatUserMessage
+            v-if="turn.user_message"
+            v-model:edit-content="editingContent"
+            v-model:edit-images="editingImages"
+            :msg="turn.user_message"
+            :hovered="hoveredMessageId === turn.user_message.message_id"
+            :editing="editingMessageId === turn.user_message.message_id"
+            @mouseenter="hoveredMessageId = turn.user_message.message_id"
+            @mouseleave="hoveredMessageId = null"
+            @edit="startEdit(turn.user_message)"
+            @rerun="handleRerunTurn(turn)"
+            @delete="handleDeleteTurn(turn)"
+            @fork="handleForkTurn(turn, turn.user_message?.message_id)"
+            @confirm-edit="confirmEdit(turn.user_message)"
+            @cancel-edit="cancelEdit"
+          />
 
-        <ChatAssistantTurn
-          v-if="turn.assistant_events.length > 0"
-          v-model:edit-content="editingContent"
-          :turn="turn"
-          :is-streaming="false"
-          :is-tool-calling="false"
-          :editing="
-            !!turnEditableAssistantMessage(turn) &&
-            editingMessageId === turnEditableAssistantMessage(turn)?.message_id
-          "
-          @edit="
-            turnEditableAssistantMessage(turn) && startEdit(turnEditableAssistantMessage(turn)!)
-          "
-          @rerun="handleRerunTurn(turn)"
-          @delete="handleDeleteTurn(turn)"
-          @fork="handleForkTurn(turn)"
-          @confirm-edit="
-            turnEditableAssistantMessage(turn) && confirmEdit(turnEditableAssistantMessage(turn)!)
-          "
-          @cancel-edit="cancelEdit"
-        />
+          <ChatAssistantTurn
+            v-if="turn.assistant_events.length > 0"
+            v-model:edit-content="editingContent"
+            :turn="turn"
+            :is-streaming="false"
+            :is-tool-calling="false"
+            :editing="
+              !!turnEditableAssistantMessage(turn) &&
+              editingMessageId === turnEditableAssistantMessage(turn)?.message_id
+            "
+            @edit="
+              turnEditableAssistantMessage(turn) && startEdit(turnEditableAssistantMessage(turn)!)
+            "
+            @rerun="handleRerunTurn(turn)"
+            @delete="handleDeleteTurn(turn)"
+            @fork="handleForkTurn(turn)"
+            @confirm-edit="
+              turnEditableAssistantMessage(turn) && confirmEdit(turnEditableAssistantMessage(turn)!)
+            "
+            @cancel-edit="cancelEdit"
+          />
+        </section>
       </template>
 
       <template v-if="isStreaming && streamingTurn">

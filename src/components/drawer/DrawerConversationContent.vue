@@ -11,6 +11,7 @@ import ProjectFileBrowser from '@/components/project/ProjectFileBrowser.vue'
 import TraceCard from '@/components/trace/TraceCard.vue'
 import { useNotify } from '@/composables/useNotify'
 import { useTraceStore } from '@/stores/traces'
+import { useUiStore } from '@/stores/ui'
 import type {
   ConversationResponse,
   ConversationTurnResponse,
@@ -28,11 +29,14 @@ const props = defineProps<{
 const { t } = useI18n()
 const notify = useNotify()
 const traceStore = useTraceStore()
+const uiStore = useUiStore()
 const activeTab = ref<TabKey>('overview')
 const visibleTraceCount = ref(10)
 const selectedPaperId = ref<string | null>(null)
 const selectedPaper = ref<PaperDetailResponse | null>(null)
 const paperLoading = ref(false)
+const outlineOpen = ref(true)
+const refsOpen = ref(true)
 
 const tabs = computed(() => [
   { key: 'overview' as TabKey, label: t('drawer.tabOverview'), icon: LayoutDashboard },
@@ -52,10 +56,7 @@ const paperReferences = computed(() => {
   for (const turn of props.turns) {
     for (const event of turn.assistant_events) {
       if (event.message_kind !== 'assistant_final' || !event.content) continue
-      const markerMatch = event.content.match(/\n(?:参考文献|References)\s*:\s*\n([\s\S]+)$/i)
-      if (!markerMatch) continue
-      const block = markerMatch[1]
-      for (const line of block.split('\n')) {
+      for (const line of event.content.split('\n')) {
         const trimmed = line.trim().replace(/^[-*]\s*/, '')
         if (!trimmed) continue
         const pipeIdx = trimmed.indexOf('|')
@@ -71,6 +72,37 @@ const paperReferences = computed(() => {
 })
 
 const hasPaperReferences = computed(() => paperReferences.value.length > 0)
+
+interface OutlineItem {
+  turnId: string
+  label: string
+}
+
+const turnOutline = computed(() => {
+  const items: OutlineItem[] = []
+  for (let i = 0; i < props.turns.length; i++) {
+    const turn = props.turns[i]
+    let label = ''
+    if (turn.user_message?.content) {
+      label = turn.user_message.content.slice(0, 40)
+    } else {
+      const final = turn.assistant_events.find((e) => e.message_kind === 'assistant_final')
+      if (final?.content) {
+        label = final.content.slice(0, 40)
+      }
+    }
+    if (!label) label = `Turn ${i + 1}`
+    if (label.length >= 40) label += '…'
+    items.push({ turnId: turn.turn_id, label })
+  }
+  return items
+})
+
+const hasOutline = computed(() => turnOutline.value.length > 0)
+
+function jumpToTurn(turnId: string): void {
+  uiStore.setScrollToTurnId(turnId)
+}
 
 function loadMore(): void {
   visibleTraceCount.value += 10
@@ -131,6 +163,17 @@ watch(
   (ids) => {
     if (ids.length > 0) {
       void traceStore.fetchByIds(ids)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => uiStore.conversationDrawerPaperTarget,
+  (paperId) => {
+    if (paperId) {
+      void openPaperReference(paperId)
+      uiStore.setConversationDrawerPaperTarget(null)
     }
   },
   { immediate: true },
@@ -202,20 +245,57 @@ watch(
         max-height="22vh"
       />
 
+      <!-- Turn Outline -->
+      <div v-if="hasOutline" class="workspace-panel overflow-hidden">
+        <button
+          type="button"
+          class="workspace-section-title flex w-full cursor-pointer items-center gap-2 p-3.5 text-sm"
+          @click="outlineOpen = !outlineOpen"
+        >
+          <MessageSquare class="h-4 w-4" />
+          <span>{{ t('drawer.turnOutline') }}</span>
+          <span class="workspace-chip ml-auto text-xs">{{ turnOutline.length }}</span>
+        </button>
+        <Transition name="section-collapse">
+          <div v-if="outlineOpen" class="max-h-48 space-y-1 overflow-y-auto px-3.5 pb-3.5">
+            <button
+              v-for="(item, idx) in turnOutline"
+              :key="item.turnId"
+              type="button"
+              class="hover:bg-ppx-bg-subtle flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition-colors"
+              @click="jumpToTurn(item.turnId)"
+            >
+              <span class="text-ppx-text-muted shrink-0 font-mono">{{ idx + 1 }}</span>
+              <span class="text-ppx-text-soft truncate">{{ item.label }}</span>
+            </button>
+          </div>
+        </Transition>
+      </div>
+
       <!-- Paper References Section -->
-      <div v-if="hasPaperReferences" class="workspace-panel p-3.5">
-        <h4 class="workspace-section-title text-sm">{{ t('chat.references') }}</h4>
-        <div class="mt-2 flex flex-wrap gap-2">
-          <button
-            v-for="pRef in paperReferences"
-            :key="pRef.paperId"
-            type="button"
-            class="workspace-chip hover-lift cursor-pointer text-left"
-            @click="openPaperReference(pRef.paperId)"
-          >
-            {{ pRef.paperId }} | {{ pRef.label }}
-          </button>
-        </div>
+      <div v-if="hasPaperReferences" class="workspace-panel overflow-hidden">
+        <button
+          type="button"
+          class="workspace-section-title flex w-full cursor-pointer items-center gap-2 p-3.5 text-sm"
+          @click="refsOpen = !refsOpen"
+        >
+          <FileText class="h-4 w-4" />
+          <span>{{ t('chat.references') }}</span>
+          <span class="workspace-chip ml-auto text-xs">{{ paperReferences.length }}</span>
+        </button>
+        <Transition name="section-collapse">
+          <div v-if="refsOpen" class="flex flex-wrap gap-2 px-3.5 pb-3.5">
+            <button
+              v-for="pRef in paperReferences"
+              :key="pRef.paperId"
+              type="button"
+              class="workspace-chip hover-lift cursor-pointer text-left"
+              @click="openPaperReference(pRef.paperId)"
+            >
+              {{ pRef.paperId }} | {{ pRef.label }}
+            </button>
+          </div>
+        </Transition>
       </div>
     </template>
 

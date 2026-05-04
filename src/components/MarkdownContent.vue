@@ -17,14 +17,28 @@ const props = withDefaults(
   },
 )
 
+const emit = defineEmits<{
+  'paper-click': [paperId: string]
+}>()
+
 function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function preprocessPapers(markdown: string): string {
+  return markdown.replace(
+    /^(?:[-*]\s*)?(pap-[a-f0-9]{32})(?:\s*\|\s*([^\n]*))?$/gm,
+    (_match, paperId: string, label: string | undefined) => {
+      const displayText = label ? `${paperId} | ${label.trim()}` : paperId
+      return `<a href="#paper/${paperId}" class="paper-link">${displayText}</a>`
+    },
+  )
 }
 
 function createMarkdownRenderer(enableMath: boolean): MarkdownIt {
   const md = new MarkdownIt({
     breaks: true,
-    html: false,
+    html: true,
     linkify: true,
   })
 
@@ -65,7 +79,8 @@ function createMarkdownRenderer(enableMath: boolean): MarkdownIt {
 
 const html = computed(() => {
   const renderer = createMarkdownRenderer(props.enableMath)
-  return DOMPurify.sanitize(renderer.render(props.markdown || ''), {
+  const raw = preprocessPapers(props.markdown || '')
+  return DOMPurify.sanitize(renderer.render(raw), {
     ALLOWED_TAGS: [
       'div',
       'span',
@@ -101,6 +116,19 @@ const html = computed(() => {
       'svg',
       'rect',
       'path',
+      'math',
+      'mrow',
+      'mi',
+      'mo',
+      'mn',
+      'msub',
+      'msup',
+      'mfrac',
+      'mtext',
+      'semantics',
+      'annotation',
+      'sub',
+      'sup',
     ],
     ALLOWED_ATTR: [
       'class',
@@ -121,11 +149,24 @@ const html = computed(() => {
       'rx',
       'ry',
       'd',
+      'style',
+      'mathvariant',
+      'encoding',
     ],
   })
 })
 
 function handleClick(e: MouseEvent): void {
+  const link = (e.target as HTMLElement).closest('a[href^="#paper/"]') as HTMLAnchorElement | null
+  if (link) {
+    e.preventDefault()
+    const paperId = link.getAttribute('href')?.replace('#paper/', '')
+    if (paperId) {
+      emit('paper-click', paperId)
+    }
+    return
+  }
+
   const btn = (e.target as HTMLElement).closest('.code-block-copy') as HTMLElement | null
   if (!btn) return
 
@@ -472,5 +513,36 @@ function handleClick(e: MouseEvent): void {
 
 .markdown-content :deep(.katex) {
   font-size: 1.05em;
+}
+
+/* ---------- Paper Links ---------- */
+.markdown-content :deep(.paper-link) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  margin: 0.125rem 0;
+  border: 1px solid var(--ppx-border);
+  background: color-mix(in srgb, var(--ppx-bg-subtle) 84%, transparent);
+  color: var(--ppx-text-soft);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform var(--ppx-motion-fast) var(--ppx-ease-smooth),
+    box-shadow var(--ppx-motion-fast) var(--ppx-ease-smooth),
+    background-color var(--ppx-motion-fast) var(--ppx-ease),
+    border-color var(--ppx-motion-fast) var(--ppx-ease);
+}
+
+.markdown-content :deep(.paper-link:hover) {
+  transform: translateY(-1px);
+  background: var(--ppx-bg-elevated);
+  color: var(--ppx-text);
+  border-color: var(--ppx-border-strong);
+  text-decoration: none;
 }
 </style>

@@ -31,23 +31,29 @@ function onSend(): void {
 </script>
 
 <template>
-  <div class="flex h-full flex-col items-center justify-center px-4 text-center">
-    <h3 class="animate-fade-in-up text-ppx-text-soft mb-8 text-2xl font-medium tracking-tight">
-      {{ t('chat.emptyChatTitle') }}
-    </h3>
+  <div class="flex h-full flex-col">
+    <!-- Title centered in remaining space -->
+    <div class="flex flex-1 flex-col items-center justify-center px-4 text-center">
+      <h3 class="animate-fade-in-up text-ppx-text-soft text-2xl font-medium tracking-tight">
+        {{ t('chat.emptyChatTitle') }}
+      </h3>
+    </div>
 
-    <div class="animate-fade-in-up w-full max-w-2xl delay-100">
-      <ChatInputBox
-        v-model="inputValue"
-        v-model:images="inputImages"
-        v-model:paper-ids="inputPaperIds"
-        v-model:expanded="inputExpanded"
-        :project-id="props.projectId"
-        :disabled="disabled"
-        @send="onSend"
-      />
-      <div v-show="!inputExpanded" class="text-ppx-text-muted mt-2 text-center text-xs">
-        {{ t('chat.inputHint') }}
+    <!-- Input area — identical structure to active chat mode -->
+    <div class="dark:bg-ppx-bg-elevated border-ppx-border shrink-0 border-t bg-white px-4 py-4">
+      <div class="mx-auto max-w-3xl">
+        <ChatInputBox
+          v-model="inputValue"
+          v-model:images="inputImages"
+          v-model:paper-ids="inputPaperIds"
+          v-model:expanded="inputExpanded"
+          :project-id="props.projectId"
+          :disabled="disabled"
+          @send="onSend"
+        />
+        <div v-show="!inputExpanded" class="text-ppx-text-muted mt-2 text-center text-xs">
+          {{ t('chat.inputHint') }}
+        </div>
       </div>
     </div>
   </div>

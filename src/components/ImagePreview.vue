@@ -32,7 +32,7 @@ onBeforeUnmount(() => {
   >
     <button
       type="button"
-      class="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-black/40 text-white transition-opacity hover:bg-black/60"
+      class="absolute top-4 right-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white transition-opacity hover:bg-black/60"
       @click="emit('close')"
     >
       <X class="h-5 w-5" />

@@ -172,6 +172,7 @@ export const projectDetail = {
       method: '方法',
       result: '结果',
       gap: '缺口',
+      noData: '暂无数据',
     },
     factCheck: {
       extraction: '提取校验',
@@ -411,6 +412,7 @@ export const projectDetail = {
       method: 'Method',
       result: 'Result',
       gap: 'Gap',
+      noData: 'No data',
     },
     factCheck: {
       extraction: 'Extraction Fact Check',
