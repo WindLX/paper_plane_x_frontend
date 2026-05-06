@@ -1,7 +1,7 @@
-import { appConfig } from '@/config'
+import { BaseWebSocketClient, type WebSocketStatus } from './ws'
 import type { HITLAnswer, HITLPendingQuestion } from '@/types/api'
 
-export type HitlSocketStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error'
+export type HitlSocketStatus = WebSocketStatus
 
 export interface HitlSocketMessage {
   type: 'hitl_question' | 'hitl_answered' | 'error'
@@ -18,21 +18,19 @@ export interface HitlSocketMessage {
   detail?: string
 }
 
-export class HitlWebSocketClient {
-  private ws: WebSocket | null = null
-  private status: HitlSocketStatus = 'idle'
+export class HitlWebSocketClient extends BaseWebSocketClient<HitlSocketMessage> {
   private onQuestionCallback: ((question: HITLPendingQuestion) => void) | null = null
   private onAnsweredCallback: ((questionId: string) => void) | null = null
-  private onErrorCallback: ((error: string) => void) | null = null
-  private onStatusChangeCallback: ((status: HitlSocketStatus) => void) | null = null
 
   constructor() {
-    const apiUrl = new URL(appConfig.apiBaseUrl)
-    const wsProtocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:'
-    this.wsUrl = `${wsProtocol}//${apiUrl.host}${apiUrl.pathname}/ws/hitl`
-  }
+    super({
+      path: '/ws/hitl',
+    })
 
-  private wsUrl: string
+    this.onMessage((data) => {
+      this.handleMessage(data)
+    })
+  }
 
   onQuestion(callback: (question: HITLPendingQuestion) => void): void {
     this.onQuestionCallback = callback
@@ -42,73 +40,12 @@ export class HitlWebSocketClient {
     this.onAnsweredCallback = callback
   }
 
-  onError(callback: (error: string) => void): void {
-    this.onErrorCallback = callback
-  }
-
-  onStatusChange(callback: (status: HitlSocketStatus) => void): void {
-    this.onStatusChangeCallback = callback
-  }
-
-  connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return
-
-    this.setStatus('connecting')
-
-    const socket = new WebSocket(this.wsUrl)
-    this.ws = socket
-
-    socket.onopen = () => {
-      this.setStatus('connected')
-    }
-
-    socket.onclose = () => {
-      this.setStatus('disconnected')
-      this.ws = null
-    }
-
-    socket.onerror = () => {
-      this.setStatus('error')
-      this.onErrorCallback?.('WebSocket connection failed')
-    }
-
-    socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data) as HitlSocketMessage
-        this.handleMessage(data)
-      } catch {
-        // ignore non-json messages
-      }
-    }
-  }
-
-  disconnect(): void {
-    this.ws?.close()
-    this.ws = null
-    this.setStatus('idle')
-  }
-
   sendAnswer(questionId: string, answers: HITLAnswer[]): void {
-    if (this.ws?.readyState !== WebSocket.OPEN) {
-      this.onErrorCallback?.('WebSocket not connected')
-      return
-    }
-    this.ws.send(
-      JSON.stringify({
-        type: 'answer',
-        question_id: questionId,
-        answers,
-      }),
-    )
-  }
-
-  get currentStatus(): HitlSocketStatus {
-    return this.status
-  }
-
-  private setStatus(status: HitlSocketStatus): void {
-    this.status = status
-    this.onStatusChangeCallback?.(status)
+    this.sendJson({
+      type: 'answer',
+      question_id: questionId,
+      answers,
+    })
   }
 
   private handleMessage(data: HitlSocketMessage): void {
@@ -137,7 +74,7 @@ export class HitlWebSocketClient {
         break
       }
       case 'error': {
-        this.onErrorCallback?.(data.detail || 'Unknown HITL error')
+        this.reportError(data.detail || 'Unknown HITL error')
         break
       }
     }

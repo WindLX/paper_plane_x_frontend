@@ -1,52 +1,181 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import { api } from '@/api'
+import { useProjectStore } from '@/stores/projects'
 import type {
   ConversationMessageResponse,
   ConversationResponse,
   ConversationTurnResponse,
 } from '@/types/api'
 
+function sortConversations(
+  conversationIds: string[],
+  conversationsById: Record<string, ConversationResponse>,
+): string[] {
+  return [...conversationIds].sort((leftId, rightId) => {
+    const left = conversationsById[leftId]
+    const right = conversationsById[rightId]
+    if (!left && !right) return 0
+    if (!left) return 1
+    if (!right) return -1
+    return new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime()
+  })
+}
+
 export const useConversationStore = defineStore('conversation', () => {
-  const conversations = ref<ConversationResponse[]>([])
+  const projectStore = useProjectStore()
+
+  const conversationsByProjectId = reactive<Record<string, string[]>>({})
+  const conversationsById = reactive<Record<string, ConversationResponse>>({})
+  const messagesByConversationId = reactive<Record<string, ConversationMessageResponse[]>>({})
+  const turnsByConversationId = reactive<Record<string, ConversationTurnResponse[]>>({})
+
   const currentConversationId = ref<string | null>(null)
-  const messages = ref<ConversationMessageResponse[]>([])
-  const turns = ref<ConversationTurnResponse[]>([])
-  const loading = ref(false)
+  const loadingProjectLists = reactive<Record<string, boolean>>({})
+  const loadingConversationContent = reactive<Record<string, boolean>>({})
   const streamingConversationId = ref<string | null>(null)
-  const activeSockets = shallowRef<Map<string, unknown>>(new Map())
 
-  function registerSocket(conversationId: string, socket: unknown): void {
-    activeSockets.value.set(conversationId, socket)
-  }
-
-  function unregisterSocket(conversationId: string): void {
-    activeSockets.value.delete(conversationId)
-  }
-
-  function getSocket(conversationId: string): unknown {
-    return activeSockets.value.get(conversationId)
-  }
-
-  const currentConversation = computed<ConversationResponse | undefined>(() =>
-    conversations.value.find((c) => c.conversation_id === currentConversationId.value),
+  const loading = computed(
+    () =>
+      Object.values(loadingProjectLists).some(Boolean) ||
+      Object.values(loadingConversationContent).some(Boolean),
   )
 
-  const projectConversations = computed(() => {
-    return (projectId: string) =>
-      conversations.value
-        .filter((c) => c.project_id === projectId)
-        .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
-  })
+  const currentConversation = computed<ConversationResponse | undefined>(() =>
+    currentConversationId.value ? conversationsById[currentConversationId.value] : undefined,
+  )
+
+  const messages = computed<ConversationMessageResponse[]>(() =>
+    currentConversationId.value ? messagesByConversationId[currentConversationId.value] ?? [] : [],
+  )
+
+  const turns = computed<ConversationTurnResponse[]>(() =>
+    currentConversationId.value ? turnsByConversationId[currentConversationId.value] ?? [] : [],
+  )
+
+  function setProjectConversationIds(projectId: string, conversationIds: string[]): void {
+    conversationsByProjectId[projectId] = sortConversations(conversationIds, conversationsById)
+  }
+
+  function syncConversation(conversation: ConversationResponse): ConversationResponse {
+    conversationsById[conversation.conversation_id] = conversation
+    const currentIds = conversationsByProjectId[conversation.project_id] ?? []
+    if (!currentIds.includes(conversation.conversation_id)) {
+      conversationsByProjectId[conversation.project_id] = [
+        conversation.conversation_id,
+        ...currentIds,
+      ]
+    }
+    setProjectConversationIds(conversation.project_id, conversationsByProjectId[conversation.project_id])
+    return conversation
+  }
+
+  function touchConversation(
+    conversationId: string,
+    patch: Partial<ConversationResponse> = {},
+  ): void {
+    const existing = conversationsById[conversationId]
+    if (!existing) return
+    syncConversation({
+      ...existing,
+      ...patch,
+      updated_at: patch.updated_at ?? new Date().toISOString(),
+    })
+  }
+
+  function removeConversationEntity(conversationId: string): void {
+    const conversation = conversationsById[conversationId]
+    if (conversation) {
+      const projectId = conversation.project_id
+      conversationsByProjectId[projectId] = (conversationsByProjectId[projectId] ?? []).filter(
+        (id) => id !== conversationId,
+      )
+      delete conversationsById[conversationId]
+    }
+    delete messagesByConversationId[conversationId]
+    delete turnsByConversationId[conversationId]
+    if (currentConversationId.value === conversationId) {
+      currentConversationId.value = null
+    }
+  }
+
+  function clearCurrentConversation(): void {
+    currentConversationId.value = null
+  }
+
+  function projectConversations(projectId: string): ConversationResponse[] {
+    return (conversationsByProjectId[projectId] ?? [])
+      .map((conversationId) => conversationsById[conversationId])
+      .filter((conversation): conversation is ConversationResponse => Boolean(conversation))
+  }
+
+  function currentMessages(conversationId: string | null): ConversationMessageResponse[] {
+    if (!conversationId) return []
+    return messagesByConversationId[conversationId] ?? []
+  }
+
+  function currentTurns(conversationId: string | null): ConversationTurnResponse[] {
+    if (!conversationId) return []
+    return turnsByConversationId[conversationId] ?? []
+  }
+
+  function setTurns(
+    nextTurns: ConversationTurnResponse[],
+    conversationId = currentConversationId.value,
+  ): void {
+    if (!conversationId) return
+    turnsByConversationId[conversationId] = [...nextTurns].sort((left, right) => {
+      const leftSeq = left.user_message?.sequence_no ?? left.assistant_events[0]?.sequence_no ?? 0
+      const rightSeq =
+        right.user_message?.sequence_no ?? right.assistant_events[0]?.sequence_no ?? 0
+      return leftSeq - rightSeq
+    })
+  }
+
+  function upsertTurn(
+    turn: ConversationTurnResponse,
+    conversationId = currentConversationId.value,
+  ): void {
+    if (!conversationId) return
+    const currentTurnsList = turnsByConversationId[conversationId] ?? []
+    const existingIndex = currentTurnsList.findIndex((item) => item.turn_id === turn.turn_id)
+    if (existingIndex === -1) {
+      setTurns([...currentTurnsList, turn], conversationId)
+      return
+    }
+    const nextTurns = [...currentTurnsList]
+    nextTurns[existingIndex] = turn
+    setTurns(nextTurns, conversationId)
+  }
+
+  function setMessages(
+    nextMessages: ConversationMessageResponse[],
+    conversationId = currentConversationId.value,
+  ): void {
+    if (!conversationId) return
+    messagesByConversationId[conversationId] = nextMessages
+  }
 
   async function loadConversations(projectId: string): Promise<void> {
-    loading.value = true
+    loadingProjectLists[projectId] = true
     try {
-      const res = await api.listConversations(projectId)
-      conversations.value = res.items
+      const response = await api.listConversations(projectId)
+      const nextIds = response.items.map((conversation) => {
+        conversationsById[conversation.conversation_id] = conversation
+        return conversation.conversation_id
+      })
+
+      const previousIds = conversationsByProjectId[projectId] ?? []
+      for (const conversationId of previousIds) {
+        if (!nextIds.includes(conversationId)) {
+          removeConversationEntity(conversationId)
+        }
+      }
+
+      setProjectConversationIds(projectId, nextIds)
     } finally {
-      loading.value = false
+      loadingProjectLists[projectId] = false
     }
   }
 
@@ -54,53 +183,62 @@ export const useConversationStore = defineStore('conversation', () => {
     projectId: string,
     title?: string,
   ): Promise<ConversationResponse> {
-    const res = await api.createConversation({ project_id: projectId, title })
-    conversations.value.unshift(res)
-    currentConversationId.value = res.conversation_id
-    messages.value = []
-    turns.value = []
-    return res
+    const conversation = await api.createConversation({ project_id: projectId, title })
+    syncConversation(conversation)
+    currentConversationId.value = conversation.conversation_id
+    setMessages([], conversation.conversation_id)
+    setTurns([], conversation.conversation_id)
+
+    const project = projectStore.projectsById[projectId]
+    if (project) {
+      projectStore.patchProject(projectId, {
+        conversation_count: (project.conversation_count ?? 0) + 1,
+      })
+    }
+
+    return conversation
   }
 
-  async function selectConversation(id: string): Promise<void> {
-    currentConversationId.value = id
-    messages.value = []
-    turns.value = []
-    await loadMessages(id)
+  async function selectConversation(conversationId: string): Promise<void> {
+    currentConversationId.value = conversationId
+    const hasMessages = currentMessages(conversationId).length > 0
+    const hasTurns = currentTurns(conversationId).length > 0
+    if (!hasMessages && !hasTurns) {
+      await loadMessages(conversationId)
+    }
   }
 
   async function loadMessages(conversationId: string): Promise<void> {
-    loading.value = true
+    loadingConversationContent[conversationId] = true
     try {
-      const [messageRes, turnRes] = await Promise.all([
+      const [messageResponse, turnResponse] = await Promise.all([
         api.listMessages(conversationId),
         api.listTurns(conversationId),
       ])
-      messages.value = messageRes
-      turns.value = turnRes
+      setMessages(messageResponse, conversationId)
+      setTurns(turnResponse, conversationId)
     } finally {
-      loading.value = false
+      loadingConversationContent[conversationId] = false
     }
   }
 
   async function updateTitle(conversationId: string, title: string): Promise<void> {
-    const res = await api.updateConversation(conversationId, { title })
-    const idx = conversations.value.findIndex((c) => c.conversation_id === conversationId)
-    if (idx !== -1) {
-      conversations.value[idx] = res
-    }
-    if (currentConversation.value?.conversation_id === conversationId) {
-      // refresh current
-    }
+    const conversation = await api.updateConversation(conversationId, { title })
+    syncConversation(conversation)
   }
 
   async function deleteConversation(conversationId: string): Promise<void> {
+    const conversation = conversationsById[conversationId]
     await api.deleteConversation(conversationId)
-    conversations.value = conversations.value.filter((c) => c.conversation_id !== conversationId)
-    if (currentConversationId.value === conversationId) {
-      currentConversationId.value = null
-      messages.value = []
-      turns.value = []
+    removeConversationEntity(conversationId)
+
+    if (conversation) {
+      const project = projectStore.projectsById[conversation.project_id]
+      if (project) {
+        projectStore.patchProject(conversation.project_id, {
+          conversation_count: Math.max(0, (project.conversation_count ?? 0) - 1),
+        })
+      }
     }
   }
 
@@ -109,39 +247,24 @@ export const useConversationStore = defineStore('conversation', () => {
     title?: string,
     forkedAtMessageId?: string,
   ): Promise<ConversationResponse> {
-    const res = await api.forkConversation(conversationId, {
+    const conversation = await api.forkConversation(conversationId, {
       title,
       forked_at_message_id: forkedAtMessageId ?? null,
     })
-    conversations.value.unshift(res)
-    currentConversationId.value = res.conversation_id
-    messages.value = []
-    turns.value = []
-    await loadMessages(res.conversation_id)
-    return res
-  }
+    syncConversation(conversation)
+    currentConversationId.value = conversation.conversation_id
+    setMessages([], conversation.conversation_id)
+    setTurns([], conversation.conversation_id)
+    await loadMessages(conversation.conversation_id)
 
-  function appendMessage(message: ConversationMessageResponse): void {
-    messages.value.push(message)
-  }
-
-  function setTurns(nextTurns: ConversationTurnResponse[]): void {
-    turns.value = [...nextTurns].sort((a, b) => {
-      const aSeq = a.user_message?.sequence_no ?? a.assistant_events[0]?.sequence_no ?? 0
-      const bSeq = b.user_message?.sequence_no ?? b.assistant_events[0]?.sequence_no ?? 0
-      return aSeq - bSeq
-    })
-  }
-
-  function upsertTurn(turn: ConversationTurnResponse): void {
-    const idx = turns.value.findIndex((item) => item.turn_id === turn.turn_id)
-    if (idx === -1) {
-      setTurns([...turns.value, turn])
-      return
+    const project = projectStore.projectsById[conversation.project_id]
+    if (project) {
+      projectStore.patchProject(conversation.project_id, {
+        conversation_count: (project.conversation_count ?? 0) + 1,
+      })
     }
-    const next = [...turns.value]
-    next[idx] = turn
-    setTurns(next)
+
+    return conversation
   }
 
   async function updateMessage(
@@ -149,31 +272,37 @@ export const useConversationStore = defineStore('conversation', () => {
     messageId: string,
     content: string,
   ): Promise<void> {
-    const res = await api.updateMessage(conversationId, messageId, { content })
-    const idx = messages.value.findIndex((m) => m.message_id === messageId)
-    if (idx !== -1) {
-      messages.value[idx] = res
+    const message = await api.updateMessage(conversationId, messageId, { content })
+    const currentMessagesList = currentMessages(conversationId)
+    const messageIndex = currentMessagesList.findIndex((item) => item.message_id === messageId)
+    if (messageIndex !== -1) {
+      const nextMessages = [...currentMessagesList]
+      nextMessages[messageIndex] = message
+      setMessages(nextMessages, conversationId)
     }
-    if (res.role !== 'user') {
+    touchConversation(conversationId)
+    if (message.role !== 'user') {
       await loadMessages(conversationId)
       return
     }
-    const turnId = res.turn_id
+    const turnId = message.turn_id
     if (turnId) {
-      const turnIdx = turns.value.findIndex((turn) => turn.turn_id === turnId)
-      if (turnIdx !== -1 && turns.value[turnIdx].user_message) {
-        const nextTurns = [...turns.value]
-        nextTurns[turnIdx] = {
-          ...nextTurns[turnIdx],
-          user_message: res,
+      const currentTurnsList = currentTurns(conversationId)
+      const turnIndex = currentTurnsList.findIndex((turn) => turn.turn_id === turnId)
+      if (turnIndex !== -1 && currentTurnsList[turnIndex].user_message) {
+        const nextTurns = [...currentTurnsList]
+        nextTurns[turnIndex] = {
+          ...nextTurns[turnIndex],
+          user_message: message,
           assistant_events: [],
           trace_ids: [],
         }
         setTurns(
           nextTurns.filter(
             (turn) =>
-              (turn.user_message?.sequence_no ?? Number.MAX_SAFE_INTEGER) <= res.sequence_no,
+              (turn.user_message?.sequence_no ?? Number.MAX_SAFE_INTEGER) <= message.sequence_no,
           ),
+          conversationId,
         )
       }
     }
@@ -181,71 +310,106 @@ export const useConversationStore = defineStore('conversation', () => {
 
   async function deleteMessage(conversationId: string, messageId: string): Promise<void> {
     await api.deleteMessage(conversationId, messageId)
-    messages.value = messages.value.filter((m) => m.message_id !== messageId)
-    turns.value = turns.value.filter(
-      (turn) =>
-        turn.user_message?.message_id !== messageId &&
-        !turn.assistant_events.some((event) => event.message_id === messageId),
+    setMessages(
+      currentMessages(conversationId).filter((message) => message.message_id !== messageId),
+      conversationId,
     )
+    setTurns(
+      currentTurns(conversationId).filter(
+        (turn) =>
+          turn.user_message?.message_id !== messageId &&
+          !turn.assistant_events.some((event) => event.message_id === messageId),
+      ),
+      conversationId,
+    )
+    touchConversation(conversationId)
   }
 
   async function deleteTurn(conversationId: string, turnId: string): Promise<void> {
     await api.deleteTurn(conversationId, turnId)
-    messages.value = messages.value.filter((message) => message.turn_id !== turnId)
-    turns.value = turns.value.filter((turn) => turn.turn_id !== turnId)
+    setMessages(
+      currentMessages(conversationId).filter((message) => message.turn_id !== turnId),
+      conversationId,
+    )
+    setTurns(
+      currentTurns(conversationId).filter((turn) => turn.turn_id !== turnId),
+      conversationId,
+    )
+    touchConversation(conversationId)
   }
 
   async function renameConversation(conversationId: string, title: string): Promise<void> {
-    const res = await api.updateConversation(conversationId, { title })
-    const idx = conversations.value.findIndex((c) => c.conversation_id === conversationId)
-    if (idx !== -1) {
-      conversations.value[idx] = res
-    }
+    const conversation = await api.updateConversation(conversationId, { title })
+    syncConversation(conversation)
   }
 
-  function removeMessagesAfter(messageId: string): void {
-    const idx = messages.value.findIndex((m) => m.message_id === messageId)
-    if (idx !== -1) {
-      messages.value = messages.value.slice(0, idx + 1)
-      const cutoff = messages.value[idx]?.sequence_no ?? Number.MAX_SAFE_INTEGER
-      turns.value = turns.value.filter(
-        (turn) => (turn.user_message?.sequence_no ?? Number.MAX_SAFE_INTEGER) <= cutoff,
+  function removeMessagesAfter(messageId: string, conversationId = currentConversationId.value): void {
+    if (!conversationId) return
+    const currentMessagesList = currentMessages(conversationId)
+    const messageIndex = currentMessagesList.findIndex((message) => message.message_id === messageId)
+    if (messageIndex !== -1) {
+      const nextMessages = currentMessagesList.slice(0, messageIndex + 1)
+      setMessages(nextMessages, conversationId)
+      const cutoff = nextMessages[messageIndex]?.sequence_no ?? Number.MAX_SAFE_INTEGER
+      setTurns(
+        currentTurns(conversationId).filter(
+          (turn) => (turn.user_message?.sequence_no ?? Number.MAX_SAFE_INTEGER) <= cutoff,
+        ),
+        conversationId,
       )
     }
   }
 
-  function prepareTurnReplay(userMessageId: string): void {
-    const turn = turns.value.find((item) => item.user_message?.message_id === userMessageId)
+  function prepareTurnReplay(
+    userMessageId: string,
+    conversationId = currentConversationId.value,
+  ): void {
+    if (!conversationId) return
+    const currentTurnsList = currentTurns(conversationId)
+    const turn = currentTurnsList.find((item) => item.user_message?.message_id === userMessageId)
     if (!turn?.user_message) return
 
     const cutoff = turn.user_message.sequence_no
-    messages.value = messages.value.filter(
-      (message) => message.role === 'system' || message.sequence_no <= cutoff,
+    setMessages(
+      currentMessages(conversationId).filter(
+        (message) => message.role === 'system' || message.sequence_no <= cutoff,
+      ),
+      conversationId,
     )
 
-    turns.value = turns.value
-      .filter((item) => (item.user_message?.sequence_no ?? Number.MAX_SAFE_INTEGER) <= cutoff)
-      .map((item) =>
-        item.turn_id === turn.turn_id
-          ? {
-              ...item,
-              assistant_events: [],
-              trace_ids: [],
-            }
-          : item,
-      )
+    setTurns(
+      currentTurnsList
+        .filter((item) => (item.user_message?.sequence_no ?? Number.MAX_SAFE_INTEGER) <= cutoff)
+        .map((item) =>
+          item.turn_id === turn.turn_id
+            ? {
+                ...item,
+                assistant_events: [],
+                trace_ids: [],
+              }
+            : item,
+        ),
+      conversationId,
+    )
   }
 
   return {
-    conversations,
+    conversationsByProjectId,
+    conversationsById,
+    messagesByConversationId,
+    turnsByConversationId,
     currentConversationId,
     currentConversation,
     messages,
     turns,
     loading,
+    loadingProjectLists,
+    loadingConversationContent,
     streamingConversationId,
-    activeSockets,
+    clearCurrentConversation,
     projectConversations,
+    currentMessages,
+    currentTurns,
     loadConversations,
     createConversation,
     selectConversation,
@@ -257,13 +421,12 @@ export const useConversationStore = defineStore('conversation', () => {
     updateMessage,
     deleteMessage,
     deleteTurn,
-    appendMessage,
+    setMessages,
     setTurns,
     upsertTurn,
     removeMessagesAfter,
     prepareTurnReplay,
-    registerSocket,
-    unregisterSocket,
-    getSocket,
+    syncConversation,
+    touchConversation,
   }
 })

@@ -14,8 +14,8 @@ function changeLocale(nextLocale: AppLocale): void {
 
 <template>
   <SettingsCard
-    :title="t('settings.languageTitle')"
-    :body="t('settings.languageBody')"
+    :title="t('settings.language.title')"
+    :body="t('settings.language.body')"
     :icon="Languages"
   >
     <div class="grid gap-2 sm:grid-cols-2">
@@ -48,10 +48,10 @@ function changeLocale(nextLocale: AppLocale): void {
               class="text-sm font-semibold"
               :class="locale === 'zh-CN' ? 'text-ppx-accent' : 'text-ppx-text'"
             >
-              {{ t('language.zhCN') }}
+              {{ t('settings.language.zhCN') }}
             </div>
             <div class="workspace-body mt-0.5 text-xs">
-              {{ t('settings.languageZhHint') }}
+              {{ t('settings.language.zhCNHint') }}
             </div>
           </div>
         </div>
@@ -86,10 +86,10 @@ function changeLocale(nextLocale: AppLocale): void {
               class="text-sm font-semibold"
               :class="locale === 'en-US' ? 'text-ppx-accent' : 'text-ppx-text'"
             >
-              {{ t('language.enUS') }}
+              {{ t('settings.language.enUS') }}
             </div>
             <div class="workspace-body mt-0.5 text-xs">
-              {{ t('settings.languageEnHint') }}
+              {{ t('settings.language.enUSHint') }}
             </div>
           </div>
         </div>

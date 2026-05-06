@@ -49,7 +49,7 @@ function handleExport(): void {
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <h4 class="text-ppx-text text-sm font-semibold">
-        {{ t('projectDetail.exportFieldsTitle') }}
+        {{ t('projects.exportFieldsTitle') }}
       </h4>
       <div class="flex items-center gap-2">
         <button
@@ -57,14 +57,14 @@ function handleExport(): void {
           class="text-ppx-text-soft text-xs underline underline-offset-2"
           @click="selectAll"
         >
-          {{ t('projectDetail.selectAllFields') }}
+          {{ t('projects.selectAllFields') }}
         </button>
         <button
           type="button"
           class="text-ppx-text-soft text-xs underline underline-offset-2"
           @click="clearAll"
         >
-          {{ t('actions.clear') }}
+          {{ t('projects.actions.clear') }}
         </button>
       </div>
     </div>
@@ -86,17 +86,17 @@ function handleExport(): void {
           class="accent-ppx-accent h-3.5 w-3.5"
           @change="toggleField(field)"
         />
-        <span class="truncate">{{ t(`projectDetail.exportFields.${field}`) || field }}</span>
+        <span class="truncate">{{ t(`paper.exportFields.${field}`) || field }}</span>
       </label>
     </div>
 
     <div class="space-y-2">
-      <label class="workspace-label">{{ t('projectDetail.citations') }}</label>
+      <label class="workspace-label">{{ t('projects.citations') }}</label>
       <AppSelect
         v-model="citationsMode"
         :options="[
-          { label: t('projectDetail.keepCitations'), value: 'keep' },
-          { label: t('projectDetail.stripCitations'), value: 'strip' },
+          { label: t('projects.keepCitations'), value: 'keep' },
+          { label: t('projects.stripCitations'), value: 'strip' },
         ]"
       />
     </div>
@@ -113,8 +113,8 @@ function handleExport(): void {
       <span>
         {{
           exporting
-            ? t('projectDetail.exporting')
-            : `${t('projectDetail.export')} (${selectedFields.length})`
+            ? t('projects.exporting')
+            : `${t('projects.export')} (${selectedFields.length})`
         }}
       </span>
     </AppButton>

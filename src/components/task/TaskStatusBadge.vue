@@ -25,7 +25,7 @@ const colorClass = computed(() => {
   }
 })
 
-const label = computed(() => t(`status.${props.status}`))
+const label = computed(() => t(`tasks.status.${props.status}`))
 </script>
 
 <template>

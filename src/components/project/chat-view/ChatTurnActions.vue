@@ -28,7 +28,7 @@ const { t } = useI18n()
     <button
       type="button"
       class="workspace-icon-button h-8 w-8"
-      :title="t('chat.editTurn')"
+      :title="t('projects.chatView.editTurn')"
       @click="emit('edit')"
     >
       <Pencil class="h-4 w-4" />
@@ -36,7 +36,7 @@ const { t } = useI18n()
     <button
       type="button"
       class="workspace-icon-button h-8 w-8"
-      :title="t('chat.rerunTurn')"
+      :title="t('projects.chatView.rerunTurn')"
       @click="emit('rerun')"
     >
       <RotateCcw class="h-4 w-4" />
@@ -44,7 +44,7 @@ const { t } = useI18n()
     <button
       type="button"
       class="workspace-icon-button h-8 w-8 text-red-500 hover:text-red-600"
-      :title="t('chat.deleteTurn')"
+      :title="t('projects.chatView.deleteTurn')"
       @click="emit('delete')"
     >
       <Trash2 class="h-4 w-4" />
@@ -52,7 +52,7 @@ const { t } = useI18n()
     <button
       type="button"
       class="workspace-icon-button h-8 w-8"
-      :title="t('chat.forkTurn')"
+      :title="t('projects.chatView.forkTurn')"
       @click="emit('fork')"
     >
       <GitBranch class="h-4 w-4" />

@@ -3,10 +3,12 @@ import { BookOpen } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import SettingsCard from '@/components/settings/SettingsCard.vue'
-import { useSettingsStore } from '@/stores/settings'
+import type { SettingsController } from '@/composables/useSettingsController'
 
 const { t } = useI18n()
-const settingsStore = useSettingsStore()
+const props = defineProps<{
+  ctrl: SettingsController
+}>()
 </script>
 
 <template>
@@ -15,13 +17,13 @@ const settingsStore = useSettingsStore()
     :body="t('settings.appSettings.librarian.body')"
     :icon="BookOpen"
     :action-label="t('actions.save')"
-    :loading="settingsStore.saving"
-    @action="settingsStore.updateLibrarianConfig(settingsStore.appSettings!.librarian)"
+    :loading="props.ctrl.saving"
+    @action="props.ctrl.updateLibrarianConfig(props.ctrl.appSettings!.librarian)"
   >
-    <div class="workspace-subpanel p-2.5">
+    <div>
       <label class="workspace-label">{{ t('settings.appSettings.librarian.topTagsLimit') }}</label>
       <input
-        v-model.number="settingsStore.appSettings!.librarian.top_tags_limit"
+        v-model.number="props.ctrl.appSettings!.librarian.top_tags_limit"
         type="number"
         class="workspace-input"
       />

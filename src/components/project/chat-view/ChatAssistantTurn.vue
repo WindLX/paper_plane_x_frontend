@@ -8,8 +8,6 @@ import MarkdownContent from '@/components/MarkdownContent.vue'
 import ChatTurnActions from './ChatTurnActions.vue'
 import type { ConversationTurnEventResponse, ConversationTurnResponse } from '@/types/api'
 import { Check, X } from 'lucide-vue-next'
-import { useUiStore } from '@/stores/ui'
-import { useConversationStore } from '@/stores/conversation'
 
 const props = defineProps<{
   turn: ConversationTurnResponse
@@ -27,12 +25,11 @@ const emit = defineEmits<{
   fork: []
   confirmEdit: []
   cancelEdit: []
+  openPaper: [paperId: string]
 }>()
 
 const { t } = useI18n()
 const hovered = ref(false)
-const uiStore = useUiStore()
-const conversationStore = useConversationStore()
 
 const events = computed(() =>
   [...props.turn.assistant_events].sort((a, b) => a.sequence_no - b.sequence_no),
@@ -84,15 +81,7 @@ function toolResultValue(event: ConversationTurnEventResponse): Record<string, u
 }
 
 function openPaperReference(paperId: string): void {
-  const currentConv = conversationStore.currentConversation
-  if (currentConv) {
-    uiStore.openRightDrawer(
-      'conversation',
-      { conversationId: currentConv.conversation_id },
-      'local',
-    )
-  }
-  uiStore.setConversationDrawerPaperTarget(paperId)
+  emit('openPaper', paperId)
 }
 </script>
 
@@ -108,7 +97,7 @@ function openPaperReference(paperId: string): void {
           <div v-if="event.message_kind === 'assistant_reasoning'" class="space-y-2">
             <div class="text-ppx-text-soft flex items-center gap-2 px-1 text-xs font-medium">
               <BrainCircuit class="h-3.5 w-3.5" />
-              <span>{{ t('chat.reasoning') }}</span>
+              <span>{{ t('projects.chatView.reasoning') }}</span>
             </div>
             <details
               class="reasoning-panel workspace-panel-inset overflow-hidden"
@@ -122,7 +111,7 @@ function openPaperReference(paperId: string): void {
                 >
                   <ChevronDown class="reasoning-chevron-open text-ppx-text-muted h-4 w-4" />
                   <ChevronRight class="reasoning-chevron-closed text-ppx-text-muted h-4 w-4" />
-                  <span>{{ t('chat.reasoning') }}</span>
+                  <span>{{ t('projects.chatView.reasoning') }}</span>
                 </div>
               </summary>
               <div
@@ -136,7 +125,7 @@ function openPaperReference(paperId: string): void {
           <div v-else-if="event.message_kind === 'assistant_tool_call'" class="space-y-2">
             <div class="text-ppx-text-soft flex items-center gap-2 px-1 text-xs font-medium">
               <Wrench class="h-3.5 w-3.5" />
-              <span>{{ t('chat.toolCalls') }}</span>
+              <span>{{ t('projects.chatView.toolCalls') }}</span>
             </div>
             <JsonPanel :title="toolName(event)" :value="toolCallValue(event)" max-height="18rem" />
           </div>
@@ -147,7 +136,7 @@ function openPaperReference(paperId: string): void {
                 class="h-3.5 w-3.5"
                 :class="{ 'text-ppx-accent animate-spin': isStreaming && isToolCalling }"
               />
-              <span>{{ t('chat.toolResults') }}</span>
+              <span>{{ t('projects.chatView.toolResults') }}</span>
             </div>
             <JsonPanel
               :title="event.name ?? 'tool'"
@@ -198,7 +187,7 @@ function openPaperReference(paperId: string): void {
                 class="mt-2 flex items-center gap-1.5"
               >
                 <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
-                <span class="text-xs">{{ t('chat.generating') }}</span>
+                <span class="text-xs">{{ t('projects.chatView.generating') }}</span>
               </div>
             </template>
           </div>
@@ -211,7 +200,7 @@ function openPaperReference(paperId: string): void {
           <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full delay-150" />
           <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full delay-300" />
         </div>
-        <span class="text-sm">{{ t('chat.thinking') }}</span>
+        <span class="text-sm">{{ t('projects.chatView.thinking') }}</span>
       </div>
 
       <div
@@ -220,7 +209,7 @@ function openPaperReference(paperId: string): void {
       >
         <div v-if="isStreaming && isToolCalling" class="flex items-center gap-1.5">
           <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
-          <span>{{ t('chat.toolCalling') }}</span>
+          <span>{{ t('projects.chatView.toolCalling') }}</span>
         </div>
         <ChatTurnActions
           :visible="hovered && !isStreaming"

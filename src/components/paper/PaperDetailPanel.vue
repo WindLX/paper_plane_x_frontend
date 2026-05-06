@@ -23,6 +23,7 @@ const emit = defineEmits<{
   unlink: [paperId: string]
   link: [paperId: string]
   linkToProject: [projectId: string, paperId: string]
+  delete: [paperId: string]
 }>()
 
 const { t } = useI18n()
@@ -48,6 +49,7 @@ async function handleLinkToProject(projectId: string): Promise<void> {
         @unlink="emit('unlink', $event)"
         @link="emit('link', $event)"
         @open-project-link-modal="linkModal.openProjectLinkModal()"
+        @delete="emit('delete', $event)"
       />
 
       <PaperQuickScan
@@ -88,7 +90,7 @@ async function handleLinkToProject(projectId: string): Promise<void> {
 
       <section class="workspace-panel p-3.5">
         <JsonPanel
-          :title="t('projectDetail.rawPaperJson')"
+          :title="t('paper.rawPaperJson')"
           :value="paper"
           :default-open="false"
           max-height="34vh"
@@ -96,7 +98,7 @@ async function handleLinkToProject(projectId: string): Promise<void> {
       </section>
     </template>
     <div v-else class="workspace-subpanel workspace-body p-4 text-sm">
-      {{ t('projectDetail.noPaperSelected') }}
+      {{ t('paper.noPaperSelected') }}
     </div>
 
     <PaperProjectLinkModal

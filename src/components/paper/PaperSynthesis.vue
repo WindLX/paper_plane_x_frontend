@@ -22,33 +22,33 @@ const { t } = useI18n()
   <section class="workspace-panel space-y-3 p-3.5">
     <h3 class="workspace-section-title inline-flex items-center gap-1.5">
       <CheckCircle2 class="h-4 w-4" />
-      <span>{{ t('projectDetail.sections.synthesisData') }}</span>
+      <span>{{ t('paper.sections.synthesisData') }}</span>
     </h3>
     <template v-if="props.hasSynthesis">
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.synthesis.reviewSummary') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.synthesis.reviewSummary') }}</div>
         <MarkdownContent :markdown="props.synthesisSummary?.text ?? '-'" />
         <CitationsBlock :citations="props.synthesisSummary?.citations ?? []" />
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.synthesis.methodology') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.synthesis.methodology') }}</div>
         <SectionCardList
           :cards="props.synthesisMethodology"
-          :empty-text="t('projectDetail.generic.noData')"
+          :empty-text="t('paper.generic.noData')"
         />
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.synthesis.keyResults') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.synthesis.keyResults') }}</div>
         <SectionCardList
           :cards="props.synthesisKeyResults"
-          :empty-text="t('projectDetail.generic.noData')"
+          :empty-text="t('paper.generic.noData')"
         />
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.synthesis.researchGaps') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.synthesis.researchGaps') }}</div>
         <SectionCardList
           :cards="props.synthesisGaps"
-          :empty-text="t('projectDetail.generic.noData')"
+          :empty-text="t('paper.generic.noData')"
         />
       </div>
     </template>

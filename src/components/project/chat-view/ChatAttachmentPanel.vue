@@ -56,7 +56,7 @@ function onPreviewImage(src: string): void {
         class="workspace-panel rounded-ppx-panel max-h-[18vh] overflow-y-auto px-3 py-2"
       >
         <div class="mb-2 flex items-center">
-          <span class="text-ppx-text-muted text-xs font-medium">{{ t('chat.attachments') }}</span>
+          <span class="text-ppx-text-muted text-xs font-medium">{{ t('projects.chatView.attachments') }}</span>
         </div>
         <div v-if="selectedPapers.size > 0" class="flex flex-wrap gap-1.5">
           <div

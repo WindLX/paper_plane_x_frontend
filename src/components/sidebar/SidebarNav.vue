@@ -10,35 +10,31 @@ const props = defineProps<{
   collapsed?: boolean
 }>()
 
-const emit = defineEmits<{
-  navigate: []
-}>()
-
 const route = useRoute()
 const { t } = useI18n()
 
 const navItems = computed(() => [
   {
     to: '/library',
-    label: t('nav.library'),
+    label: t('sidebar.nav.library'),
     icon: LibraryBig,
     active: route.path.startsWith('/library'),
   },
   {
     to: '/tasks',
-    label: t('nav.tasks'),
+    label: t('sidebar.nav.tasks'),
     icon: ListChecks,
     active: route.path.startsWith('/tasks'),
   },
   {
     to: '/traces',
-    label: t('nav.traces'),
+    label: t('sidebar.nav.traces'),
     icon: Activity,
     active: route.path.startsWith('/traces'),
   },
   {
     to: '/settings',
-    label: t('nav.settings'),
+    label: t('sidebar.nav.settings'),
     icon: Settings2,
     active: route.path.startsWith('/settings'),
   },
@@ -58,7 +54,6 @@ const navItems = computed(() => [
           : 'text-ppx-text-soft hover:bg-ppx-bg-elevated/60 hover:text-ppx-text',
         props.collapsed ? 'justify-center' : '',
       ]"
-      @click="emit('navigate')"
     >
       <component
         :is="item.icon"

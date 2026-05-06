@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ChevronDown, Folder, FolderPlus, Search } from 'lucide-vue-next'
+import { Folder, FolderPlus, Search } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SidebarButton from './SidebarButton.vue'
+import VirtualScrollList from '@/components/VirtualScrollList.vue'
 import type { ProjectResponse } from '@/types/api'
 
 const props = defineProps<{
   projects: ProjectResponse[]
   activeProjectId?: string | null
   collapsed?: boolean
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -20,13 +23,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const projectsOpen = ref(true)
-const projectsGroupOpen = ref({
-  recent7: true,
-  recent30: true,
-  older: true,
-})
 
-const groupedProjects = computed(() => {
+type FlatEntry =
+  | { _type: 'group-header'; _key: string; key: string; label: string; count: number }
+  | { _type: 'item'; _key: string; project: ProjectResponse }
+
+const flatItems = computed<FlatEntry[]>(() => {
   const now = Date.now()
   const oneDay = 24 * 60 * 60 * 1000
   const recent7: ProjectResponse[] = []
@@ -45,31 +47,45 @@ const groupedProjects = computed(() => {
     }
   })
 
-  return [
-    { key: 'recent7', label: t('projects.sidebar.groupRecent7'), projects: recent7 },
-    { key: 'recent30', label: t('projects.sidebar.groupRecent30'), projects: recent30 },
-    { key: 'older', label: t('projects.sidebar.groupOlder'), projects: older },
-  ] as const
+  const result: FlatEntry[] = []
+  if (recent7.length) {
+    result.push({
+      _type: 'group-header',
+      _key: 'gh-recent7',
+      key: 'recent7',
+      label: t('sidebar.project.groupRecent7'),
+      count: recent7.length,
+    })
+    result.push(
+      ...recent7.map((p) => ({ _type: 'item' as const, _key: `p-${p.project_id}`, project: p })),
+    )
+  }
+  if (recent30.length) {
+    result.push({
+      _type: 'group-header',
+      _key: 'gh-recent30',
+      key: 'recent30',
+      label: t('sidebar.project.groupRecent30'),
+      count: recent30.length,
+    })
+    result.push(
+      ...recent30.map((p) => ({ _type: 'item' as const, _key: `p-${p.project_id}`, project: p })),
+    )
+  }
+  if (older.length) {
+    result.push({
+      _type: 'group-header',
+      _key: 'gh-older',
+      key: 'older',
+      label: t('sidebar.project.groupOlder'),
+      count: older.length,
+    })
+    result.push(
+      ...older.map((p) => ({ _type: 'item' as const, _key: `p-${p.project_id}`, project: p })),
+    )
+  }
+  return result
 })
-
-function groupHasActive(groupProjects: readonly ProjectResponse[]): boolean {
-  return groupProjects.some((project) => projectIsActive(project))
-}
-
-function groupExpanded(
-  key: keyof typeof projectsGroupOpen.value,
-  groupProjects: readonly ProjectResponse[],
-): boolean {
-  return groupHasActive(groupProjects) || projectsGroupOpen.value[key]
-}
-
-function toggleGroup(
-  key: keyof typeof projectsGroupOpen.value,
-  groupProjects: readonly ProjectResponse[],
-): void {
-  if (groupHasActive(groupProjects)) return
-  projectsGroupOpen.value[key] = !projectsGroupOpen.value[key]
-}
 
 function projectIsActive(project: ProjectResponse): boolean {
   return props.activeProjectId === project.project_id
@@ -77,96 +93,79 @@ function projectIsActive(project: ProjectResponse): boolean {
 </script>
 
 <template>
-  <section class="border-ppx-border min-h-0 flex-1 overflow-y-auto border-t pt-3">
-    <button
+  <section class="border-ppx-border flex min-h-0 flex-1 flex-col border-t pt-3">
+    <SidebarButton
       v-if="!props.collapsed"
-      type="button"
-      class="text-ppx-text-soft hover:bg-ppx-bg-elevated/60 hover:text-ppx-text flex h-8 w-full cursor-pointer items-center justify-between rounded-xl px-2 text-left text-sm font-semibold transition-colors"
+      variant="toggle"
+      :open="projectsOpen"
       @click="projectsOpen = !projectsOpen"
     >
-      <span>{{ t('projects.sidebar.projects') }}</span>
-      <ChevronDown
-        class="text-ppx-text-soft duration-ppx-fast h-4 w-4 transition-transform"
-        :class="projectsOpen ? '' : '-rotate-90'"
-      />
-    </button>
+      {{ t('sidebar.project.project') }}
+    </SidebarButton>
 
-    <div
-      class="duration-ppx-standard ease-ppx grid transition-all"
-      :class="projectsOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'"
-    >
-      <div class="mt-1 min-h-0 space-y-1 pb-2">
-        <button
-          type="button"
-          class="group duration-ppx-fast text-ppx-text-soft hover:bg-ppx-bg-elevated/60 hover:text-ppx-text flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 text-sm font-medium transition-colors"
-          :class="props.collapsed ? 'justify-center' : ''"
-          @click="emit('openCreateModal')"
-        >
+    <div v-show="projectsOpen" class="mt-1 flex min-h-0 flex-col overflow-hidden pb-2">
+      <SidebarButton variant="action" :collapsed="props.collapsed" @click="emit('openCreateModal')">
+        <template #icon>
           <FolderPlus class="text-ppx-text-soft h-4.5 w-4.5 group-hover:text-current" />
-          <span v-if="!props.collapsed">{{ t('projects.sidebar.createInline') }}</span>
-        </button>
-
-        <button
-          type="button"
-          class="group duration-ppx-fast text-ppx-text-soft hover:bg-ppx-bg-elevated/60 hover:text-ppx-text flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 text-sm font-medium transition-colors"
-          :class="props.collapsed ? 'justify-center' : ''"
-          @click="emit('openSearchModal')"
-        >
-          <Search class="text-ppx-text-soft h-4.5 w-4.5 group-hover:text-current" />
-          <span v-if="!props.collapsed">{{ t('projects.sidebar.searchInline') }}</span>
-        </button>
-
-        <template v-if="!props.collapsed">
-          <section
-            v-for="group in groupedProjects"
-            :key="group.key"
-            class="border-ppx-border border-t pt-2 first:border-t-0"
-          >
-            <button
-              type="button"
-              class="duration-ppx-fast text-ppx-text-soft hover:bg-ppx-bg-elevated/60 hover:text-ppx-text flex h-8 w-full cursor-pointer items-center justify-between rounded-xl px-2 text-left text-sm font-semibold transition-colors"
-              @click="toggleGroup(group.key, group.projects)"
-            >
-              <span>{{ group.label }}</span>
-              <ChevronDown
-                class="duration-ppx-fast h-3.5 w-3.5 transition-transform"
-                :class="groupExpanded(group.key, group.projects) ? '' : '-rotate-90'"
-              />
-            </button>
-            <div
-              class="duration-ppx-standard ease-ppx grid transition-all"
-              :class="
-                groupExpanded(group.key, group.projects)
-                  ? 'grid-rows-[1fr] opacity-100'
-                  : 'grid-rows-[0fr] opacity-0'
-              "
-            >
-              <div class="min-h-0 space-y-1">
-                <button
-                  v-for="project in group.projects"
-                  :key="project.project_id"
-                  type="button"
-                  class="group duration-ppx-fast flex h-9 w-full cursor-pointer items-center gap-2.5 rounded-xl px-2 text-left text-sm font-medium transition-colors"
-                  :class="
-                    projectIsActive(project)
-                      ? 'bg-ppx-bg-elevated text-ppx-text shadow-ppx-rest'
-                      : 'text-ppx-text-soft hover:bg-ppx-bg-elevated/60 hover:text-ppx-text'
-                  "
-                  @click="emit('openProject', project.project_id)"
-                >
-                  <Folder
-                    class="h-4 w-4 shrink-0"
-                    :class="
-                      projectIsActive(project) ? '' : 'text-ppx-text-soft group-hover:text-current'
-                    "
-                  />
-                  <span class="truncate">{{ project.name }}</span>
-                </button>
-              </div>
-            </div>
-          </section>
         </template>
-      </div>
+        {{ t('sidebar.project.createInline') }}
+      </SidebarButton>
+
+      <SidebarButton variant="action" :collapsed="props.collapsed" @click="emit('openSearchModal')">
+        <template #icon>
+          <Search class="text-ppx-text-soft h-4.5 w-4.5 group-hover:text-current" />
+        </template>
+        {{ t('sidebar.project.searchInline') }}
+      </SidebarButton>
+
+      <template v-if="!props.collapsed">
+        <div
+          v-if="props.loading && flatItems.length === 0"
+          class="flex flex-col items-center justify-center py-12 text-center"
+        >
+          <p class="text-ppx-text-muted text-xs">{{ t('common.loading') }}</p>
+        </div>
+        <VirtualScrollList
+          v-else-if="flatItems.length > 0"
+          :items="flatItems"
+          :window-size="30"
+          :step-size="10"
+          key-field="_key"
+          class="min-h-0 flex-1"
+        >
+          <template #default="{ item: entry }">
+            <!-- Group header -->
+            <div
+              v-if="entry._type === 'group-header'"
+              class="text-ppx-text-soft border-ppx-border pt-2.5 pb-1 pl-2 text-xs font-semibold tracking-wide uppercase first:pt-1"
+            >
+              {{ entry.label }}
+            </div>
+            <!-- Project item -->
+            <SidebarButton
+              v-else
+              variant="item"
+              :active="projectIsActive(entry.project)"
+              @click="emit('openProject', entry.project.project_id)"
+            >
+              <template #icon>
+                <Folder
+                  class="h-4 w-4 shrink-0"
+                  :class="
+                    projectIsActive(entry.project)
+                      ? ''
+                      : 'text-ppx-text-soft group-hover:text-current'
+                  "
+                />
+              </template>
+              {{ entry.project.name }}
+            </SidebarButton>
+          </template>
+        </VirtualScrollList>
+        <div v-else class="flex flex-col items-center justify-center py-12 text-center">
+          <p class="text-ppx-text-muted text-xs">{{ t('sidebar.project.empty') }}</p>
+        </div>
+      </template>
     </div>
   </section>
 </template>

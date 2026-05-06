@@ -32,7 +32,7 @@ watch(
       providerForm.value = {
         name: 'deepseek-pro',
         model: 'deepseek-v4-pro',
-        base_url: '',
+        base_url: 'https://api.deepseek.com/v1',
         api_key: '',
       }
     }
@@ -75,14 +75,15 @@ function onSave() {
             :type="showKey ? 'text' : 'password'"
             class="workspace-input pr-10"
           />
-          <button
-            type="button"
-            class="text-ppx-text-muted hover:text-ppx-text absolute inset-y-0 right-0 flex cursor-pointer items-center px-3"
+          <AppButton
+            size="xs"
+            variant="transparent"
+            class="absolute inset-y-0 right-0"
             @click="showKey = !showKey"
           >
             <Eye v-if="!showKey" class="h-4 w-4" />
             <EyeOff v-else class="h-4 w-4" />
-          </button>
+          </AppButton>
         </div>
       </div>
       <div class="flex justify-end gap-2 pt-2">

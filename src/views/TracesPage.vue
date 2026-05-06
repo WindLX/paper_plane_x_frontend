@@ -1,101 +1,131 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PagerBar from '@/components/PagerBar.vue'
+import PageLayout from '@/components/layout/PageLayout.vue'
+import SlidePanel from '@/components/layout/SlidePanel.vue'
 import SimpleSearchBar from '@/components/SimpleSearchBar.vue'
+import TraceDrawerContent from '@/components/trace/TraceDrawerContent.vue'
 import TraceListTable from '@/components/trace/TraceListTable.vue'
 import TraceSummaryCards from '@/components/trace/TraceSummaryCards.vue'
-import { useNotify } from '@/composables/useNotify'
-import { useTraceStore } from '@/stores/traces'
-import { useUiStore } from '@/stores/ui'
+import { useTraceList } from '@/composables/useTracesController'
+import { useTasksWsStore } from '@/stores/tasksWs'
 
-const traceStore = useTraceStore()
-const notify = useNotify()
-const uiStore = useUiStore()
 const { t } = useI18n()
-const lastErrorNotified = ref<string | null>(null)
+const list = useTraceList()
+const wsStore = useTasksWsStore()
 const keyword = ref('')
 const selectedTraceId = ref<string | null>(null)
+
+/* ── Drawer state ─────────────────────────────────────────────── */
+const drawerOpen = ref(false)
+
+async function openTraceDrawer(traceId: string): Promise<void> {
+  drawerOpen.value = true
+  await nextTick()
+  selectedTraceId.value = traceId
+}
+
+function closeTraceDrawer(): void {
+  drawerOpen.value = false
+}
+
+watch(drawerOpen, (isOpen) => {
+  if (!isOpen) {
+    selectedTraceId.value = null
+  }
+})
+
+// Search Filter
 
 const filteredTraces = computed(() => {
   const search = keyword.value.trim().toLowerCase()
   if (!search) {
-    return traceStore.items
+    return list.paginated.items
   }
-  return traceStore.items.filter((trace) => {
+  return list.paginated.items.filter((trace) => {
     const haystacks = [trace.trace_id, trace.agent_name, trace.llm_model ?? '']
     return haystacks.some((item) => item.toLowerCase().includes(search))
   })
 })
 
-onMounted(async () => {
-  await traceStore.fetchTraces({ offset: 0, limit: 20 })
-})
-
 watch(
-  () => traceStore.error,
-  (error) => {
-    if (!error) {
-      lastErrorNotified.value = null
-      return
-    }
-    if (lastErrorNotified.value === error) {
-      return
-    }
-    notify.push(error, 'error', 3600)
-    lastErrorNotified.value = error
-  },
-)
-
-watch(
-  () => uiStore.rightDrawerOpen,
-  (isOpen) => {
-    if (!isOpen) {
+  () => filteredTraces.value,
+  (items, oldItems) => {
+    if (items.length === 0) {
       selectedTraceId.value = null
+      return
+    }
+    if (!oldItems || oldItems.length === 0) return
+    if (!selectedTraceId.value) return
+    const exists = items.some((trace) => trace.trace_id === selectedTraceId.value)
+    if (!exists) {
+      selectedTraceId.value = items[0].trace_id
     }
   },
 )
 
-function openTraceDrawer(traceId: string): void {
-  uiStore.openRightDrawer('trace', { traceId }, 'local')
-}
+/* ── WebSocket 刷新 ── */
+watch(
+  () => wsStore.lastUpdatedTask,
+  () => {
+    void list.fetchTraces()
+  },
+)
 
-function closeTraceDrawer(): void {
-  uiStore.closeRightDrawer()
-}
+onMounted(async () => {
+  await list.fetchTraces({ offset: 0, limit: 20 })
+})
 </script>
 
 <template>
-  <section class="space-y-4">
-    <TraceSummaryCards :stats="traceStore.stats" :total="traceStore.total" />
+  <div class="h-full w-full">
+    <PageLayout
+      :title="t('traces.title')"
+      :subtitle="t('traces.subtitle')"
+      :drawer-open="drawerOpen"
+    >
+      <section class="space-y-4">
+        <TraceSummaryCards :stats="list.stats" :total="list.paginated.total" />
 
-    <section class="workspace-panel p-3">
-      <SimpleSearchBar v-model="keyword" :placeholder="t('traces.searchPlaceholder')" />
-    </section>
+        <SimpleSearchBar v-model="keyword" :placeholder="t('traces.searchPlaceholder')" />
 
-    <div :key="`${keyword}-${traceStore.currentPage}`" class="animate-fade-in-up space-y-4">
-      <TraceListTable
-        v-model:selected-trace-id="selectedTraceId"
-        :traces="filteredTraces"
-        :offset="traceStore.offset"
-        :sort-order="traceStore.sortOrder"
-        :sort-by="traceStore.sortBy"
-        @sort="traceStore.toggleSort"
-        @open="openTraceDrawer"
-        @close="closeTraceDrawer"
-      />
+        <div :key="`${keyword}-${list.paginated.currentPage}`" class="animate-fade-in-up space-y-4">
+          <TraceListTable
+            v-model:selected-trace-id="selectedTraceId"
+            :traces="filteredTraces"
+            :offset="list.paginated.offset"
+            :sort-order="list.paginated.sortOrder"
+            :sort-by="list.paginated.sortBy"
+            @sort="list.paginated.toggleSort"
+            @open="openTraceDrawer"
+            @close="closeTraceDrawer"
+          />
 
-      <PagerBar
-        :current-page="traceStore.currentPage"
-        :total-pages="traceStore.totalPages"
-        :total-count="traceStore.total"
-        :rows-per-page="traceStore.limit"
-        @prev-page="traceStore.prevPage()"
-        @next-page="traceStore.nextPage()"
-        @set-page="traceStore.setPage"
-        @set-limit="traceStore.setLimit"
-      />
-    </div>
-  </section>
+          <PagerBar
+            :current-page="list.paginated.currentPage"
+            :total-pages="list.paginated.totalPages"
+            :total-count="list.paginated.total"
+            :rows-per-page="list.paginated.limit"
+            @prev-page="list.paginated.prevPage()"
+            @next-page="list.paginated.nextPage()"
+            @set-page="list.paginated.setPage"
+            @set-limit="list.paginated.setLimit"
+          />
+        </div>
+      </section>
+
+      <template #drawer>
+        <SlidePanel :title="t('drawer.traceTitle')" @close="closeTraceDrawer">
+          <TraceDrawerContent
+            v-if="selectedTraceId"
+            :trace-id="selectedTraceId"
+            @close="closeTraceDrawer"
+            @list-refresh="list.fetchTraces()"
+          />
+        </SlidePanel>
+      </template>
+    </PageLayout>
+  </div>
 </template>

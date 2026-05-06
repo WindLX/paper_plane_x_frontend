@@ -1,4 +1,5 @@
 import { request } from './core'
+import { BaseWebSocketClient, type WebSocketStatus } from './ws'
 import type {
   ConversationCreateRequest,
   ConversationForkRequest,
@@ -6,10 +7,64 @@ import type {
   ConversationMessageCreateRequest,
   ConversationMessageResponse,
   ConversationMessageUpdateRequest,
+  ConversationTurnEventResponse,
   ConversationTurnResponse,
   ConversationResponse,
   ConversationUpdateRequest,
 } from '../types/api'
+
+export type ConversationSocketStatus = WebSocketStatus
+
+export interface ConversationSocketMessage {
+  type: 'stream_start' | 'stream_chunk' | 'tool_call' | 'tool_result' | 'stream_complete' | 'error'
+  turn_id?: string
+  user_message?: ConversationMessageResponse
+  message_id?: string
+  sequence_no?: number
+  message_kind?: ConversationTurnEventResponse['message_kind']
+  delta?: string
+  reasoning_delta?: string
+  name?: string | null
+  tool_call?: Record<string, unknown>
+  tool_call_id?: string | null
+  content?: string | null
+  trace_ids?: string[]
+  detail?: string
+}
+
+export class ConversationWebSocketClient extends BaseWebSocketClient<ConversationSocketMessage> {
+  private readonly conversationId: string
+
+  constructor(conversationId: string) {
+    super({
+      path: `/ws/conversations/${conversationId}`,
+    })
+    this.conversationId = conversationId
+  }
+
+  sendMessage(content: string, messageId?: string, images?: string[], paperIds?: string[]): void {
+    const payload: Record<string, unknown> = {
+      type: 'user_message',
+      content,
+      message_id: messageId ?? undefined,
+    }
+    if (images && images.length > 0) {
+      payload.images = images
+    }
+    if (paperIds && paperIds.length > 0) {
+      payload.paper_ids = paperIds
+    }
+    this.sendJson(payload)
+  }
+
+  stopGeneration(): void {
+    this.sendJson({ type: 'stop' })
+  }
+
+  get id(): string {
+    return this.conversationId
+  }
+}
 
 export const conversationApi = {
   listConversations(projectId: string): Promise<ConversationListResponse> {
@@ -90,5 +145,9 @@ export const conversationApi = {
     return request(`/conversations/${conversationId}/turns/${turnId}`, {
       method: 'DELETE',
     })
+  },
+
+  createWebSocketClient(conversationId: string): ConversationWebSocketClient {
+    return new ConversationWebSocketClient(conversationId)
   },
 }

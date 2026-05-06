@@ -15,7 +15,7 @@ const { t } = useI18n()
   <section class="workspace-panel space-y-3 p-3.5">
     <h3 class="workspace-section-title inline-flex items-center gap-1.5">
       <NotebookPen class="h-4 w-4" />
-      <span>{{ t('projectDetail.sections.agentNote') }}</span>
+      <span>{{ t('paper.sections.agentNote') }}</span>
     </h3>
     <div v-if="props.agentNote" class="workspace-subpanel p-2.5">
       <MarkdownContent :markdown="props.agentNote" />

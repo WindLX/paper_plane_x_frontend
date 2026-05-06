@@ -1,64 +1,193 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
-import { translate } from '../i18n'
+import { translate } from '@/i18n'
 import { api } from '@/api'
-import { usePagination } from '@/composables/usePagination'
-import type { ProjectSortKey } from '@/types/sort'
-import type { ProjectResponse } from '@/types/api'
+import type { ProjectResponse, ProjectUpdateRequest } from '@/types/api'
+
+function sortProjectIds(
+  ids: string[],
+  projectsById: Record<string, ProjectResponse>,
+): string[] {
+  return [...ids].sort((leftId, rightId) => {
+    const left = projectsById[leftId]
+    const right = projectsById[rightId]
+    if (!left && !right) return 0
+    if (!left) return 1
+    if (!right) return -1
+    return new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime()
+  })
+}
 
 export const useProjectStore = defineStore('projects', () => {
-  const loading = ref(false)
+  const projectsById = reactive<Record<string, ProjectResponse>>({})
+  const orderedProjectIds = ref<string[]>([])
+  const currentProjectId = ref<string | null>(null)
+  const listLoading = ref(false)
+  const detailLoading = ref(false)
+  const mutating = ref(false)
   const error = ref<string | null>(null)
 
-  const paginated = usePagination<ProjectResponse, ProjectSortKey>({
-    fetcher: ({ offset, limit, sortOrder, sortBy }) =>
-      api.listProjects(offset, limit, sortOrder, sortBy),
-    defaultLimit: 20,
-  })
+  const loading = computed(
+    () => listLoading.value || detailLoading.value || mutating.value,
+  )
 
-  async function fetchProjects(options?: Parameters<typeof paginated.fetch>[0]): Promise<void> {
-    loading.value = true
-    error.value = null
-    try {
-      await paginated.fetch(options)
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : translate('errors.fetchProjects')
-    } finally {
-      loading.value = false
+  const projects = computed(() =>
+    orderedProjectIds.value
+      .map((projectId) => projectsById[projectId])
+      .filter((project): project is ProjectResponse => Boolean(project)),
+  )
+
+  const currentProject = computed(() =>
+    currentProjectId.value ? projectsById[currentProjectId.value] ?? null : null,
+  )
+
+  function syncProject(project: ProjectResponse): ProjectResponse {
+    projectsById[project.project_id] = project
+    if (!orderedProjectIds.value.includes(project.project_id)) {
+      orderedProjectIds.value = [project.project_id, ...orderedProjectIds.value]
+    }
+    orderedProjectIds.value = sortProjectIds(orderedProjectIds.value, projectsById)
+    return project
+  }
+
+  function syncProjects(projects: ProjectResponse[]): void {
+    const nextIds = projects.map((project) => {
+      projectsById[project.project_id] = project
+      return project.project_id
+    })
+
+    for (const projectId of orderedProjectIds.value) {
+      if (!nextIds.includes(projectId) && projectsById[projectId]) {
+        delete projectsById[projectId]
+      }
+    }
+
+    orderedProjectIds.value = sortProjectIds(nextIds, projectsById)
+  }
+
+  function patchProject(projectId: string, patch: Partial<ProjectResponse>): void {
+    const existing = projectsById[projectId]
+    if (!existing) return
+    projectsById[projectId] = {
+      ...existing,
+      ...patch,
+    }
+    orderedProjectIds.value = sortProjectIds(orderedProjectIds.value, projectsById)
+  }
+
+  function removeProjectEntity(projectId: string): void {
+    delete projectsById[projectId]
+    orderedProjectIds.value = orderedProjectIds.value.filter((id) => id !== projectId)
+    if (currentProjectId.value === projectId) {
+      currentProjectId.value = null
     }
   }
 
-  async function createProject(name: string, description: string | null): Promise<void> {
-    await api.createProject({ name, description })
-    await fetchProjects()
+  function selectProject(projectId: string | null): void {
+    currentProjectId.value = projectId
   }
 
-  async function removeProject(projectId: string): Promise<void> {
-    await api.deleteProject(projectId)
-    paginated.items.value = paginated.items.value.filter((item) => item.project_id !== projectId)
+  async function fetchProjects(): Promise<ProjectResponse[]> {
+    listLoading.value = true
+    error.value = null
+    try {
+      const response = await api.listProjects(0, 100, 'desc', 'updated_at')
+      syncProjects(response.items)
+      return response.items
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : translate('projects.errors.listProjects')
+      return []
+    } finally {
+      listLoading.value = false
+    }
+  }
+
+  async function fetchProject(projectId: string): Promise<ProjectResponse | null> {
+    detailLoading.value = true
+    error.value = null
+    try {
+      const project = await api.getProject(projectId)
+      syncProject(project)
+      return project
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : translate('projects.errors.requestFailed')
+      return null
+    } finally {
+      detailLoading.value = false
+    }
+  }
+
+  async function createProject(
+    name: string,
+    description: string | null,
+  ): Promise<ProjectResponse | null> {
+    mutating.value = true
+    error.value = null
+    try {
+      const project = await api.createProject({ name, description })
+      syncProject(project)
+      currentProjectId.value = project.project_id
+      return project
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : translate('projects.errors.createProject')
+      return null
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function updateProject(
+    projectId: string,
+    payload: ProjectUpdateRequest,
+  ): Promise<ProjectResponse | null> {
+    mutating.value = true
+    error.value = null
+    try {
+      const project = await api.updateProject(projectId, payload)
+      syncProject(project)
+      return project
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : translate('projects.errors.requestFailed')
+      return null
+    } finally {
+      mutating.value = false
+    }
+  }
+
+  async function deleteProject(projectId: string): Promise<boolean> {
+    mutating.value = true
+    error.value = null
+    try {
+      await api.deleteProject(projectId)
+      removeProjectEntity(projectId)
+      return true
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : translate('projects.errors.deleteProject')
+      return false
+    } finally {
+      mutating.value = false
+    }
   }
 
   return {
-    projects: paginated.items,
+    projectsById,
+    orderedProjectIds,
+    currentProjectId,
+    currentProject,
+    projects,
     loading,
+    listLoading,
+    detailLoading,
+    mutating,
     error,
-    total: paginated.total,
-    offset: paginated.offset,
-    limit: paginated.limit,
-    sortOrder: paginated.sortOrder,
-    sortBy: paginated.sortBy,
-    totalPages: paginated.totalPages,
-    currentPage: paginated.currentPage,
-    hasPrevPage: paginated.hasPrevPage,
-    hasNextPage: paginated.hasNextPage,
+    selectProject,
     fetchProjects,
+    fetchProject,
     createProject,
-    removeProject,
-    setPage: paginated.setPage,
-    nextPage: paginated.nextPage,
-    prevPage: paginated.prevPage,
-    setLimit: paginated.setLimit,
-    toggleSort: paginated.toggleSort,
+    updateProject,
+    deleteProject,
+    patchProject,
+    syncProject,
   }
 })

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   isStreaming: boolean
+  hasConversation?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,9 +47,10 @@ function onDelete(): void {
   <div class="border-ppx-border flex shrink-0 items-center justify-between border-b px-4 py-2.5">
     <div class="flex min-w-0 flex-1 items-center gap-2">
       <button
+        v-if="props.hasConversation"
         type="button"
         class="workspace-icon-button lg:hidden"
-        :title="t('chat.toggleSidebar')"
+        :title="t('projects.chatView.toggleSidebar')"
         @click="emit('toggleSidebar')"
       >
         <PanelRightClose class="h-4 w-4" />
@@ -73,28 +75,30 @@ function onDelete(): void {
         </div>
       </template>
       <template v-else>
-        <div class="flex min-w-0 items-center gap-2">
+        <div class="flex min-w-0 flex-1 items-center gap-2">
           <h2
-            class="hover:bg-ppx-bg-elevated/60 text-ppx-text min-w-0 truncate rounded-md px-1.5 py-0.5 text-base font-semibold transition-colors"
+            class="hover:bg-ppx-bg-elevated/60 text-ppx-text min-w-0 flex-1 truncate rounded-md px-1.5 py-0.5 text-base font-semibold transition-colors"
           >
-            {{ title ?? t('chat.newConversation') }}
+            {{ title ?? t('projects.chatView.newConversation') }}
           </h2>
-          <button
-            type="button"
-            class="workspace-icon-button h-8 w-8 shrink-0"
-            :title="t('chat.rename')"
-            @click="startEdit"
-          >
-            <Pencil class="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            class="workspace-icon-button border-ppx-border-strong text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft h-8 w-8 shrink-0 focus-visible:ring-3"
-            :title="t('chat.deleteMessage')"
-            @click="onDelete"
-          >
-            <Trash2 class="h-4 w-4" />
-          </button>
+          <div v-if="props.hasConversation" class="ml-auto flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              class="workspace-icon-button h-8 w-8 shrink-0"
+              :title="t('projects.chatView.rename')"
+              @click="startEdit"
+            >
+              <Pencil class="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              class="workspace-icon-button border-ppx-border-strong text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft h-8 w-8 shrink-0 focus-visible:ring-3"
+              :title="t('projects.chatView.deleteMessage')"
+              @click="onDelete"
+            >
+              <Trash2 class="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </template>
     </div>
@@ -103,13 +107,13 @@ function onDelete(): void {
       class="text-ppx-text-soft flex shrink-0 items-center gap-1.5 text-xs"
     >
       <LoaderCircle class="h-3.5 w-3.5 animate-spin" />
-      <span>{{ t('chat.thinking') }}</span>
+      <span>{{ t('projects.chatView.thinking') }}</span>
       <button
         type="button"
         class="text-ppx-text-soft ml-1 rounded-md px-1.5 py-0.5 text-xs"
         @click="emit('stopStream')"
       >
-        {{ t('chat.stop') }}
+        {{ t('projects.chatView.stop') }}
       </button>
     </div>
   </div>

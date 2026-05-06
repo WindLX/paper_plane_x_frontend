@@ -1,6 +1,52 @@
 import { request } from './core'
+import { BaseWebSocketClient, type WebSocketStatus } from './ws'
 import type { DataProcessTaskListResponse, DataProcessTaskResponse } from '../types/api'
 import type { SortOrder, TaskSortKey } from '../types/sort'
+
+export type DataProcessSocketStatus = WebSocketStatus
+
+export interface DataProcessSocketMessage {
+  type: 'task_update' | 'pong' | 'error'
+  task?: DataProcessTaskResponse
+  detail?: string
+}
+
+export class DataProcessWebSocketClient extends BaseWebSocketClient<DataProcessSocketMessage> {
+  private onTaskUpdateCallback: ((task: DataProcessTaskResponse) => void) | null = null
+
+  constructor() {
+    super({
+      path: '/ws/data-process',
+      heartbeatIntervalMs: 30000,
+      heartbeatPayload: { type: 'ping' },
+    })
+
+    this.onMessage((data) => {
+      this.handleMessage(data)
+    })
+  }
+
+  onTaskUpdate(callback: (task: DataProcessTaskResponse) => void): void {
+    this.onTaskUpdateCallback = callback
+  }
+
+  private handleMessage(data: DataProcessSocketMessage): void {
+    switch (data.type) {
+      case 'task_update': {
+        if (data.task) {
+          this.onTaskUpdateCallback?.(data.task)
+        }
+        break
+      }
+      case 'error': {
+        this.reportError(data.detail || 'Unknown data-process error')
+        break
+      }
+      case 'pong':
+        break
+    }
+  }
+}
 
 export const tasksApi = {
   listTasks(
@@ -36,5 +82,9 @@ export const tasksApi = {
 
   deleteTask(taskId: string): Promise<{ message: string }> {
     return request(`/data-process/tasks/${taskId}`, { method: 'DELETE' })
+  },
+
+  createWebSocketClient(): DataProcessWebSocketClient {
+    return new DataProcessWebSocketClient()
   },
 }

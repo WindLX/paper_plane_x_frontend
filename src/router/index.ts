@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeRedirectPage from '@/views/HomeRedirectPage.vue'
-import ProjectDetailPage from '@/views/ProjectDetailPage.vue'
+import ProjectPage from '@/views/ProjectPage.vue'
 import LibraryPage from '@/views/LibraryPage.vue'
 import TasksPage from '@/views/TasksPage.vue'
 import TracesPage from '@/views/TracesPage.vue'
@@ -18,8 +18,8 @@ export const router = createRouter({
     },
     {
       path: '/projects/:projectId',
-      name: 'ProjectDetailPage',
-      component: ProjectDetailPage,
+      name: 'ProjectPage',
+      component: ProjectPage,
       props: true,
     },
     {

@@ -35,7 +35,7 @@ function onSend(): void {
     <!-- Title centered in remaining space -->
     <div class="flex flex-1 flex-col items-center justify-center px-4 text-center">
       <h3 class="animate-fade-in-up text-ppx-text-soft text-2xl font-medium tracking-tight">
-        {{ t('chat.emptyChatTitle') }}
+        {{ t('projects.chatView.emptyChatTitle') }}
       </h3>
     </div>
 
@@ -52,7 +52,7 @@ function onSend(): void {
           @send="onSend"
         />
         <div v-show="!inputExpanded" class="text-ppx-text-muted mt-2 text-center text-xs">
-          {{ t('chat.inputHint') }}
+          {{ t('projects.chatView.inputHint') }}
         </div>
       </div>
     </div>

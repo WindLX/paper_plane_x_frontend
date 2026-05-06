@@ -28,7 +28,7 @@ function handleSave(): void {
       <textarea v-model="description" rows="4" class="workspace-textarea" />
     </div>
     <AppButton variant="solid" tone="sky" block @click="handleSave">
-      {{ t('actions.save') }}
+      {{ t('projects.actions.save') }}
     </AppButton>
   </div>
 </template>

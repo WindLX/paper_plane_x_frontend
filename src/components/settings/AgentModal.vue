@@ -138,8 +138,8 @@ function onSave() {
             v-model="agentForm.thinking_enabled"
             :options="[
               { label: '-', value: null },
-              { label: t('settings.yes'), value: true },
-              { label: t('settings.no'), value: false },
+              { label: t('settings.agents.yes'), value: true },
+              { label: t('settings.agents.no'), value: false },
             ]"
           />
         </div>
@@ -149,8 +149,8 @@ function onSave() {
             v-model="agentForm.is_vlm"
             :options="[
               { label: '-', value: null },
-              { label: t('settings.yes'), value: true },
-              { label: t('settings.no'), value: false },
+              { label: t('settings.agents.yes'), value: true },
+              { label: t('settings.agents.no'), value: false },
             ]"
           />
         </div>

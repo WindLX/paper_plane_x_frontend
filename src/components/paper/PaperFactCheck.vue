@@ -21,26 +21,26 @@ const { t } = useI18n()
   <section class="workspace-panel space-y-3 p-3.5">
     <h3 class="workspace-section-title inline-flex items-center gap-1.5">
       <FileCheck2 class="h-4 w-4" />
-      <span>{{ t('projectDetail.sections.factCheck') }}</span>
+      <span>{{ t('paper.sections.factCheck') }}</span>
     </h3>
     <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
       <article class="workspace-subpanel space-y-2 p-2.5">
-        <div class="workspace-label mb-0">{{ t('projectDetail.factCheck.extraction') }}</div>
+        <div class="workspace-label mb-0">{{ t('paper.factCheck.extraction') }}</div>
         <template v-if="props.hasExtractionFactCheck">
           <div class="workspace-subpanel space-y-1 p-2.5">
-            <div class="workspace-label mb-0">{{ t('projectDetail.factCheck.result') }}</div>
+            <div class="workspace-label mb-0">{{ t('paper.factCheck.result') }}</div>
             <div class="workspace-body">
               {{
                 props.extractionFactCheckPassed === null
                   ? '-'
                   : props.extractionFactCheckPassed
-                    ? t('projectDetail.factCheck.passed')
-                    : t('projectDetail.factCheck.failed')
+                    ? t('paper.factCheck.passed')
+                    : t('paper.factCheck.failed')
               }}
             </div>
           </div>
           <div v-if="props.extractionFactCheckErrors.length" class="space-y-1.5">
-            <div class="workspace-label mb-0">{{ t('projectDetail.factCheck.error') }}</div>
+            <div class="workspace-label mb-0">{{ t('paper.factCheck.error') }}</div>
             <article
               v-for="(issue, index) in props.extractionFactCheckErrors"
               :key="`efi-${index}`"
@@ -69,22 +69,22 @@ const { t } = useI18n()
       </article>
 
       <article class="workspace-subpanel space-y-2 p-2.5">
-        <div class="workspace-label mb-0">{{ t('projectDetail.factCheck.analysis') }}</div>
+        <div class="workspace-label mb-0">{{ t('paper.factCheck.analysis') }}</div>
         <template v-if="props.hasAnalysisFactCheck">
           <div class="workspace-subpanel space-y-1 p-2.5">
-            <div class="workspace-label mb-0">{{ t('projectDetail.factCheck.result') }}</div>
+            <div class="workspace-label mb-0">{{ t('paper.factCheck.result') }}</div>
             <div class="workspace-body">
               {{
                 props.analysisFactCheckPassed === null
                   ? '-'
                   : props.analysisFactCheckPassed
-                    ? t('projectDetail.factCheck.passed')
-                    : t('projectDetail.factCheck.failed')
+                    ? t('paper.factCheck.passed')
+                    : t('paper.factCheck.failed')
               }}
             </div>
           </div>
           <div v-if="props.analysisFactCheckErrors.length" class="space-y-1.5">
-            <div class="workspace-label mb-0">{{ t('projectDetail.factCheck.error') }}</div>
+            <div class="workspace-label mb-0">{{ t('paper.factCheck.error') }}</div>
             <article
               v-for="(issue, index) in props.analysisFactCheckErrors"
               :key="`afi-${index}`"

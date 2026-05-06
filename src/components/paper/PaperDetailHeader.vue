@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ExternalLink, Folder, Link2, Unlink2 } from 'lucide-vue-next'
+import { ExternalLink, Folder, Link2, Trash2, Unlink2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import type { PaperDetailResponse } from '@/types/api'
@@ -19,6 +19,7 @@ const emit = defineEmits<{
   unlink: [paperId: string]
   link: [paperId: string]
   openProjectLinkModal: []
+  delete: [paperId: string]
 }>()
 
 const { t } = useI18n()
@@ -59,7 +60,7 @@ const zoteroUrl = computed<string | null>(() => {
     <h3 class="workspace-section-title">
       {{ paper.title ?? '-' }}
     </h3>
-    <div class="flex items-center justify-between gap-3">
+    <div class="flex flex-col justify-between gap-3">
       <CopyableText :text="paper.paper_id" mono />
       <div class="flex items-center gap-2 overflow-x-auto">
         <a
@@ -100,23 +101,32 @@ const zoteroUrl = computed<string | null>(() => {
           <Link2 class="h-3.5 w-3.5" />
           <span>{{ t('actions.link') }}</span>
         </AppButton>
+        <AppButton
+          variant="outline"
+          tone="rose"
+          size="xs"
+          @click="emit('delete', paper.paper_id)"
+        >
+          <Trash2 class="h-3.5 w-3.5" />
+          <span>{{ t('actions.delete') }}</span>
+        </AppButton>
       </div>
     </div>
     <div class="grid gap-2 md:grid-cols-2">
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-0">{{ t('projectDetail.labels.authors') }}</div>
+        <div class="workspace-label mb-0">{{ t('paper.labels.authors') }}</div>
         <div class="workspace-body">{{ paper.authors.join(', ') || '-' }}</div>
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-0">{{ t('projectDetail.labels.publication') }}</div>
+        <div class="workspace-label mb-0">{{ t('paper.labels.publication') }}</div>
         <div class="workspace-body">{{ paper.publication ?? '-' }}</div>
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-0">{{ t('projectDetail.labels.year') }}</div>
+        <div class="workspace-label mb-0">{{ t('paper.labels.year') }}</div>
         <div class="workspace-body">{{ paper.year ?? '-' }}</div>
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-0">{{ t('projectDetail.labels.doi') }}</div>
+        <div class="workspace-label mb-0">{{ t('paper.labels.doi') }}</div>
         <div class="workspace-body">{{ paper.doi ?? '-' }}</div>
       </div>
     </div>

@@ -108,3 +108,47 @@ pnpm build:console
 ```bash
 pnpm build:console
 ```
+
+
+## TODO
+
+### debug && refactor
+
+- [x] library, tasks, agent trace, settings页面如果调用了api（新增，删除，修改等会改变后端数据的操作，还有 load, error）需要提供事件，通知前端重新获取数据，且可以避免 watch 操作
+- [x] tasks websocket
+- [x] websocket 收入 pinia 全局状态管理
+- [ ] 小 button 组件复用
+- [ ] 前端消息管理
+- [x] 侧边栏无限滚动，涉及到两个侧边栏 + 搜索项目 + 搜索对话
+- [x] 重整 project store, conversation store
+- [ ] project 的 button 复用
+- [ ] topbar i18n 问题，可以收起，button 复用
+- [ ] drawer ui 优化，状态保持
+  - [ ] 沙箱文件展示优化
+  - [ ] 沙箱文件可以打开展示
+- [x] message card 的缩略文案宽度优化
+- [x] hitl 全局占用优化
+- [ ] 删除项目后的跳转问题
+- [ ] dialog 整治
+- [ ] chatinputbox 组件的复用化，同步给消息编辑
+- [ ] 消息编辑/重新运行/删除/fork的bug整治
+- [ ] pandoc 文件格式导出问题
+- [ ] chat 的对话跳转 topbar 状态
+- [x] chat drawer traces 滚动 lazy load
+- [x] chat drawer markdown 高度问题
+- [x] chattopbar 的 icon 位置
+- [x] 新对话的 chat topbar icon 不显示
+- [x] 修复sidebar 横向宽度 overflow 省略的问题
+- [ ] project 的日志面板整治
+
+### new feature
+
+- [ ] skills
+- [ ] ppt 制作
+- [ ] juypter sandbox
+- [ ] mineru token
+- [ ] 导出项目支持导出对话
+
+### docs
+
+- [ ] 整治文档

@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import HitlQuestionPanel from './HitlQuestionPanel.vue'
+import HitlQuestionPanel from './chat-view/HitlQuestionPanel.vue'
 import ChatViewHeader from './chat-view/ChatViewHeader.vue'
 import ChatEmptyState from './chat-view/ChatEmptyState.vue'
 import ChatDateSeparator from './chat-view/ChatDateSeparator.vue'
@@ -10,31 +10,32 @@ import ChatUserMessage from './chat-view/ChatUserMessage.vue'
 import ChatAssistantTurn from './chat-view/ChatAssistantTurn.vue'
 import ChatSystemMessage from './chat-view/ChatSystemMessage.vue'
 import ChatInputBox from './chat-view/ChatInputBox.vue'
-import { useConversationSocket } from '@/composables/useConversationSocket'
-import { useHitl } from '@/composables/useHitl'
 import { useConversationStore } from '@/stores/conversation'
-import { useUiStore } from '@/stores/ui'
+import { useConversationWsStore } from '@/stores/conversationWs'
 import { useNotify } from '@/composables/useNotify'
 import { useDialog } from '@/composables/useDialog'
+import { useHitlWs } from '@/composables/useHitlWs'
 import { useRouter } from 'vue-router'
 import type { ConversationMessageResponse, ConversationTurnResponse, HITLAnswer } from '@/types/api'
 import { api } from '@/api'
 
 const props = defineProps<{
   projectId: string
+  scrollToTurnId?: string | null
 }>()
 
 const emit = defineEmits<{
   toggleSidebar: []
+  openPaper: [paperId: string]
 }>()
 
 const { t } = useI18n()
 const router = useRouter()
 const chatStore = useConversationStore()
-const uiStore = useUiStore()
+const conversationWsStore = useConversationWsStore()
+const { currentQuestion, answerQuestion } = useHitlWs(() => chatStore.currentConversationId)
 const notify = useNotify()
 const dialog = useDialog()
-const hitl = useHitl()
 
 const inputValue = ref('')
 const inputImages = ref<string[]>([])
@@ -52,30 +53,21 @@ let scrollTimeout: ReturnType<typeof setTimeout> | null = null
 let autoScrollFlag: ReturnType<typeof setTimeout> | null = null
 let isAutoScrolling = false
 
-const socket = ref<ReturnType<typeof useConversationSocket> | null>(null)
-
 const conversation = computed(() => chatStore.currentConversation)
 const messages = computed(() => chatStore.messages)
 const turns = computed(() => chatStore.turns)
-
-const isStreaming = computed(() => socket.value?.isStreaming ?? false)
-const streamingTurn = computed(() => socket.value?.streamingTurn ?? null)
-
-// HITL
-watch(
-  () => conversation.value?.conversation_id,
-  (convId) => {
-    if (convId) {
-      hitl.connect()
-    } else {
-      hitl.disconnect()
-    }
-  },
-)
+const currentConversationId = computed(() => chatStore.currentConversationId)
+const currentSocketState = computed(() => {
+  const conversationId = currentConversationId.value
+  return conversationId ? conversationWsStore.getState(conversationId) : null
+})
+const isStreaming = computed(() => currentSocketState.value?.isStreaming ?? false)
+const isToolCalling = computed(() => currentSocketState.value?.isToolCalling ?? false)
+const streamingTurn = computed(() => currentSocketState.value?.streamingTurn ?? null)
 
 // Scroll to turn from drawer outline click
 watch(
-  () => uiStore.scrollToTurnId,
+  () => props.scrollToTurnId,
   (turnId) => {
     if (!turnId) return
     nextTick(() => {
@@ -83,7 +75,6 @@ watch(
       if (el && chatContainerRef.value) {
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
-      uiStore.setScrollToTurnId(null)
     })
   },
 )
@@ -127,44 +118,18 @@ watch(
   () => chatStore.currentConversationId,
   (newId, oldId) => {
     if (newId && newId !== oldId) {
-      // Try to reuse existing socket from store to avoid interrupting streaming on page switch
-      const existing = chatStore.getSocket(newId)
-      if (existing) {
-        socket.value = existing as ReturnType<typeof useConversationSocket>
-      } else {
-        socket.value?.disconnect()
-        chatStore.unregisterSocket(oldId ?? '')
-        const newSocket = useConversationSocket(newId)
-        socket.value = newSocket
-        chatStore.registerSocket(newId, newSocket)
-        newSocket.connect()
-      }
+      conversationWsStore.connect(newId)
       // Clear input state when switching conversations
       inputValue.value = ''
       inputImages.value = []
       inputPaperIds.value = []
       inputExpanded.value = false
-    } else if (!newId) {
-      socket.value?.disconnect()
-      if (oldId) chatStore.unregisterSocket(oldId)
-      socket.value = null
     }
   },
 )
 
-// Refresh sidebar when streaming ends
-watch(
-  () => socket.value?.isStreaming,
-  (curr, prev) => {
-    if (prev && !curr) {
-      void chatStore.loadConversations(props.projectId)
-    }
-  },
-)
-
-// Note: we intentionally do NOT disconnect the socket on unmount
-// so that streaming continues when the user navigates away from this page.
-// The socket is kept alive via the conversation store's activeSockets map.
+// Socket lifecycles are managed by the global conversation ws store
+// so streaming can continue across page transitions.
 
 async function handleSend(): Promise<void> {
   const text = inputValue.value.trim()
@@ -187,30 +152,21 @@ async function handleSend(): Promise<void> {
 
   await ensureSocketReady(convId)
 
-  socket.value?.sendMessage(text, undefined, imagesToSend, paperIdsToSend)
+  conversationWsStore.sendMessage(convId, text, undefined, imagesToSend, paperIdsToSend)
 }
 
 async function ensureSocketReady(convId: string): Promise<void> {
-  if (convId && (!socket.value || socket.value.status === 'idle')) {
-    const existing = chatStore.getSocket(convId)
-    if (existing) {
-      socket.value = existing as ReturnType<typeof useConversationSocket>
-    } else {
-      socket.value?.disconnect()
-      const newSocket = useConversationSocket(convId)
-      socket.value = newSocket
-      chatStore.registerSocket(convId, newSocket)
-      newSocket.connect()
-    }
+  const socketState = conversationWsStore.getState(convId)
+  if (socketState.status === 'idle' || socketState.status === 'disconnected') {
+    conversationWsStore.connect(convId)
   }
 
-  const currentSocket = socket.value
-  if (currentSocket && currentSocket.status !== 'connected') {
+  if (socketState.status !== 'connected') {
     await new Promise<void>((resolve) => {
       const unwatch = watch(
-        () => currentSocket.status,
-        (s) => {
-          if (s === 'connected' || s === 'error') {
+        () => conversationWsStore.getState(convId).status,
+        (status) => {
+          if (status === 'connected' || status === 'error') {
             unwatch()
             resolve()
           }
@@ -225,7 +181,9 @@ async function ensureSocketReady(convId: string): Promise<void> {
 }
 
 function stopStream(): void {
-  socket.value?.stopGeneration()
+  const convId = currentConversationId.value
+  if (!convId) return
+  conversationWsStore.stopGeneration(convId)
 }
 
 function isNewDay(
@@ -297,15 +255,13 @@ async function confirmEdit(msg: ConversationMessageResponse): Promise<void> {
     if (msg.role === 'user') {
       chatStore.prepareTurnReplay(msg.message_id)
       await ensureSocketReady(convId)
-      socket.value?.sendMessage(content, msg.message_id)
+      conversationWsStore.sendMessage(convId, content, msg.message_id)
     } else {
-      await api.updateMessage(convId, msg.message_id, { content })
-      await chatStore.loadMessages(convId)
-      await chatStore.loadConversations(props.projectId)
+      await chatStore.updateMessage(convId, msg.message_id, content)
     }
-    notify.push(t('chat.messageEdited'), 'success', 2000)
+    notify.push(t('projects.chatView.messageEdited'), 'success', 2000)
   } catch (err) {
-    notify.push(err instanceof Error ? err.message : t('errors.requestFailed'), 'error', 3600)
+    notify.push(err instanceof Error ? err.message : t('projects.errors.requestFailed'), 'error', 3600)
   }
   cancelEdit()
 }
@@ -314,19 +270,18 @@ async function handleDeleteTurn(turn: ConversationTurnResponse): Promise<void> {
   const convId = conversation.value?.conversation_id
   if (!convId) return
   const confirmed = await dialog.confirm({
-    title: t('chat.deleteTurn'),
-    message: t('chat.confirmDeleteTurn'),
-    confirmText: t('actions.delete'),
-    cancelText: t('actions.cancel'),
+    title: t('projects.chatView.deleteTurn'),
+    message: t('projects.chatView.confirmDeleteTurn'),
+    confirmText: t('projects.actions.delete'),
+    cancelText: t('projects.actions.cancel'),
     tone: 'danger',
   })
   if (!confirmed) return
   try {
     await chatStore.deleteTurn(convId, turn.turn_id)
-    await chatStore.loadConversations(props.projectId)
-    notify.push(t('chat.turnDeleted'), 'success', 2000)
+    notify.push(t('projects.chatView.turnDeleted'), 'success', 2000)
   } catch (err) {
-    notify.push(err instanceof Error ? err.message : t('errors.requestFailed'), 'error', 3600)
+    notify.push(err instanceof Error ? err.message : t('projects.errors.requestFailed'), 'error', 3600)
   }
 }
 
@@ -339,19 +294,18 @@ async function handleForkTurn(
   const actualAnchorId = anchorMessageId ?? turnForkAnchorMessageId(turn)
   if (!actualAnchorId) return
   const confirmed = await dialog.confirm({
-    title: t('chat.forkTurn'),
-    message: t('chat.confirmForkTurn'),
-    confirmText: t('actions.confirm'),
-    cancelText: t('actions.cancel'),
+    title: t('projects.chatView.forkTurn'),
+    message: t('projects.chatView.confirmForkTurn'),
+    confirmText: t('projects.actions.confirm'),
+    cancelText: t('projects.actions.cancel'),
   })
   if (!confirmed) return
   try {
     const title = `${conversation.value?.title ?? ''} (分支)`
     await chatStore.forkConversation(convId, title, actualAnchorId)
-    await chatStore.loadConversations(props.projectId)
-    notify.push(t('chat.conversationForked'), 'success', 2000)
+    notify.push(t('projects.chatView.conversationForked'), 'success', 2000)
   } catch (err) {
-    notify.push(err instanceof Error ? err.message : t('errors.requestFailed'), 'error', 3600)
+    notify.push(err instanceof Error ? err.message : t('projects.errors.requestFailed'), 'error', 3600)
   }
 }
 
@@ -361,11 +315,13 @@ async function handleRerunTurn(turn: ConversationTurnResponse): Promise<void> {
   if (!userMessage || !convId) return
   chatStore.prepareTurnReplay(userMessage.message_id)
   await ensureSocketReady(convId)
-  socket.value?.sendMessage(userMessage.content ?? '', userMessage.message_id)
+  conversationWsStore.sendMessage(convId, userMessage.content ?? '', userMessage.message_id)
 }
 
 function handleHitlSubmit(answers: HITLAnswer[]): void {
-  hitl.submitAnswer(answers)
+  const questionId = currentQuestion.value?.question_id
+  if (!questionId) return
+  answerQuestion(questionId, answers)
 }
 
 async function handleUpdateTitle(title: string | null): Promise<void> {
@@ -373,10 +329,9 @@ async function handleUpdateTitle(title: string | null): Promise<void> {
   if (!convId || !title) return
   try {
     await chatStore.updateTitle(convId, title)
-    await chatStore.loadConversations(props.projectId)
-    notify.push(t('chat.conversationRenamed'), 'success', 2000)
+    notify.push(t('projects.chatView.conversationRenamed'), 'success', 2000)
   } catch (err) {
-    notify.push(err instanceof Error ? err.message : t('errors.requestFailed'), 'error', 3600)
+    notify.push(err instanceof Error ? err.message : t('projects.errors.requestFailed'), 'error', 3600)
   }
 }
 
@@ -384,31 +339,31 @@ async function handleDeleteConversation(): Promise<void> {
   const convId = conversation.value?.conversation_id
   if (!convId) return
   const confirmed = await dialog.confirm({
-    title: t('chat.deleteMessage'),
-    message: t('chat.confirmDeleteConversation'),
-    confirmText: t('actions.delete'),
-    cancelText: t('actions.cancel'),
+    title: t('projects.chatView.deleteMessage'),
+    message: t('projects.chatView.confirmDeleteConversation'),
+    confirmText: t('projects.actions.delete'),
+    cancelText: t('projects.actions.cancel'),
     tone: 'danger',
   })
   if (!confirmed) return
   try {
     await chatStore.deleteConversation(convId)
-    await chatStore.loadConversations(props.projectId)
-    notify.push(t('chat.messageDeleted'), 'success', 2000)
+    notify.push(t('projects.chatView.messageDeleted'), 'success', 2000)
     await router.push(`/projects/${props.projectId}`)
   } catch (err) {
-    notify.push(err instanceof Error ? err.message : t('errors.requestFailed'), 'error', 3600)
+    notify.push(err instanceof Error ? err.message : t('projects.errors.requestFailed'), 'error', 3600)
   }
 }
 </script>
 
 <template>
-  <div class="text-ppx-text-soft flex h-full flex-col">
+  <div class="text-ppx-text-soft flex h-full flex-1 flex-col">
     <ChatViewHeader
       v-model:editing="editingTitle"
       v-model:editing-value="editingTitleValue"
       :title="conversation?.title ?? null"
       :is-streaming="isStreaming"
+      :has-conversation="Boolean(conversation)"
       @toggle-sidebar="emit('toggleSidebar')"
       @stop-stream="stopStream"
       @update:title="handleUpdateTitle"
@@ -462,6 +417,7 @@ async function handleDeleteConversation(): Promise<void> {
             @fork="handleForkTurn(turn, turn.user_message?.message_id)"
             @confirm-edit="confirmEdit(turn.user_message)"
             @cancel-edit="cancelEdit"
+            @open-paper="emit('openPaper', $event)"
           />
 
           <ChatAssistantTurn
@@ -484,6 +440,7 @@ async function handleDeleteConversation(): Promise<void> {
               turnEditableAssistantMessage(turn) && confirmEdit(turnEditableAssistantMessage(turn)!)
             "
             @cancel-edit="cancelEdit"
+            @open-paper="emit('openPaper', $event)"
           />
         </section>
       </template>
@@ -508,18 +465,18 @@ async function handleDeleteConversation(): Promise<void> {
         <ChatAssistantTurn
           :turn="streamingTurn"
           :is-streaming="true"
-          :is-tool-calling="socket?.isToolCalling ?? false"
+          :is-tool-calling="isToolCalling"
         />
       </template>
     </div>
 
     <!-- HITL Question Panel -->
     <div
-      v-if="hitl.currentQuestion.value"
+      v-if="currentQuestion"
       class="dark:bg-ppx-bg-elevated border-ppx-border shrink-0 border-t bg-white px-4 py-4"
     >
       <div class="mx-auto max-w-3xl">
-        <HitlQuestionPanel :question="hitl.currentQuestion.value" @submit="handleHitlSubmit" />
+        <HitlQuestionPanel :question="currentQuestion" @submit="handleHitlSubmit" />
       </div>
     </div>
 
@@ -537,9 +494,10 @@ async function handleDeleteConversation(): Promise<void> {
           :project-id="props.projectId"
           :disabled="isStreaming"
           @send="handleSend"
+          @open-paper="emit('openPaper', $event)"
         />
         <div v-show="!inputExpanded" class="text-ppx-text-muted mt-2 text-center text-xs">
-          {{ t('chat.inputHint') }}
+          {{ t('projects.chatView.inputHint') }}
         </div>
       </div>
     </div>

@@ -11,8 +11,8 @@ const uiStore = useUiStore()
 
 <template>
   <SettingsCard
-    :title="t('settings.appearanceTitle')"
-    :body="t('settings.appearanceBody')"
+    :title="t('settings.appearance.title')"
+    :body="t('settings.appearance.body')"
     :icon="Monitor"
   >
     <div class="grid gap-2 sm:grid-cols-2">
@@ -45,10 +45,10 @@ const uiStore = useUiStore()
               class="text-sm font-semibold"
               :class="!uiStore.darkMode ? 'text-ppx-accent' : 'text-ppx-text'"
             >
-              {{ t('theme.light') }}
+              {{ t('settings.appearance.light') }}
             </div>
             <div class="workspace-body mt-0.5 text-xs">
-              {{ t('settings.appearanceLightHint') }}
+              {{ t('settings.appearance.lightHint') }}
             </div>
           </div>
         </div>
@@ -83,10 +83,10 @@ const uiStore = useUiStore()
               class="text-sm font-semibold"
               :class="uiStore.darkMode ? 'text-ppx-accent' : 'text-ppx-text'"
             >
-              {{ t('theme.dark') }}
+              {{ t('settings.appearance.dark') }}
             </div>
             <div class="workspace-body mt-0.5 text-xs">
-              {{ t('settings.appearanceDarkHint') }}
+              {{ t('settings.appearance.darkHint') }}
             </div>
           </div>
         </div>

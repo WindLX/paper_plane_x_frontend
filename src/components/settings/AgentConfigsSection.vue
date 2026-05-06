@@ -8,6 +8,7 @@ import type { AgentLLMConfig } from '@/types/api'
 
 const props = defineProps<{
   agents: AgentLLMConfig[]
+  loading?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -18,7 +19,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <SettingsCard :title="t('settings.agents.title')" :icon="PlugZap">
+  <SettingsCard :title="t('settings.agents.title')" :icon="PlugZap" :loading="props.loading">
     <div class="workspace-table-shell">
       <table class="workspace-table">
         <thead>
@@ -63,8 +64,8 @@ const { t } = useI18n()
                   agent.thinking_enabled == null
                     ? t('settings.agents.noOverrides')
                     : agent.thinking_enabled
-                      ? t('settings.yes')
-                      : t('settings.no')
+                      ? t('settings.agents.yes')
+                      : t('settings.agents.no')
                 }}
               </span>
             </td>
@@ -83,8 +84,8 @@ const { t } = useI18n()
                   agent.is_vlm == null
                     ? t('settings.agents.noOverrides')
                     : agent.is_vlm
-                      ? t('settings.yes')
-                      : t('settings.no')
+                      ? t('settings.agents.yes')
+                      : t('settings.agents.no')
                 }}
               </span>
             </td>

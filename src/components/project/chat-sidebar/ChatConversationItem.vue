@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { LoaderCircle, MessageSquare } from 'lucide-vue-next'
+
+import SidebarButton from '@/components/sidebar/SidebarButton.vue'
 import { useConversationStore } from '@/stores/conversation'
 import type { ConversationResponse } from '@/types/api'
 
@@ -25,20 +27,13 @@ const isStreaming = computed(
 </script>
 
 <template>
-  <button
-    type="button"
-    class="group duration-ppx-fast relative flex h-9 w-full cursor-pointer items-center gap-2 rounded-xl px-2 text-left transition-colors"
-    :class="
-      active
-        ? 'bg-ppx-bg-elevated shadow-ppx-rest text-ppx-text'
-        : 'hover:bg-ppx-bg-elevated/60 text-ppx-text-soft'
-    "
-    @click="onSelect"
-  >
-    <MessageSquare class="h-4 w-4" />
-    <div class="min-w-0 flex-1 truncate text-sm font-medium">
-      {{ conversation.title }}
-    </div>
-    <LoaderCircle v-if="isStreaming" class="text-ppx-accent h-3.5 w-3.5 shrink-0 animate-spin" />
-  </button>
+  <SidebarButton variant="item" :active="active" @click="onSelect">
+    <template #icon>
+      <MessageSquare class="h-4 w-4" />
+    </template>
+    {{ conversation.title }}
+    <template v-if="isStreaming">
+      <LoaderCircle class="text-ppx-accent ml-auto h-3.5 w-3.5 shrink-0 animate-spin" />
+    </template>
+  </SidebarButton>
 </template>

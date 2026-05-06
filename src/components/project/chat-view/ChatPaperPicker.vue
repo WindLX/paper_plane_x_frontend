@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { api } from '@/api'
 import AppButton from '@/components/AppButton.vue'
 import AppModalShell from '@/components/AppModalShell.vue'
+import VirtualScrollList from '@/components/VirtualScrollList.vue'
 import { useNotify } from '@/composables/useNotify'
 import type { PaperResponse } from '@/types/api'
 
@@ -36,7 +37,6 @@ const total = ref(0)
 const loading = ref(false)
 const loadingMore = ref(false)
 const results = ref<PaperResponse[]>([])
-const resultsContainerRef = ref<HTMLDivElement | null>(null)
 
 const hasMore = computed(() => results.value.length < total.value)
 
@@ -121,13 +121,9 @@ async function loadMore(): Promise<void> {
   }
 }
 
-function onScroll(): void {
-  const el = resultsContainerRef.value
-  if (!el || loading.value || loadingMore.value || !hasMore.value) return
-  const threshold = 80
-  if (el.scrollTop + el.clientHeight >= el.scrollHeight - threshold) {
-    void loadMore()
-  }
+function handleReachBottom(): void {
+  if (loading.value || loadingMore.value || !hasMore.value) return
+  void loadMore()
 }
 
 // --- AI Polish ---
@@ -170,7 +166,7 @@ function onClose(): void {
 <template>
   <AppModalShell
     :open="open"
-    :title="t('chat.attachPaper')"
+    :title="t('projects.chatView.attachPaper')"
     width-class="max-w-3xl"
     @close="onClose"
   >
@@ -182,7 +178,7 @@ function onClose(): void {
             <Search class="workspace-muted h-4 w-4 shrink-0" />
             <input
               v-model="rawInput"
-              :placeholder="t('projectDetail.paperSearchPlaceholder')"
+              :placeholder="t('library.search.mainPlaceholder')"
               class="text-ppx-text min-w-0 flex-1 bg-transparent text-sm outline-none"
               @keydown.enter.prevent="runSearch()"
             />
@@ -201,19 +197,21 @@ function onClose(): void {
               @click="aiPolish"
             >
               <Sparkles class="h-3.5 w-3.5" />
-              <span>{{ t('library.aiPolish') }}</span>
+              <span>{{ t('library.search.aiPolish') }}</span>
             </AppButton>
             <AppButton tone="sky" variant="solid" size="xs" @click="runSearch()">
               <Search class="h-3.5 w-3.5" />
-              <span>{{ t('library.runSearch') }}</span>
+              <span>{{ t('library.search.run') }}</span>
             </AppButton>
             <AppButton size="xs" variant="outline" @click="advancedOpen = !advancedOpen">
               <Braces class="h-3.5 w-3.5" />
-              <span>{{ advancedOpen ? t('library.hideAdvanced') : t('library.advanced') }}</span>
+              <span>{{
+                advancedOpen ? t('library.search.hideAdvanced') : t('library.search.advanced')
+              }}</span>
             </AppButton>
             <AppButton size="xs" variant="outline" @click="clearSearch">
               <X class="h-3.5 w-3.5" />
-              <span>{{ t('library.clearSearch') }}</span>
+              <span>{{ t('library.search.clear') }}</span>
             </AppButton>
           </div>
 
@@ -221,19 +219,19 @@ function onClose(): void {
           <Transition name="section-collapse">
             <div v-if="advancedOpen" class="border-ppx-border grid gap-3 border-t pt-3">
               <div>
-                <label class="workspace-label mb-1">{{ t('librarian.search.queryExpr') }}</label>
+                <label class="workspace-label mb-1">{{ t('library.search.queryExpr') }}</label>
                 <textarea
                   v-model="queryExpr"
                   rows="3"
-                  :placeholder="t('librarian.search.queryExprPlaceholder')"
+                  :placeholder="t('library.search.queryExprPlaceholder')"
                   class="workspace-textarea w-full text-sm"
                 />
               </div>
               <div>
-                <label class="workspace-label mb-1">{{ t('librarian.search.paperId') }}</label>
+                <label class="workspace-label mb-1">{{ t('library.search.paperId') }}</label>
                 <input
                   v-model="paperId"
-                  :placeholder="t('librarian.search.paperIdPlaceholder')"
+                  :placeholder="t('library.search.paperIdPlaceholder')"
                   class="workspace-input w-full text-sm"
                 />
               </div>
@@ -243,51 +241,57 @@ function onClose(): void {
       </div>
 
       <!-- Results -->
-      <div
+      <VirtualScrollList
         v-if="results.length > 0"
-        ref="resultsContainerRef"
+        :items="results"
+        :window-size="24"
+        :step-size="8"
+        key-field="paper_id"
         class="max-h-[60vh] space-y-1 overflow-y-auto"
-        @scroll="onScroll"
+        @reach-bottom="handleReachBottom"
       >
-        <button
-          v-for="paper in results"
-          :key="paper.paper_id"
-          type="button"
-          class="duration-ppx-fast flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors"
-          :class="
-            selectedPaperIds.includes(paper.paper_id)
-              ? 'bg-ppx-accent-soft/40 text-ppx-accent border-ppx-accent border'
-              : 'text-ppx-text hover:bg-ppx-bg-subtle border border-transparent'
-          "
-          @click="onTogglePaper(paper)"
-        >
-          <FileText
-            class="mt-0.5 h-4 w-4 shrink-0"
+        <template #default="{ item: paper }">
+          <button
+            type="button"
+            class="duration-ppx-fast flex w-full cursor-pointer items-start gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors"
             :class="
-              selectedPaperIds.includes(paper.paper_id) ? 'text-ppx-accent' : 'text-ppx-text-muted'
+              selectedPaperIds.includes(paper.paper_id)
+                ? 'bg-ppx-accent-soft/40 text-ppx-accent border-ppx-accent border'
+                : 'text-ppx-text hover:bg-ppx-bg-subtle border border-transparent'
             "
-          />
-          <div class="min-w-0 flex-1 space-y-0.5">
-            <div class="truncate font-medium">{{ paper.title || paper.paper_id }}</div>
-            <div class="text-ppx-text-muted text-xs">
-              <span class="truncate">{{ formatAuthors(paper.authors) }}</span>
-              <span v-if="paper.publication"> · {{ paper.publication }}</span>
-              <span v-if="paper.year"> · {{ paper.year }}</span>
+            @click="onTogglePaper(paper)"
+          >
+            <FileText
+              class="mt-0.5 h-4 w-4 shrink-0"
+              :class="
+                selectedPaperIds.includes(paper.paper_id)
+                  ? 'text-ppx-accent'
+                  : 'text-ppx-text-muted'
+              "
+            />
+            <div class="min-w-0 flex-1 space-y-0.5">
+              <div class="truncate font-medium">{{ paper.title || paper.paper_id }}</div>
+              <div class="text-ppx-text-muted text-xs">
+                <span class="truncate">{{ formatAuthors(paper.authors) }}</span>
+                <span v-if="paper.publication"> · {{ paper.publication }}</span>
+                <span v-if="paper.year"> · {{ paper.year }}</span>
+              </div>
+              <div class="text-ppx-text-muted text-xs">
+                {{ paper.paper_id }} · {{ paper.created_at.slice(0, 10) }}
+              </div>
             </div>
-            <div class="text-ppx-text-muted text-xs">
-              {{ paper.paper_id }} · {{ paper.created_at.slice(0, 10) }}
-            </div>
-          </div>
-        </button>
+          </button>
+        </template>
 
-        <!-- Load more indicator -->
-        <div v-if="loadingMore" class="flex justify-center py-3">
-          <LoaderCircle class="text-ppx-text-muted h-5 w-5 animate-spin" />
-        </div>
-      </div>
+        <template #below>
+          <div v-if="loadingMore" class="flex justify-center py-3">
+            <LoaderCircle class="text-ppx-text-muted h-5 w-5 animate-spin" />
+          </div>
+        </template>
+      </VirtualScrollList>
 
       <div v-else-if="!loading" class="workspace-body px-3 py-6 text-center text-sm">
-        {{ t('projectDetail.searchResultEmpty') }}
+        {{ t('library.search.searchResultEmpty') }}
       </div>
     </div>
   </AppModalShell>

@@ -94,7 +94,7 @@ const roleAccentColor = computed(() => {
         class="text-ppx-text-soft flex cursor-pointer items-center gap-1.5 px-2.5 py-2 text-xs font-semibold"
       >
         <span class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: roleAccentColor }" />
-        {{ t('trace.reasoning') }}
+        {{ t('traces.reasoning') }}
       </summary>
       <div class="px-2.5 pb-2.5">
         <MarkdownContent :markdown="message.reasoning_content as string" :enable-math="false" />
@@ -102,7 +102,7 @@ const roleAccentColor = computed(() => {
     </details>
 
     <div v-if="parsedParts.length === 0" class="workspace-body text-ppx-text-muted text-xs">
-      {{ t('trace.emptyContent') }}
+      {{ t('traces.emptyContent') }}
     </div>
 
     <div class="space-y-2.5">
@@ -113,7 +113,7 @@ const roleAccentColor = computed(() => {
         <div v-else class="space-y-1.5">
           <img
             :src="part.url"
-            :alt="t('trace.vlmImageAlt')"
+            :alt="t('traces.vlmImageAlt')"
             loading="lazy"
             class="border-ppx-border rounded-ppx-interactive max-h-80 w-auto border object-contain"
           />
@@ -123,14 +123,14 @@ const roleAccentColor = computed(() => {
             rel="noreferrer"
             class="text-ppx-text-soft hover:text-ppx-text inline-flex items-center gap-1 text-xs underline underline-offset-2 transition-colors"
           >
-            {{ t('trace.openImage') }}
+            {{ t('traces.openImage') }}
           </a>
         </div>
       </template>
     </div>
 
     <div class="pt-1">
-      <JsonPanel :title="t('trace.rawMessageJson')" :value="message" />
+      <JsonPanel :title="t('traces.rawMessageJson')" :value="message" />
     </div>
   </div>
 </template>

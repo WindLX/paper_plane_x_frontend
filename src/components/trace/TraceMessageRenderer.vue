@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { ChevronRight } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
@@ -13,6 +13,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const open = ref(false)
 
 const roleAccent = computed(() => {
   switch (props.message.role) {
@@ -36,6 +37,9 @@ type TextPart = { type: 'text'; text: string }
 type ImagePart = { type: 'image'; url: string }
 
 const parsedParts = computed<(TextPart | ImagePart)[]>(() => {
+  if (!open.value) {
+    return []
+  }
   const content = props.message.content
   if (typeof content === 'string') {
     return [{ type: 'text', text: content }]
@@ -90,13 +94,59 @@ const hasReasoning = computed(
 )
 
 const previewText = computed(() => {
-  const firstText = parsedParts.value.find((item) => item.type === 'text')
-  if (!firstText) {
-    return parsedParts.value.length > 0 ? t('trace.multimodalMessage') : t('trace.emptyContent')
+  const content = props.message.content
+  if (typeof content === 'string') {
+    const text = content.replace(/\s+/g, ' ').trim()
+    if (!text) return t('traces.emptyContent')
+    if (text.length <= 40) return text
+    return `${text.slice(0, 40)}...`
   }
-  const text = firstText.text.replace(/\s+/g, ' ').trim()
-  if (text.length <= 80) return text
-  return `${text.slice(0, 80)}...`
+
+  if (!Array.isArray(content)) {
+    return t('traces.emptyContent')
+  }
+
+  for (const item of content) {
+    if (typeof item !== 'object' || item === null) {
+      continue
+    }
+    const part = item as Record<string, unknown>
+    if (part.type === 'text' && typeof part.text === 'string') {
+      const text = part.text.replace(/\s+/g, ' ').trim()
+      if (!text) {
+        continue
+      }
+      if (text.length <= 40) return text
+      return `${text.slice(0, 40)}...`
+    }
+  }
+
+  if (content.length > 0) {
+    return t('traces.multimodalMessage')
+  }
+
+  return t('traces.emptyContent')
+})
+
+function handleToggle(event: Event): void {
+  open.value = (event.currentTarget as HTMLDetailsElement).open
+}
+
+const hasVisibleParts = computed(() => {
+  if (typeof props.message.content === 'string') {
+    return props.message.content.length > 0
+  }
+  return parsedParts.value.length > 0
+})
+
+const showEmptyState = computed(() => {
+  if (!open.value) {
+    return false
+  }
+  if (typeof props.message.content === 'string') {
+    return props.message.content.length === 0
+  }
+  return parsedParts.value.length === 0
 })
 </script>
 
@@ -105,6 +155,7 @@ const previewText = computed(() => {
     class="group workspace-panel animate-fade-in-up overflow-hidden p-0"
     :class="roleAlignClass"
     :style="{ borderLeftColor: roleAccent, borderLeftWidth: '3px' }"
+    @toggle="handleToggle"
   >
     <summary class="summary-row cursor-pointer list-none p-3">
       <div class="flex items-start gap-2.5">
@@ -112,38 +163,38 @@ const previewText = computed(() => {
           class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
           :style="{ backgroundColor: roleAccent }"
         />
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1 overflow-hidden">
           <div class="flex items-center gap-2 text-sm font-semibold tracking-wide uppercase">
             <ChevronRight class="h-4 w-4 transition-transform group-open:rotate-90" />
             <span class="text-ppx-text"
-              >#{{ index ?? '-' }} {{ t(`trace.role.${message.role}`) }}</span
+              >#{{ index ?? '-' }} {{ t(`traces.role.${message.role}`) }}</span
             >
             <span v-if="message.name" class="workspace-body text-xs font-medium normal-case"
               >({{ message.name }})</span
             >
           </div>
-          <p class="preview-text text-ppx-text-muted m-1 max-w-100 truncate text-xs">
+          <p class="preview-text text-ppx-text-muted m-1 max-w-full truncate text-xs">
             {{ previewText }}
           </p>
         </div>
       </div>
     </summary>
 
-    <div class="border-ppx-border space-y-3 border-t px-3 pt-2 pb-3">
+    <div v-if="open" class="border-ppx-border space-y-3 border-t px-3 pt-2 pb-3">
       <details v-if="hasReasoning" class="workspace-subpanel overflow-hidden p-0">
         <summary class="text-ppx-text-soft cursor-pointer px-2.5 py-2 text-xs font-semibold">
-          {{ t('trace.reasoning') }}
+          {{ t('traces.reasoning') }}
         </summary>
         <div class="px-2.5 pb-2.5">
           <MarkdownContent :markdown="message.reasoning_content as string" />
         </div>
       </details>
 
-      <div v-if="parsedParts.length === 0" class="workspace-body text-ppx-text-muted text-xs">
-        {{ t('trace.emptyContent') }}
+      <div v-if="showEmptyState" class="workspace-body text-ppx-text-muted text-xs">
+        {{ t('traces.emptyContent') }}
       </div>
 
-      <div class="space-y-3">
+      <div v-else-if="hasVisibleParts" class="space-y-3">
         <template v-for="(part, index2) in parsedParts" :key="index2">
           <div v-if="part.type === 'text'" class="workspace-subpanel px-3 py-2.5">
             <MarkdownContent :markdown="part.text" />
@@ -151,7 +202,7 @@ const previewText = computed(() => {
           <div v-else class="space-y-1.5">
             <img
               :src="part.url"
-              :alt="t('trace.vlmImageAlt')"
+              :alt="t('traces.vlmImageAlt')"
               loading="lazy"
               class="border-ppx-border rounded-ppx-interactive max-h-80 w-auto border object-contain"
             />
@@ -161,13 +212,13 @@ const previewText = computed(() => {
               rel="noreferrer"
               class="text-ppx-text-soft hover:text-ppx-text inline-flex items-center gap-1 text-xs underline underline-offset-2 transition-colors"
             >
-              {{ t('trace.openImage') }}
+              {{ t('traces.openImage') }}
             </a>
           </div>
         </template>
       </div>
 
-      <JsonPanel :title="t('trace.rawMessageJson')" :value="message" />
+      <JsonPanel :title="t('traces.rawMessageJson')" :value="message" />
     </div>
   </details>
 </template>
@@ -176,6 +227,7 @@ const previewText = computed(() => {
 /* 外层 message card 展开收起过渡 */
 .group {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 0fr;
   transition: grid-template-rows 0.35s var(--ppx-ease-smooth);
 }
@@ -193,6 +245,7 @@ const previewText = computed(() => {
 }
 
 .summary-row {
+  overflow: hidden;
   border-bottom: 1px solid transparent;
 }
 

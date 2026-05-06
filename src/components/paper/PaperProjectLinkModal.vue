@@ -72,7 +72,7 @@ const { t } = useI18n()
             v-if="props.isPaperLinkedToProject(project.project_id)"
             class="workspace-badge workspace-badge--neutral px-2 py-0.5 text-xs"
           >
-            {{ t('drawer.paperAlreadyLinked') }}
+            {{ t('paper.alreadyLinked') }}
           </span>
         </button>
         <div

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 type ButtonTone = 'neutral' | 'sky' | 'amber' | 'rose' | 'emerald'
-type ButtonVariant = 'soft' | 'outline' | 'solid'
+type ButtonVariant = 'soft' | 'outline' | 'solid' | 'transparent'
 type ButtonSize = 'xs' | 'sm' | 'md'
 
 const props = withDefaults(
@@ -70,14 +70,26 @@ const toneClass = computed(() => {
 
   if (variant === 'outline') {
     if (tone === 'sky')
-      return 'border-ppx-border-strong bg-transparent text-ppx-accent hover:bg-ppx-accent-soft focus-visible:ring-3 focus-visible:ring-ppx-accent-soft'
+      return 'border-ppx-border-strong bg-elevated text-ppx-accent hover:bg-ppx-accent-soft focus-visible:ring-3 focus-visible:ring-ppx-accent-soft'
     if (tone === 'amber')
-      return 'border-ppx-border-strong bg-transparent text-ppx-warning hover:bg-ppx-warning-soft focus-visible:ring-3 focus-visible:ring-ppx-warning-soft'
+      return 'border-ppx-border-strong bg-elevated text-ppx-warning hover:bg-ppx-warning-soft focus-visible:ring-3 focus-visible:ring-ppx-warning-soft'
     if (tone === 'rose')
-      return 'border-ppx-border-strong bg-transparent text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-3 focus-visible:ring-ppx-danger-soft'
+      return 'border-ppx-border-strong bg-elevated text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-3 focus-visible:ring-ppx-danger-soft'
     if (tone === 'emerald')
-      return 'border-ppx-border-strong bg-transparent text-ppx-success hover:bg-ppx-success-soft focus-visible:ring-3 focus-visible:ring-ppx-success-soft'
-    return 'border-ppx-border bg-transparent text-ppx-text-soft hover:bg-ppx-bg-subtle hover:text-ppx-text focus-visible:ring-3 focus-visible:ring-ppx-accent-soft'
+      return 'border-ppx-border-strong bg-elevated text-ppx-success hover:bg-ppx-success-soft focus-visible:ring-3 focus-visible:ring-ppx-success-soft'
+    return 'border-ppx-border bg-ppx-elevated text-ppx-text-soft hover:bg-ppx-bg-subtle hover:text-ppx-text focus-visible:ring-3 focus-visible:ring-ppx-accent-soft'
+  }
+
+  if (variant === 'transparent') {
+    if (tone === 'sky')
+      return 'border-transparent bg-transparent text-ppx-accent hover:bg-transparent'
+    if (tone === 'amber')
+      return 'border-transparent bg-transparent text-ppx-warning hover:bg-transparent'
+    if (tone === 'rose')
+      return 'border-transparent bg-transparent text-ppx-danger hover:bg-transparent'
+    if (tone === 'emerald')
+      return 'border-transparent bg-transparent text-ppx-success hover:bg-transparent'
+    return 'border-transparent bg-transparent text-ppx-text-muted hover:bg-transparent hover:text-ppx-text'
   }
 
   if (tone === 'sky')

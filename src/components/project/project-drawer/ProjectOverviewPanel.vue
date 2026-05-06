@@ -44,28 +44,28 @@ const summaryCards = computed(() => {
     cards.push(
       {
         key: 'paperCount',
-        label: t('projectDetail.statusCards.total'),
+        label: t('projects.statusCards.total'),
         value: stats.paper_count,
         color: 'text-ppx-info',
         icon: LibraryBig,
       },
       {
         key: 'availableYears',
-        label: t('librarian.globalFinder.availableYears'),
+        label: t('projects.librarian.globalFinder.availableYears'),
         value: stats.year_distribution.available_count,
         color: 'text-ppx-success',
         icon: Calendar,
       },
       {
         key: 'missingYears',
-        label: t('librarian.globalFinder.missingYears'),
+        label: t('projects.librarian.globalFinder.missingYears'),
         value: stats.year_distribution.missing_count,
         color: 'text-ppx-warning',
         icon: AlertTriangle,
       },
       {
         key: 'topTags',
-        label: t('librarian.globalFinder.topTags'),
+        label: t('projects.librarian.globalFinder.topTags'),
         value: stats.top_tags.length,
         color: 'text-ppx-accent',
         icon: Tag,
@@ -75,7 +75,7 @@ const summaryCards = computed(() => {
   if (props.project) {
     cards.push({
       key: 'conversationCount',
-      label: t('projectDetail.conversationCount'),
+      label: t('projects.conversationCount'),
       value: props.project.conversation_count ?? 0,
       color: 'text-ppx-accent',
       icon: MessageSquare,
@@ -99,8 +99,8 @@ function fmtNum(value: number | null): string {
   <div>
     <div v-if="loading" class="flex flex-col items-center justify-center gap-3 py-12">
       <LoaderCircle class="text-ppx-text-soft h-8 w-8 animate-spin" />
-      <p class="text-ppx-text-soft text-sm">{{ t('common.loading') }}</p>
-      <p class="text-ppx-text-soft text-xs">{{ t('projectDetail.agentSummaryLoading') }}</p>
+      <p class="text-ppx-text-soft text-sm">{{ t('projects.common.loading') }}</p>
+      <p class="text-ppx-text-soft text-xs">{{ t('projects.agentSummaryLoading') }}</p>
     </div>
 
     <div v-else-if="project" class="space-y-4">
@@ -111,50 +111,50 @@ function fmtNum(value: number | null): string {
         </p>
         <div class="text-ppx-text-soft space-y-0.5 text-xs">
           <div>
-            <span>{{ t('projectDetail.projectId') }}:</span>
+            <span>{{ t('projects.projectId') }}:</span>
             <CopyableText :text="project.project_id" class="ml-1" />
           </div>
-          <div>{{ t('projectDetail.created') }}: {{ formatDateTime(project.created_at) }}</div>
-          <div>{{ t('projectDetail.updated') }}: {{ formatDateTime(project.updated_at) }}</div>
+          <div>{{ t('projects.created') }}: {{ formatDateTime(project.created_at) }}</div>
+          <div>{{ t('projects.updated') }}: {{ formatDateTime(project.updated_at) }}</div>
         </div>
       </div>
 
       <LibrarySummaryCards :cards="summaryCards" />
 
       <div v-if="yearDistribution" class="workspace-panel-inset space-y-2 rounded-xl p-3">
-        <h4 class="workspace-label mb-0">{{ t('librarian.globalFinder.yearStats') }}</h4>
+        <h4 class="workspace-label mb-0">{{ t('projects.librarian.globalFinder.yearStats') }}</h4>
         <div class="text-ppx-text-soft grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
           <div>
-            <span class="text-ppx-text font-medium">{{ t('librarian.globalFinder.mean') }}:</span>
+            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.mean') }}:</span>
             {{ fmtNum(yearDistribution.mean) }}
           </div>
           <div>
-            <span class="text-ppx-text font-medium">{{ t('librarian.globalFinder.median') }}:</span>
+            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.median') }}:</span>
             {{ fmtNum(yearDistribution.median) }}
           </div>
           <div>
-            <span class="text-ppx-text font-medium">{{ t('librarian.globalFinder.q25') }}:</span>
+            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.q25') }}:</span>
             {{ fmtNum(yearDistribution.q25) }}
           </div>
           <div>
-            <span class="text-ppx-text font-medium">{{ t('librarian.globalFinder.q75') }}:</span>
+            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.q75') }}:</span>
             {{ fmtNum(yearDistribution.q75) }}
           </div>
           <div>
             <span class="text-ppx-text font-medium"
-              >{{ t('librarian.globalFinder.outliers') }}:</span
+              >{{ t('projects.librarian.globalFinder.outliers') }}:</span
             >
             {{ yearDistribution.outlier_count }}
             <span v-if="yearDistribution.outlier_count > 0">
-              ({{ t('librarian.globalFinder.lowOutliers') }}:
+              ({{ t('projects.librarian.globalFinder.lowOutliers') }}:
               {{ yearDistribution.low_outlier_count }},
-              {{ t('librarian.globalFinder.highOutliers') }}:
+              {{ t('projects.librarian.globalFinder.highOutliers') }}:
               {{ yearDistribution.high_outlier_count }})
             </span>
           </div>
           <div class="col-span-2">
             <span class="text-ppx-text font-medium"
-              >{{ t('librarian.globalFinder.modeYears') }}:</span
+              >{{ t('projects.librarian.globalFinder.modeYears') }}:</span
             >
             {{ yearDistribution.mode_years.join(', ') || '-' }}
           </div>
@@ -162,7 +162,7 @@ function fmtNum(value: number | null): string {
       </div>
 
       <div v-if="topTags.length > 0" class="workspace-panel-inset space-y-2 rounded-xl p-3">
-        <h4 class="workspace-label mb-0">{{ t('librarian.globalFinder.topTags') }}</h4>
+        <h4 class="workspace-label mb-0">{{ t('projects.librarian.globalFinder.topTags') }}</h4>
         <div class="flex flex-wrap gap-1.5">
           <span
             v-for="tag in topTags"
@@ -176,7 +176,7 @@ function fmtNum(value: number | null): string {
 
       <div class="workspace-panel-inset space-y-2 rounded-xl p-3">
         <div class="flex items-center justify-between">
-          <h4 class="workspace-label mb-0">{{ t('projectDetail.summaryTitle') }}</h4>
+          <h4 class="workspace-label mb-0">{{ t('projects.summaryTitle') }}</h4>
           <div v-if="!isEditingAgentSummary" class="flex items-center gap-1">
             <AppButton
               v-if="agentSummary"
@@ -209,7 +209,7 @@ function fmtNum(value: number | null): string {
           <textarea v-model="agentSummaryDraft" rows="6" class="workspace-textarea text-sm" />
           <div class="flex items-center justify-end gap-2">
             <AppButton size="xs" variant="outline" @click="isEditingAgentSummary = false">{{
-              t('actions.cancel')
+              t('projects.actions.cancel')
             }}</AppButton>
             <AppButton
               size="xs"
@@ -218,7 +218,7 @@ function fmtNum(value: number | null): string {
               @click="
                 (emit('update:agentSummary', agentSummaryDraft), (isEditingAgentSummary = false))
               "
-              >{{ t('actions.save') }}</AppButton
+              >{{ t('projects.actions.save') }}</AppButton
             >
           </div>
         </div>
@@ -226,7 +226,7 @@ function fmtNum(value: number | null): string {
           <MarkdownContent :markdown="agentSummary" :enable-math="false" />
         </div>
         <div v-else class="text-ppx-text-soft text-sm">
-          {{ t('projectDetail.summaryPlaceholder') }}
+          {{ t('projects.summaryPlaceholder') }}
         </div>
       </div>
     </div>

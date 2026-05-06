@@ -1,44 +1,57 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import PagerBar from '../components/PagerBar.vue'
-import SimpleSearchBar from '../components/SimpleSearchBar.vue'
-import TaskListTable from '../components/task/TaskListTable.vue'
-import TaskQueueCards from '../components/task/TaskQueueCards.vue'
-import TaskToolbar from '../components/task/TaskToolbar.vue'
-import { useAutoRefresh } from '../composables/useAutoRefresh'
-import { useNotify } from '../composables/useNotify'
-import { useTaskStore } from '../stores/tasks'
-import { useUiStore } from '../stores/ui'
+import PagerBar from '@/components/PagerBar.vue'
+import PageLayout from '@/components/layout/PageLayout.vue'
+import SlidePanel from '@/components/layout/SlidePanel.vue'
+import SimpleSearchBar from '@/components/SimpleSearchBar.vue'
+import TaskListTable from '@/components/task/TaskListTable.vue'
+import TaskQueueCards from '@/components/task/TaskQueueCards.vue'
+import TaskDrawerContent from '@/components/task/TaskDrawerContent.vue'
 
-const taskStore = useTaskStore()
-const notify = useNotify()
-const uiStore = useUiStore()
+import { useTaskList } from '@/composables/useTasksController'
+
+import { useTasksWsStore } from '@/stores/tasksWs'
+
 const { t } = useI18n()
-const lastErrorNotified = ref<string | null>(null)
+const list = useTaskList()
+const wsStore = useTasksWsStore()
+
 const selectedTaskId = ref<string | null>(null)
+const drawerOpen = ref(false)
 const keyword = ref('')
 
-const autoRefresh = useAutoRefresh(() => {
-  void taskStore.fetchTasks()
+/* ── Drawer Control ───────────────────────────────────────────── */
+
+async function openTaskDrawer(taskId: string): Promise<void> {
+  drawerOpen.value = true
+  await nextTick()
+  selectedTaskId.value = taskId
+}
+
+function closeTaskDrawer(): void {
+  drawerOpen.value = false
+}
+
+// Drawer 关闭时清理 taskId（也可以保留做下次打开缓存）
+watch(drawerOpen, (isOpen) => {
+  if (!isOpen) selectedTaskId.value = null
 })
 
+/* ── Search Filter ── */
 const filteredTasks = computed(() => {
   const search = keyword.value.trim().toLowerCase()
   if (!search) {
-    return taskStore.tasks
+    return list.paginated.items
   }
-  return taskStore.tasks.filter((task) => {
+  return list.paginated.items.filter((task) => {
     const haystacks = [task.task_id, task.paper_id, task.status, task.retry_of_task_id ?? '']
     return haystacks.some((item) => item.toLowerCase().includes(search))
   })
 })
 
-onMounted(async () => {
-  await taskStore.fetchTasks({ offset: 0, limit: 20 })
-})
-
+/* ── 选中项在过滤后失效时自动修正 ── */
 watch(
   () => filteredTasks.value,
   (items, oldItems) => {
@@ -46,7 +59,6 @@ watch(
       selectedTaskId.value = null
       return
     }
-    // 只在列表过滤变化时调整（oldItems 非空），避免首次加载后自动选中第一项
     if (!oldItems || oldItems.length === 0) return
     if (!selectedTaskId.value) return
     const exists = items.some((task) => task.task_id === selectedTaskId.value)
@@ -56,120 +68,68 @@ watch(
   },
 )
 
+/* ── WebSocket 刷新 ── */
 watch(
-  () => taskStore.error,
-  (error) => {
-    if (!error) {
-      lastErrorNotified.value = null
-      return
-    }
-    if (lastErrorNotified.value === error) {
-      return
-    }
-    notify.push(error, 'error', 3600)
-    lastErrorNotified.value = error
-  },
+  () => wsStore.lastUpdatedTask,
+  () => list.fetchTasks(),
 )
 
-watch(
-  () => uiStore.rightDrawerOpen,
-  (isOpen) => {
-    if (!isOpen) {
-      selectedTaskId.value = null
-    }
-  },
-)
-
-function handleToggleAutoRefresh(): void {
-  autoRefresh.toggleAutoRefresh()
-  if (autoRefresh.autoRefreshEnabled.value) {
-    notify.push(t('tasks.autoRefreshEnabled'), 'info', 1800)
-  } else {
-    notify.push(t('tasks.autoRefreshDisabled'), 'info', 1800)
-  }
-}
-
-async function cancelTaskFromTable(taskId: string): Promise<void> {
-  try {
-    await taskStore.cancelTask(taskId)
-  } catch (error) {
-    notify.push(error instanceof Error ? error.message : t('errors.fetchTasks'), 'error', 2200)
-  }
-}
-
-async function retryTaskFromTable(taskId: string): Promise<void> {
-  try {
-    await taskStore.retryTask(taskId)
-  } catch (error) {
-    notify.push(error instanceof Error ? error.message : t('errors.fetchTasks'), 'error', 2200)
-  }
-}
-
-async function deleteTaskFromTable(taskId: string): Promise<void> {
-  try {
-    await taskStore.deleteTask(taskId)
-    notify.push(t('tasks.deleted', { taskId }), 'success', 1800)
-  } catch (error) {
-    notify.push(error instanceof Error ? error.message : t('errors.deleteTask'), 'error', 2200)
-  }
-}
-
-function openTaskDrawer(taskId: string): void {
-  uiStore.openRightDrawer('task', { taskId }, 'local')
-}
-
-function closeTaskDrawer(): void {
-  uiStore.closeRightDrawer()
-}
+onMounted(async () => {
+  wsStore.connect()
+  await list.fetchTasks({ offset: 0, limit: list.paginated.limit })
+})
 </script>
 
 <template>
-  <section class="space-y-4">
-    <TaskToolbar
-      :auto-refresh-enabled="autoRefresh.autoRefreshEnabled.value"
-      :refreshing="autoRefresh.refreshing.value"
-      :last-updated-at="taskStore.lastUpdatedAt"
-      @toggle-auto-refresh="handleToggleAutoRefresh"
-    />
+  <div class="h-full w-full">
+    <PageLayout :title="t('tasks.title')" :subtitle="t('tasks.subtitle')" :drawer-open="drawerOpen">
+      <section class="space-y-4">
+        <TaskQueueCards
+          :total="list.paginated.total"
+          :queued="list.queued"
+          :running="list.running"
+          :completed="list.completed"
+          :failed="list.failed"
+          :canceled="list.canceled"
+        />
 
-    <TaskQueueCards
-      :total="taskStore.total"
-      :queued="taskStore.queued"
-      :running="taskStore.running"
-      :completed="taskStore.completed"
-      :failed="taskStore.failed"
-      :canceled="taskStore.canceled"
-    />
+        <SimpleSearchBar v-model="keyword" :placeholder="t('tasks.searchPlaceholder')" />
 
-    <section class="workspace-panel p-3">
-      <SimpleSearchBar v-model="keyword" :placeholder="t('tasks.searchPlaceholder')" />
-    </section>
+        <div :key="`${keyword}-${list.paginated.currentPage}`" class="animate-fade-in-up space-y-4">
+          <TaskListTable
+            v-model:selected-task-id="selectedTaskId"
+            :tasks="filteredTasks"
+            :offset="list.paginated.offset"
+            :sort-order="list.paginated.sortOrder"
+            :sort-by="list.paginated.sortBy"
+            @sort="list.paginated.toggleSort"
+            @open="openTaskDrawer"
+            @close="closeTaskDrawer"
+          />
 
-    <div :key="`${keyword}-${taskStore.currentPage}`" class="animate-fade-in-up space-y-4">
-      <TaskListTable
-        v-model:selected-task-id="selectedTaskId"
-        :tasks="filteredTasks"
-        :offset="taskStore.offset"
-        :sort-order="taskStore.sortOrder"
-        :sort-by="taskStore.sortBy"
-        @sort="taskStore.toggleSort"
-        @cancel="cancelTaskFromTable"
-        @retry="retryTaskFromTable"
-        @delete="deleteTaskFromTable"
-        @open="openTaskDrawer"
-        @close="closeTaskDrawer"
-      />
+          <PagerBar
+            :current-page="list.paginated.currentPage"
+            :total-pages="list.paginated.totalPages"
+            :total-count="list.paginated.total"
+            :rows-per-page="list.paginated.limit"
+            @prev-page="list.paginated.prevPage()"
+            @next-page="list.paginated.nextPage()"
+            @set-page="list.paginated.setPage"
+            @set-limit="list.paginated.setLimit"
+          />
+        </div>
+      </section>
 
-      <PagerBar
-        :current-page="taskStore.currentPage"
-        :total-pages="taskStore.totalPages"
-        :total-count="taskStore.total"
-        :rows-per-page="taskStore.limit"
-        @prev-page="taskStore.prevPage()"
-        @next-page="taskStore.nextPage()"
-        @set-page="taskStore.setPage"
-        @set-limit="taskStore.setLimit"
-      />
-    </div>
-  </section>
+      <template #drawer>
+        <SlidePanel :title="t('tasks.detail.title')" @close="closeTaskDrawer">
+          <TaskDrawerContent
+            v-if="selectedTaskId"
+            :task-id="selectedTaskId"
+            @close="closeTaskDrawer"
+            @list-refresh="list.fetchTasks()"
+          />
+        </SlidePanel>
+      </template>
+    </PageLayout>
+  </div>
 </template>

@@ -5,7 +5,6 @@ import { onMounted, ref, watch } from 'vue'
 import ChatTurnActions from './ChatTurnActions.vue'
 import ImagePreview from '@/components/ImagePreview.vue'
 import { api } from '@/api'
-import { useUiStore } from '@/stores/ui'
 import type { ConversationMessageResponse, PaperResponse } from '@/types/api'
 
 const props = defineProps<{
@@ -17,7 +16,6 @@ const props = defineProps<{
 const editContent = defineModel<string>('editContent', { default: '' })
 const editImages = defineModel<string[]>('editImages', { default: () => [] })
 
-const uiStore = useUiStore()
 const papersData = ref<Map<string, PaperResponse>>(new Map())
 const previewSrc = ref<string | null>(null)
 
@@ -49,6 +47,7 @@ const emit = defineEmits<{
   fork: []
   confirmEdit: []
   cancelEdit: []
+  openPaper: [paperId: string]
 }>()
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -187,7 +186,7 @@ function formatTime(iso: string): string {
               :key="paper.paper_id"
               type="button"
               class="bg-ppx-accent-soft/40 text-ppx-accent hover:bg-ppx-accent/10 flex max-w-[16rem] items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors"
-              @click="uiStore.openRightDrawer('paper', { paperId: paper.paper_id })"
+              @click="emit('openPaper', paper.paper_id)"
             >
               <FileText class="h-3.5 w-3.5 shrink-0" />
               <span class="truncate">{{ paper.title || paper.paper_id }}</span>

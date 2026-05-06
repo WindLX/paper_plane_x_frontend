@@ -21,7 +21,7 @@ function itemClass(type: string): string {
 </script>
 
 <template>
-  <div class="pointer-events-none fixed top-6 right-4 z-50 flex w-[min(420px,95vw)] flex-col gap-2">
+  <div class="pointer-events-none fixed top-6 right-4 z-99 flex w-[min(420px,95vw)] flex-col gap-2">
     <TransitionGroup name="notify">
       <div
         v-for="item in items"

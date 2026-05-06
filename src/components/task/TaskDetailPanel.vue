@@ -44,7 +44,7 @@ const { t } = useI18n()
           <span class="text-ppx-text-muted shrink-0 font-semibold">{{
             t('tasks.detail.status')
           }}</span>
-          <span>{{ t(`status.${props.task.status}`) }}</span>
+          <span>{{ t(`tasks.status.${props.task.status}`) }}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="text-ppx-text-muted shrink-0 font-semibold">{{
@@ -67,7 +67,7 @@ const { t } = useI18n()
           @click="emit('cancel', props.task.task_id)"
         >
           <Ban class="h-3.5 w-3.5" />
-          <span>{{ t('actions.cancel') }}</span>
+          <span>{{ t('tasks.detail.cancel') }}</span>
         </AppButton>
         <AppButton
           variant="outline"
@@ -76,7 +76,7 @@ const { t } = useI18n()
           @click="emit('retry', props.task.task_id)"
         >
           <RotateCcw class="h-3.5 w-3.5" />
-          <span>{{ t('actions.retry') }}</span>
+          <span>{{ t('tasks.detail.retry') }}</span>
         </AppButton>
         <AppButton
           variant="outline"
@@ -86,7 +86,7 @@ const { t } = useI18n()
           @click="emit('delete', props.task.task_id)"
         >
           <Trash2 class="h-3.5 w-3.5" />
-          <span>{{ t('actions.delete') }}</span>
+          <span>{{ t('tasks.detail.delete') }}</span>
         </AppButton>
       </div>
     </header>
@@ -113,7 +113,7 @@ const { t } = useI18n()
         </div>
         <div class="min-w-0">
           <span class="text-ppx-text-muted mb-0.5 block font-semibold">{{
-            t('taskDetail.totalTraces')
+            t('tasks.detail.totalTraces')
           }}</span>
           <div>
             {{

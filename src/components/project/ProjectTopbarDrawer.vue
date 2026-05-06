@@ -18,12 +18,14 @@ const props = defineProps<{
   project: ProjectResponse | null
   globalFinder: LibrarianGlobalFinderResponse | null
   loading: boolean
+  hasConversation?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:agentSummary': [content: string]
   'delete:agentSummary': []
   forceAgentSummary: []
+  'open-conversation': []
   'update:project': [payload: { name?: string | null; description?: string | null }]
   'delete:project': []
   'export:project': [payload: { fields: ProjectExportField[]; citationsMode: 'keep' | 'strip' }]
@@ -69,13 +71,13 @@ const editDescription = ref('')
 const panelTitle = computed(() => {
   switch (activePanel.value) {
     case 'overview':
-      return t('projectDetail.overview')
+      return t('projects.overview')
     case 'export':
-      return t('projectDetail.exportPanelTitle')
+      return t('projects.exportPanelTitle')
     case 'edit':
-      return t('projectDetail.editPanelTitle')
+      return t('projects.editPanelTitle')
     case 'logs':
-      return t('projectDetail.logsPanelTitle')
+      return t('projects.logsPanelTitle')
     default:
       return ''
   }
@@ -122,8 +124,10 @@ function handleSaveProject(payload: { name: string | null; description: string |
 <template>
   <ProjectTopbarActions
     :active-panel="activePanel"
+    :has-conversation="props.hasConversation"
     @open-panel="openPanel"
     @delete-project="emit('delete:project')"
+    @open-conversation="emit('open-conversation')"
   />
 
   <ProjectPanelShell :open="!!activePanel" :title="panelTitle" @close="closePanel">
@@ -155,7 +159,7 @@ function handleSaveProject(payload: { name: string | null; description: string |
     <ProjectLogsPanel v-else-if="activePanel === 'logs' && project" :project="project" />
 
     <div v-else class="text-ppx-text-soft py-8 text-center text-sm">
-      {{ t('drawer.empty') }}
+      {{ t('projects.chatDrawer.empty') }}
     </div>
   </ProjectPanelShell>
 </template>

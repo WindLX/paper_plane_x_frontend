@@ -23,7 +23,7 @@ const { t } = useI18n()
     >
       <span class="inline-flex items-center gap-1.5">
         <Quote class="text-ppx-text-soft h-3.5 w-3.5" />
-        {{ t('projectDetail.sectionCitations') }} {{ props.citations.length }}
+        {{ t('paper.sectionCitations') }} {{ props.citations.length }}
       </span>
       <ChevronDown
         class="text-ppx-text-soft duration-ppx-fast h-3.5 w-3.5 transition-transform group-open:rotate-180"

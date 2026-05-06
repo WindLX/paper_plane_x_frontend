@@ -1,21 +1,32 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PageLayout from '@/components/layout/PageLayout.vue'
+import AppearanceCard from '@/components/settings/AppearanceCard.vue'
+import LanguageCard from '@/components/settings/LanguageCard.vue'
+import ProvidersSection from '@/components/settings/ProvidersSection.vue'
+import ProviderModal from '@/components/settings/ProviderModal.vue'
 import AgentConfigsSection from '@/components/settings/AgentConfigsSection.vue'
 import AgentModal from '@/components/settings/AgentModal.vue'
-import AppearanceCard from '@/components/settings/AppearanceCard.vue'
-import AppSettingsSection from '@/components/settings/AppSettingsSection.vue'
-import LanguageCard from '@/components/settings/LanguageCard.vue'
-import ProviderModal from '@/components/settings/ProviderModal.vue'
-import ProvidersSection from '@/components/settings/ProvidersSection.vue'
+import DataProcessCard from '@/components/settings/DataProcessCard.vue'
+import LibrarianCard from '@/components/settings/LibrarianCard.vue'
+import MinerUCard from '@/components/settings/MinerUCard.vue'
+
 import { useDialog } from '@/composables/useDialog'
-import { useSettingsStore } from '@/stores/settings'
+import { useSettingsController } from '@/composables/useSettingsController'
+
 import type { AgentLLMConfig, LLMProvider } from '@/types/api'
 
 const { t } = useI18n()
-const settingsStore = useSettingsStore()
+const ctrl = useSettingsController()
 const dialog = useDialog()
+
+const isLoading = computed(
+  () => ctrl.loadingProviders || ctrl.loadingAgents || ctrl.loadingAppSettings,
+)
+const isSaving = computed(() => ctrl.saving)
+const statusKey = computed(() => (isSaving.value ? 'saving' : 'loading'))
 
 /* ── Provider Modal ───────────────────────────────────────────── */
 const showProviderModal = ref(false)
@@ -36,12 +47,11 @@ async function onSaveProvider(payload: LLMProvider) {
     const oldName = editingProvider.value.name
     const { name: newName, ...rest } = payload
     if (newName !== oldName) {
-      await settingsStore.renameProvider(oldName, newName)
+      await ctrl.renameProvider(oldName, newName)
     }
-    // 无论是否重命名，都更新其他字段
-    await settingsStore.updateProvider(newName, rest)
+    await ctrl.updateProvider(newName, rest)
   } else {
-    await settingsStore.createProvider(payload)
+    await ctrl.createProvider(payload)
   }
   showProviderModal.value = false
 }
@@ -53,7 +63,7 @@ async function onDeleteProvider(p: LLMProvider) {
     tone: 'danger',
   })
   if (ok) {
-    await settingsStore.removeProvider(p.name)
+    await ctrl.removeProvider(p.name)
   }
 }
 
@@ -78,56 +88,100 @@ async function onSaveAgent(
     is_vlm?: boolean | null
   },
 ) {
-  await settingsStore.updateAgentConfig(agentName, payload)
+  await ctrl.updateAgentConfig(agentName, payload)
   showAgentModal.value = false
 }
 
 /* ── Lifecycle ────────────────────────────────────────────────── */
 onMounted(() => {
-  settingsStore.fetchProviders()
-  settingsStore.fetchAgentConfigs()
-  settingsStore.fetchAppSettings()
+  ctrl.fetchProviders()
+  ctrl.fetchAgentConfigs()
+  ctrl.fetchAppSettings()
 })
 </script>
 
 <template>
-  <section class="animate-fade-in-up space-y-5">
-    <!-- Appearance & Language -->
-    <section class="grid gap-4 xl:grid-cols-2">
-      <AppearanceCard />
-      <LanguageCard />
-    </section>
+  <div class="h-full w-full">
+    <PageLayout :title="t('settings.title')" :subtitle="t('settings.subtitle')">
+      <section
+        class="animate-fade-in-up relative space-y-5 transition-[filter,opacity] duration-300"
+        :class="isLoading || isSaving ? 'pointer-events-none opacity-70 blur-[0.5px]' : ''"
+        :aria-busy="isLoading || isSaving"
+      >
+        <div v-if="isLoading || isSaving" class="sticky top-0 z-20 flex justify-end pb-1">
+          <div
+            class="border-ppx-border bg-ppx-bg-elevated/90 text-ppx-text-soft shadow-ppx-shadow-rest flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm backdrop-blur"
+          >
+            <span
+              class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent"
+            />
+            <span>{{ t(`settings.status.${statusKey}`) }}</span>
+          </div>
+        </div>
 
-    <!-- Providers & MinerU -->
-    <ProvidersSection
-      :providers="settingsStore.providers"
-      :loading="settingsStore.loadingProviders"
-      @add="openAddProvider"
-      @edit="openEditProvider"
-      @delete="onDeleteProvider"
-    />
+        <!-- Appearance & Language -->
+        <section class="grid gap-5 xl:grid-cols-2">
+          <AppearanceCard />
+          <LanguageCard />
+        </section>
 
-    <!-- Agent Configs -->
-    <AgentConfigsSection :agents="settingsStore.agentConfigs" @edit="openEditAgent" />
+        <!-- Providers & MinerU -->
+        <ProvidersSection
+          :providers="ctrl.providers"
+          :loading="ctrl.loadingProviders"
+          @add="openAddProvider"
+          @edit="openEditProvider"
+          @delete="onDeleteProvider"
+        />
 
-    <!-- App Settings -->
-    <AppSettingsSection />
+        <!-- Agent Configs -->
+        <AgentConfigsSection
+          :agents="ctrl.agentConfigs"
+          :loading="ctrl.loadingAgents"
+          @edit="openEditAgent"
+        />
 
-    <!-- Provider Modal -->
-    <ProviderModal
-      :open="showProviderModal"
-      :editing-provider="editingProvider"
-      @close="showProviderModal = false"
-      @save="onSaveProvider"
-    />
+        <!-- App Settings -->
+        <section
+          v-if="ctrl.loadingAppSettings && !ctrl.appSettings"
+          class="grid gap-5 md:grid-cols-2"
+        >
+          <article class="workspace-page animate-pulse p-5">
+            <div class="bg-ppx-bg-subtle h-5 w-32 rounded-full" />
+            <div class="rounded-ppx-card bg-ppx-bg-subtle mt-4 h-24" />
+          </article>
+          <article class="workspace-page animate-pulse p-5">
+            <div class="bg-ppx-bg-subtle h-5 w-40 rounded-full" />
+            <div class="rounded-ppx-card bg-ppx-bg-subtle mt-4 h-24" />
+          </article>
+          <article class="workspace-page animate-pulse p-5">
+            <div class="bg-ppx-bg-subtle h-5 w-28 rounded-full" />
+            <div class="rounded-ppx-card bg-ppx-bg-subtle mt-4 h-24" />
+          </article>
+        </section>
+        <section v-if="ctrl.appSettings" class="grid gap-5 md:grid-cols-2">
+          <MinerUCard :ctrl="ctrl" />
+          <DataProcessCard :ctrl="ctrl" />
+          <LibrarianCard :ctrl="ctrl" />
+        </section>
 
-    <!-- Agent Modal -->
-    <AgentModal
-      :open="showAgentModal"
-      :editing-agent="editingAgent"
-      :providers="settingsStore.providers"
-      @close="showAgentModal = false"
-      @save="onSaveAgent"
-    />
-  </section>
+        <!-- Provider Modal -->
+        <ProviderModal
+          :open="showProviderModal"
+          :editing-provider="editingProvider"
+          @close="showProviderModal = false"
+          @save="onSaveProvider"
+        />
+
+        <!-- Agent Modal -->
+        <AgentModal
+          :open="showAgentModal"
+          :editing-agent="editingAgent"
+          :providers="ctrl.providers"
+          @close="showAgentModal = false"
+          @save="onSaveAgent"
+        />
+      </section>
+    </PageLayout>
+  </div>
 </template>

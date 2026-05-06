@@ -19,23 +19,23 @@ const { t } = useI18n()
   <section class="workspace-panel space-y-3 p-3.5">
     <h3 class="workspace-section-title inline-flex items-center gap-1.5">
       <ScanSearch class="h-4 w-4" />
-      <span>{{ t('projectDetail.sections.quickScan') }}</span>
+      <span>{{ t('paper.sections.quickScan') }}</span>
     </h3>
     <template v-if="props.hasQuickScan">
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.quickScan.verdict') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.quickScan.verdict') }}</div>
         <div class="workspace-body">{{ props.quickScanVerdict ?? '-' }}</div>
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.quickScan.reason') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.quickScan.reason') }}</div>
         <div class="workspace-body">{{ props.quickScanReason ?? '-' }}</div>
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.quickScan.summary') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.quickScan.summary') }}</div>
         <MarkdownContent :markdown="props.quickScanSummary ?? '-'" />
       </div>
       <div class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.quickScan.tags') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.quickScan.tags') }}</div>
         <div class="flex flex-wrap gap-1.5">
           <span
             v-for="tag in props.quickScanTags"

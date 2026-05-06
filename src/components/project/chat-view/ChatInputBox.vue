@@ -4,8 +4,6 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ImagePreview from '@/components/ImagePreview.vue'
-import { useConversationStore } from '@/stores/conversation'
-import { useUiStore } from '@/stores/ui'
 import type { PaperResponse } from '@/types/api'
 
 import ChatAttachmentPanel from './ChatAttachmentPanel.vue'
@@ -19,6 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   send: []
+  openPaper: [paperId: string]
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
@@ -27,8 +26,6 @@ const expanded = defineModel<boolean>('expanded', { default: false })
 const paperIds = defineModel<string[]>('paperIds', { default: () => [] })
 
 const { t, te } = useI18n()
-const uiStore = useUiStore()
-const conversationStore = useConversationStore()
 
 // --- Core Input State ---
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
@@ -59,7 +56,7 @@ watch(
 // --- Hint Text ---
 const hintText = computed(() => {
   if (te('chat.expandInputHint')) {
-    return t('chat.expandInputHint')
+    return t('projects.chatView.expandInputHint')
   }
   return '展开编辑模式 · Esc 收起'
 })
@@ -92,15 +89,7 @@ function onRemovePaper(paperId: string): void {
 }
 
 function onOpenPaper(paperId: string): void {
-  const currentConv = conversationStore.currentConversation
-  if (currentConv) {
-    uiStore.openRightDrawer(
-      'conversation',
-      { conversationId: currentConv.conversation_id },
-      'local',
-    )
-  }
-  uiStore.setConversationDrawerPaperTarget(paperId)
+  emit('openPaper', paperId)
 }
 
 // --- Image Upload ---
@@ -252,7 +241,7 @@ function toggleExpanded(): void {
           <button
             type="button"
             class="workspace-icon-button h-7 w-7"
-            :title="t('chat.collapseInput')"
+            :title="t('projects.chatView.collapseInput')"
             @click="expanded = false"
           >
             <X class="h-3.5 w-3.5" />
@@ -266,7 +255,7 @@ function toggleExpanded(): void {
           rows="1"
           class="text-ppx-text min-h-6 flex-1 resize-none bg-transparent py-1 text-base leading-relaxed outline-none"
           :class="expanded ? 'max-h-144 min-h-64' : 'max-h-40'"
-          :placeholder="placeholder ?? t('chat.inputPlaceholder')"
+          :placeholder="placeholder ?? t('projects.chatView.inputPlaceholder')"
           @keydown="onKeydown"
           @drop="onDrop"
           @dragover="onDragOver"
@@ -281,7 +270,7 @@ function toggleExpanded(): void {
                 class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
                 >Enter</kbd
               >
-              <span>{{ t('chat.keyboardNewLine') }}</span>
+              <span>{{ t('projects.chatView.keyboardNewLine') }}</span>
             </span>
             <span class="flex items-center gap-1">
               <kbd
@@ -293,14 +282,14 @@ function toggleExpanded(): void {
                 class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
                 >Enter</kbd
               >
-              <span>{{ t('chat.keyboardSend') }}</span>
+              <span>{{ t('projects.chatView.keyboardSend') }}</span>
             </span>
             <span class="flex items-center gap-1">
               <kbd
                 class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
                 >Esc</kbd
               >
-              <span>{{ t('chat.keyboardCollapse') }}</span>
+              <span>{{ t('projects.chatView.keyboardCollapse') }}</span>
             </span>
           </div>
           <div v-else class="flex-1" />
@@ -318,7 +307,7 @@ function toggleExpanded(): void {
               v-if="selectedPapers.size + images.length > 0"
               type="button"
               class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="`${selectedPapers.size + images.length} ${t('chat.attachments')}`"
+              :title="`${selectedPapers.size + images.length} ${t('projects.chatView.attachments')}`"
               @click="attachmentsCollapsed = !attachmentsCollapsed"
             >
               <ChevronUp v-if="!attachmentsCollapsed" class="h-4 w-4" />
@@ -328,7 +317,7 @@ function toggleExpanded(): void {
               v-if="props.projectId"
               type="button"
               class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="t('chat.attachPaper')"
+              :title="t('projects.chatView.attachPaper')"
               @click="openPaperPicker"
             >
               <FileText class="h-4 w-4" />
@@ -337,7 +326,7 @@ function toggleExpanded(): void {
               v-if="images.length < MAX_IMAGES"
               type="button"
               class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="t('chat.attachImage')"
+              :title="t('projects.chatView.attachImage')"
               @click="openFilePicker"
             >
               <ImagePlus class="h-4 w-4" />
@@ -346,7 +335,7 @@ function toggleExpanded(): void {
               v-if="!expanded"
               type="button"
               class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="t('chat.expandInput')"
+              :title="t('projects.chatView.expandInput')"
               @click="toggleExpanded"
             >
               <Expand class="h-4 w-4" />

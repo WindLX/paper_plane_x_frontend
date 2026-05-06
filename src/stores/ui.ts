@@ -1,19 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export type DrawerContentType = 'paper' | 'task' | 'trace' | 'conversation' | 'deep_dive' | 'custom'
-
-export type DrawerTab = 'overview' | 'traces' | 'paper'
-
-export interface DrawerPayload {
-  paperId?: string
-  projectId?: string
-  taskId?: string
-  traceId?: string
-  conversationId?: string
-  title?: string
-}
-
 const THEME_STORAGE_KEY = 'ppx-console-theme'
 const SIDEBAR_STORAGE_KEY = 'ppx-console-sidebar-collapsed'
 
@@ -33,17 +20,7 @@ function resolveInitialSidebarCollapsed(): boolean {
 
 export const useUiStore = defineStore('ui', () => {
   const darkMode = ref(resolveInitialDarkMode())
-  const desktopSidebarCollapsed = ref(resolveInitialSidebarCollapsed())
-  const mobileSidebarOpen = ref(false)
-  const rightDrawerOpen = ref(false)
-  const rightDrawerType = ref<DrawerContentType | null>(null)
-  const rightDrawerPayload = ref<DrawerPayload | null>(null)
-  const rightDrawerSource = ref<'local' | 'route'>('local')
-  const rightDrawerActiveTab = ref<DrawerTab>('overview')
-  const conversationDrawerPaperTarget = ref<string | null>(null)
-  const scrollToTurnId = ref<string | null>(null)
-  const pageTitle = ref<string | null>(null)
-  const pageSubtitle = ref<string | null>(null)
+  const sidebarCollapsed = ref(resolveInitialSidebarCollapsed())
 
   function setDarkMode(nextValue: boolean): void {
     darkMode.value = nextValue
@@ -56,100 +33,23 @@ export const useUiStore = defineStore('ui', () => {
     setDarkMode(!darkMode.value)
   }
 
-  function setDesktopSidebarCollapsed(nextValue: boolean): void {
-    desktopSidebarCollapsed.value = nextValue
+  function setSidebarCollapsed(nextValue: boolean): void {
+    sidebarCollapsed.value = nextValue
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(SIDEBAR_STORAGE_KEY, String(nextValue))
     }
   }
 
-  function toggleDesktopSidebar(): void {
-    setDesktopSidebarCollapsed(!desktopSidebarCollapsed.value)
-  }
-
-  function openMobileSidebar(): void {
-    mobileSidebarOpen.value = true
-  }
-
-  function closeMobileSidebar(): void {
-    mobileSidebarOpen.value = false
-  }
-
-  function openRightDrawer(
-    type: DrawerContentType,
-    payload: DrawerPayload,
-    source: 'local' | 'route' = 'local',
-  ): void {
-    rightDrawerType.value = type
-    rightDrawerPayload.value = payload
-    rightDrawerSource.value = source
-    rightDrawerActiveTab.value = 'overview'
-    rightDrawerOpen.value = true
-  }
-
-  function closeRightDrawer(): void {
-    rightDrawerOpen.value = false
-    rightDrawerType.value = null
-    rightDrawerPayload.value = null
-    rightDrawerSource.value = 'local'
-    rightDrawerActiveTab.value = 'overview'
-  }
-
-  function setRightDrawerTab(tab: DrawerTab): void {
-    rightDrawerActiveTab.value = tab
-  }
-
-  function setConversationDrawerPaperTarget(paperId: string | null): void {
-    conversationDrawerPaperTarget.value = paperId
-  }
-
-  function setScrollToTurnId(turnId: string | null): void {
-    scrollToTurnId.value = turnId
-  }
-
-  function setPageTitle(title: string | null): void {
-    pageTitle.value = title
-  }
-
-  function setPageSubtitle(subtitle: string | null): void {
-    pageSubtitle.value = subtitle
-  }
-
-  function clearPageTitle(): void {
-    pageTitle.value = null
-  }
-
-  function clearPageSubtitle(): void {
-    pageSubtitle.value = null
+  function toggleSidebar(): void {
+    setSidebarCollapsed(!sidebarCollapsed.value)
   }
 
   return {
     darkMode,
-    desktopSidebarCollapsed,
-    mobileSidebarOpen,
-    rightDrawerOpen,
-    rightDrawerType,
-    rightDrawerPayload,
-    rightDrawerSource,
-    rightDrawerActiveTab,
-    conversationDrawerPaperTarget,
-    scrollToTurnId,
-    pageTitle,
-    pageSubtitle,
+    sidebarCollapsed,
     setDarkMode,
     toggleDarkMode,
-    setDesktopSidebarCollapsed,
-    toggleDesktopSidebar,
-    openMobileSidebar,
-    closeMobileSidebar,
-    openRightDrawer,
-    closeRightDrawer,
-    setRightDrawerTab,
-    setConversationDrawerPaperTarget,
-    setScrollToTurnId,
-    setPageTitle,
-    setPageSubtitle,
-    clearPageTitle,
-    clearPageSubtitle,
+    setSidebarCollapsed,
+    toggleSidebar,
   }
 })

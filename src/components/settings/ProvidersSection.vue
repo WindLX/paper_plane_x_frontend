@@ -39,7 +39,11 @@ const { t } = useI18n()
           </tr>
         </thead>
         <tbody class="animate-stagger">
-          <tr v-for="p in props.providers" :key="p.name">
+          <tr
+            v-for="p in props.providers"
+            :key="p.name"
+            class="workspace-row-hover transition-colors"
+          >
             <td class="text-ppx-text font-medium">{{ p.name }}</td>
             <td>{{ p.model }}</td>
             <td>{{ p.base_url || '-' }}</td>

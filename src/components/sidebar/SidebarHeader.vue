@@ -6,12 +6,10 @@ import brandIcon from '@/assets/favicon.svg'
 import { appConfig } from '@/config'
 
 const props = defineProps<{
-  mobile?: boolean
   collapsed?: boolean
 }>()
 
 const emit = defineEmits<{
-  close: []
   toggleSidebar: []
 }>()
 
@@ -19,7 +17,7 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div v-if="props.collapsed && !props.mobile" class="flex items-center justify-center px-1">
+  <div v-if="props.collapsed" class="flex items-center justify-center px-1">
     <button
       type="button"
       aria-label="Expand navigation"
@@ -28,7 +26,7 @@ const { t } = useI18n()
     >
       <img
         :src="brandIcon"
-        :alt="t('common.appName')"
+        :alt="t('sidebar.appName')"
         class="duration-ppx-fast h-5 w-5 transition-opacity group-hover:opacity-0"
       />
       <PanelLeftOpen
@@ -40,27 +38,18 @@ const { t } = useI18n()
   <div v-else class="flex items-center justify-between gap-1 px-1">
     <div class="flex min-w-0 items-center gap-2">
       <div class="flex h-9 w-9 items-center justify-center rounded-xl">
-        <img :src="brandIcon" :alt="t('common.appName')" class="h-5 w-5" />
+        <img :src="brandIcon" :alt="t('sidebar.appName')" class="h-5 w-5" />
       </div>
       <div class="min-w-0">
         <div class="text-m text-ppx-text truncate font-semibold tracking-tight">
-          {{ t('common.appName') }}
+          {{ t('sidebar.appName') }}
         </div>
         <div class="workspace-muted text-xs">v{{ appConfig.appVersion }}</div>
       </div>
     </div>
 
     <button
-      v-if="props.mobile"
-      type="button"
-      aria-label="Close navigation"
-      class="workspace-icon-button"
-      @click="$emit('close')"
-    >
-      <PanelLeftClose class="h-4 w-4" />
-    </button>
-    <button
-      v-else-if="!props.collapsed"
+      v-if="!props.collapsed"
       type="button"
       aria-label="Collapse navigation"
       class="workspace-icon-button hidden lg:inline-flex"

@@ -24,7 +24,7 @@ const emit = defineEmits<{
     <Transition name="panel-pop">
       <div
         v-if="open"
-        class="bg-ppx-bg-elevated border-ppx-border rounded-ppx-page fixed top-16 right-4 z-60 flex max-h-[calc(100vh-5rem)] w-md max-w-[calc(100vw-2rem)] flex-col overflow-hidden border"
+        class="bg-ppx-bg-elevated border-ppx-border rounded-ppx-page fixed top-16 right-4 z-60 flex max-h-[calc(100vh-5rem)] w-3xl max-w-[calc(100vw-2rem)] flex-col overflow-hidden border"
         @click.stop
       >
         <div class="border-ppx-border flex items-center justify-between border-b px-4 py-3">

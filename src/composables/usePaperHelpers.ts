@@ -213,8 +213,8 @@ export function usePaperHelpers(paper: PaperDetailResponse | null) {
     if (!value) return []
     return asSectionCards(
       value.methodology ?? value.methods ?? value.method,
-      t('projectDetail.generic.method'),
-      t('projectDetail.generic.summary'),
+      t('paper.generic.method'),
+      t('paper.generic.summary'),
     )
   })
 
@@ -223,8 +223,8 @@ export function usePaperHelpers(paper: PaperDetailResponse | null) {
     if (!value) return []
     return asSectionCards(
       value.key_results ?? value.results ?? value.findings,
-      t('projectDetail.generic.result'),
-      t('projectDetail.generic.summary'),
+      t('paper.generic.result'),
+      t('paper.generic.summary'),
     )
   })
 
@@ -237,8 +237,8 @@ export function usePaperHelpers(paper: PaperDetailResponse | null) {
         value.gaps ??
         value.future_work ??
         value.limitations,
-      t('projectDetail.generic.gap'),
-      t('projectDetail.generic.summary'),
+      t('paper.generic.gap'),
+      t('paper.generic.summary'),
     )
   })
 

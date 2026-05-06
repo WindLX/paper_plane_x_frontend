@@ -59,6 +59,7 @@ async function copyToClipboard(): Promise<void> {
     >
       <div class="overflow-hidden">
         <div
+          v-if="open"
           class="bg-ppx-bg-inset/72 overflow-auto px-3 py-2.5"
           :style="props.maxHeight ? { maxHeight: props.maxHeight } : undefined"
         >

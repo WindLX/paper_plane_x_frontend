@@ -34,11 +34,11 @@ const { t } = useI18n()
   <section class="workspace-panel space-y-3 p-3.5">
     <h3 class="workspace-section-title inline-flex items-center gap-1.5">
       <FileCheck2 class="h-4 w-4" />
-      <span>{{ t('projectDetail.sections.analysisReport') }}</span>
+      <span>{{ t('paper.sections.analysisReport') }}</span>
     </h3>
     <template v-if="props.hasAnalysisReport">
       <div class="workspace-subpanel space-y-2 p-2.5">
-        <div class="workspace-label mb-0">{{ t('projectDetail.analysis.prerequisites') }}</div>
+        <div class="workspace-label mb-0">{{ t('paper.analysis.prerequisites') }}</div>
         <div v-if="props.analysisPrerequisites.length" class="space-y-2">
           <article
             v-for="(item, index) in props.analysisPrerequisites"
@@ -49,7 +49,7 @@ const { t } = useI18n()
             <MarkdownContent class="mt-1" :markdown="item.briefExplanation" />
             <div v-if="item.relevance" class="mt-2">
               <div class="workspace-label mb-1">
-                {{ t('projectDetail.analysis.relevance') }}
+                {{ t('paper.analysis.relevance') }}
               </div>
               <MarkdownContent :markdown="item.relevance.text || '-'" />
               <CitationsBlock
@@ -65,7 +65,7 @@ const { t } = useI18n()
       <div class="space-y-2">
         <article class="workspace-subpanel p-2.5">
           <div class="workspace-label mb-1">
-            {{ t('projectDetail.analysis.problemDefinition') }}
+            {{ t('paper.analysis.problemDefinition') }}
           </div>
           <MarkdownContent
             :markdown="props.analysisCoreFormulation.problemDefinition?.text ?? '-'"
@@ -73,7 +73,7 @@ const { t } = useI18n()
         </article>
         <article class="workspace-subpanel p-2.5">
           <div class="workspace-label mb-1">
-            {{ t('projectDetail.analysis.objectiveFunction') }}
+            {{ t('paper.analysis.objectiveFunction') }}
           </div>
           <MarkdownContent
             :markdown="props.analysisCoreFormulation.objectiveFunction?.text ?? '-'"
@@ -81,7 +81,7 @@ const { t } = useI18n()
         </article>
         <article class="workspace-subpanel p-2.5">
           <div class="workspace-label mb-1">
-            {{ t('projectDetail.analysis.algorithmFlow') }}
+            {{ t('paper.analysis.algorithmFlow') }}
           </div>
           <MarkdownContent :markdown="props.analysisCoreFormulation.algorithmFlow?.text ?? '-'" />
         </article>
@@ -89,7 +89,7 @@ const { t } = useI18n()
 
       <div class="workspace-subpanel p-2.5">
         <div class="workspace-label mb-1">
-          {{ t('projectDetail.analysis.derivationSteps') }}
+          {{ t('paper.analysis.derivationSteps') }}
         </div>
         <div v-if="props.analysisDerivationSteps.length" class="space-y-2">
           <article
@@ -99,7 +99,7 @@ const { t } = useI18n()
           >
             <div class="workspace-section-title text-sm">
               <span v-if="step.stepOrder !== null"
-                >{{ t('projectDetail.analysis.step') }} {{ step.stepOrder }} · </span
+                >{{ t('paper.analysis.step') }} {{ step.stepOrder }} · </span
               >{{ step.stepName }}
             </div>
             <MarkdownContent class="mt-1" :markdown="step.detail?.text ?? '-'" />
@@ -115,7 +115,7 @@ const { t } = useI18n()
 
       <div class="workspace-subpanel p-2.5">
         <div class="workspace-label mb-1">
-          {{ t('projectDetail.analysis.relatedReferences') }}
+          {{ t('paper.analysis.relatedReferences') }}
         </div>
         <div v-if="props.analysisRelatedReferences.length" class="space-y-2">
           <article
@@ -131,7 +131,7 @@ const { t } = useI18n()
       </div>
 
       <div v-if="props.analysisExtras.length" class="workspace-subpanel p-2.5">
-        <div class="workspace-label mb-1">{{ t('projectDetail.analysis.additional') }}</div>
+        <div class="workspace-label mb-1">{{ t('paper.analysis.additional') }}</div>
         <div class="space-y-1.5">
           <div v-for="item in props.analysisExtras" :key="item.key" class="text-sm">
             <span class="text-ppx-text-soft font-medium">{{ item.label }}:</span>

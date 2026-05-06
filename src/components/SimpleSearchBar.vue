@@ -7,7 +7,7 @@ const props = withDefaults(
     variant?: 'subtle' | 'elevated'
   }>(),
   {
-    variant: 'subtle',
+    variant: 'elevated',
   },
 )
 

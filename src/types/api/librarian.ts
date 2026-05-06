@@ -8,6 +8,7 @@ export interface LibrarianUnifiedSearchRequest {
   offset?: number
   sort_by?: PaperSortKey
   sort_order?: SortOrder
+  only_completed?: boolean
 }
 
 export interface LibrarianUnifiedSearchResponse {
