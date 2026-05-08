@@ -140,24 +140,27 @@ pnpm build:console
 - [x] 新对话的 chat topbar icon 不显示
 - [x] 修复sidebar 横向宽度 overflow 省略的问题
 - [ ] project 的日志面板整治
-- [ ] chatview 渲染问题
+- [x] chatview 渲染问题
   - [x] 使用工具的时候生成ing 消失
   - [x] 用户气泡过长
   - [x] ![alt text](image.png) 对话中进入别的页面再跳转回来渲染 bug，似乎只会由 hitl 触发
   - [x] hitl 还会留下 empty state
   - [x] 终止对话按钮位置应该放在气泡下面，且终止对话无效
-  - [ ] 对话中点击 paper 无法跳转
-  - [ ] 对话详情按钮可以放到 chattopbar 里
-  - [ ] ![alt text](image-1.png) trace 记录存在 bug
-- [ ] 右侧边栏的宽度问题
+  - [x] 对话中点击 paper 无法跳转
+  - [x] 对话详情按钮可以放到 chattopbar 里
+  - [x] ![alt text](image-1.png) trace 记录存在 bug
+- [x] 右侧边栏的宽度问题
 
 ### new feature
 
 - [ ] skills
 - [ ] ppt 制作
-- [ ] juypter sandbox
+- [ ] sandbox
+  - [ ] codeact
+  - [ ] juypter
 - [ ] mineru token
 - [ ] 导出项目支持导出对话
+- [ ] 记忆优化功能
 
 ### docs
 

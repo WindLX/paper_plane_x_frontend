@@ -32,6 +32,7 @@ export interface AgentLLMConfig {
   reasoning_effort?: string | null
   extra_body?: Record<string, unknown> | null
   is_vlm: boolean
+  short_memory_window: number
   effective_model?: string | null
   effective_base_url?: string | null
 }
@@ -45,6 +46,7 @@ export interface AgentLLMConfigUpdateRequest {
   reasoning_effort?: string | null
   extra_body?: Record<string, unknown> | null
   is_vlm?: boolean | null
+  short_memory_window?: number | null
 }
 
 export interface ProviderListResponse {

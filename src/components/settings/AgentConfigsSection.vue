@@ -28,6 +28,7 @@ const { t } = useI18n()
             <th>{{ t('settings.agents.provider') }}</th>
             <th>{{ t('settings.agents.temperature') }}</th>
             <th>{{ t('settings.agents.maxTokens') }}</th>
+            <th>{{ t('settings.agents.shortMemoryWindow') }}</th>
             <th>{{ t('settings.agents.thinking') }}</th>
             <th>{{ t('settings.agents.isVlm') }}</th>
             <th>{{ t('settings.agents.extraBody') }}</th>
@@ -48,6 +49,9 @@ const { t } = useI18n()
             </td>
             <td>
               {{ agent.max_tokens ?? t('settings.agents.noOverrides') }}
+            </td>
+            <td>
+              {{ agent.short_memory_window ?? t('settings.agents.noOverrides') }}
             </td>
             <td>
               <span

@@ -72,7 +72,9 @@ export function useChatViewController(projectId: Ref<string>) {
       return turns.value
     }
 
-    const targetIndex = turns.value.findIndex((turn) => turn.turn_id === streamingTurn.value?.turn_id)
+    const targetIndex = turns.value.findIndex(
+      (turn) => turn.turn_id === streamingTurn.value?.turn_id,
+    )
     if (targetIndex === -1) {
       return turns.value
     }
@@ -93,13 +95,12 @@ export function useChatViewController(projectId: Ref<string>) {
     }
     return nextTurns
   })
-  const showStreamingTurn = computed(
-    () =>
-      Boolean(
-        isStreaming.value &&
-          streamingTurn.value &&
-          !turns.value.some((turn) => turn.turn_id === streamingTurn.value?.turn_id),
-      ),
+  const showStreamingTurn = computed(() =>
+    Boolean(
+      isStreaming.value &&
+      streamingTurn.value &&
+      !turns.value.some((turn) => turn.turn_id === streamingTurn.value?.turn_id),
+    ),
   )
 
   // ── Socket helper ──────────────────────────────────────────────────────
@@ -319,7 +320,6 @@ export function useChatViewController(projectId: Ref<string>) {
       notify.push(t('projects.errors.requestFailed'), 'error', 3600)
       return
     }
-    conversationWsStore.resetStreamingState(convId)
     chatStore.prepareTurnReplay(userMessage.message_id)
   }
 
@@ -395,7 +395,9 @@ export function useChatViewController(projectId: Ref<string>) {
     ([conversationId]) => {
       if (!conversationId) return
       const socketState = conversationWsStore.getState(conversationId)
-      const persistedTurnIds = new Set(chatStore.currentTurns(conversationId).map((turn) => turn.turn_id))
+      const persistedTurnIds = new Set(
+        chatStore.currentTurns(conversationId).map((turn) => turn.turn_id),
+      )
       if (
         !socketState.isStreaming &&
         socketState.streamingTurn?.turn_id &&
@@ -404,7 +406,10 @@ export function useChatViewController(projectId: Ref<string>) {
         conversationWsStore.resetStreamingState(conversationId)
         return
       }
-      if (socketState.completionStatus === 'stopped' && !hitlWsStore.questionForConversation(conversationId)) {
+      if (
+        socketState.completionStatus === 'stopped' &&
+        !hitlWsStore.questionForConversation(conversationId)
+      ) {
         conversationWsStore.resetStreamingState(conversationId)
       }
     },

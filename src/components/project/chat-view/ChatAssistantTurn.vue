@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { BrainCircuit, ChevronDown, ChevronRight, LoaderCircle, Square, Wrench } from 'lucide-vue-next'
+import {
+  BrainCircuit,
+  ChevronDown,
+  ChevronRight,
+  LoaderCircle,
+  Square,
+  Wrench,
+} from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -31,6 +38,32 @@ const hovered = ref(false)
 const events = computed(() =>
   [...props.turn.assistant_events].sort((a, b) => a.sequence_no - b.sequence_no),
 )
+
+function eventReasoning(event: ConversationTurnEventResponse): string {
+  return event.reasoning_content?.trim() ?? ''
+}
+
+function eventContent(event: ConversationTurnEventResponse): string {
+  return event.content?.trim() ?? ''
+}
+
+function hasReasoning(event: ConversationTurnEventResponse): boolean {
+  return eventReasoning(event).length > 0
+}
+
+function hasRenderableContent(event: ConversationTurnEventResponse): boolean {
+  if (event.role !== 'assistant') return false
+  if (event.message_kind === 'assistant_reasoning') return false
+  return eventContent(event).length > 0
+}
+
+function hasToolCall(event: ConversationTurnEventResponse): boolean {
+  return event.message_kind === 'assistant_tool_call' || Boolean(event.tool_calls?.length)
+}
+
+function hasToolResult(event: ConversationTurnEventResponse): boolean {
+  return event.message_kind === 'tool_result'
+}
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -95,14 +128,14 @@ const showStreamingIndicator = computed(
     <div class="mx-auto max-w-3xl space-y-3">
       <template v-if="events.length > 0">
         <template v-for="event in events" :key="event.message_id">
-          <div v-if="event.message_kind === 'assistant_reasoning'" class="space-y-2">
+          <div v-if="hasReasoning(event)" class="space-y-2">
             <div class="text-ppx-text-soft flex items-center gap-2 px-1 text-xs font-medium">
               <BrainCircuit class="h-3.5 w-3.5" />
               <span>{{ t('projects.chatView.reasoning') }}</span>
             </div>
             <details
               class="reasoning-panel workspace-panel-inset overflow-hidden"
-              :open="isStreaming"
+              :open="props.isStreaming"
             >
               <summary
                 class="border-ppx-border flex cursor-pointer list-none items-center justify-between border-b px-3 py-2.5"
@@ -115,18 +148,23 @@ const showStreamingIndicator = computed(
                   <span>{{ t('projects.chatView.reasoning') }}</span>
                 </div>
               </summary>
-              <div
-                class="bg-ppx-bg-inset/72 px-3 py-2.5"
-              >
+              <div class="bg-ppx-bg-inset/72 px-3 py-2.5">
                 <MarkdownContent
-                  :markdown="event.reasoning_content ?? event.content ?? ''"
+                  :markdown="eventReasoning(event)"
                   @paper-click="openPaperReference($event)"
                 />
               </div>
             </details>
           </div>
 
-          <div v-else-if="event.message_kind === 'assistant_tool_call'" class="space-y-2">
+          <div v-if="hasRenderableContent(event)" class="text-ppx-text text-base leading-relaxed">
+            <MarkdownContent
+              :markdown="eventContent(event)"
+              @paper-click="openPaperReference($event)"
+            />
+          </div>
+
+          <div v-if="hasToolCall(event)" class="space-y-2">
             <div class="text-ppx-text-soft flex items-center gap-2 px-1 text-xs font-medium">
               <Wrench class="h-3.5 w-3.5" />
               <span>{{ t('projects.chatView.toolCalls') }}</span>
@@ -134,11 +172,13 @@ const showStreamingIndicator = computed(
             <JsonPanel :title="toolName(event)" :value="toolCallValue(event)" max-height="18rem" />
           </div>
 
-          <div v-else-if="event.message_kind === 'tool_result'" class="space-y-2">
+          <div v-if="hasToolResult(event)" class="space-y-2">
             <div class="text-ppx-text-soft flex items-center gap-2 px-1 text-xs font-medium">
               <LoaderCircle
                 class="h-3.5 w-3.5"
-                :class="{ 'text-ppx-accent animate-spin': isStreaming && isToolCalling }"
+                :class="{
+                  'text-ppx-accent animate-spin': props.isStreaming && props.isToolCalling,
+                }"
               />
               <span>{{ t('projects.chatView.toolResults') }}</span>
             </div>
@@ -148,36 +188,8 @@ const showStreamingIndicator = computed(
               max-height="18rem"
             />
           </div>
-
-          <div
-            v-else-if="event.message_kind === 'assistant_final'"
-            class="text-ppx-text text-base leading-relaxed"
-          >
-            <MarkdownContent
-              :markdown="event.content ?? ''"
-              @paper-click="openPaperReference($event)"
-            />
-          </div>
         </template>
       </template>
-
-      <div
-        v-else-if="showStreamingIndicator"
-        class="text-ppx-text-soft flex items-center gap-3 px-1 py-2"
-      >
-        <div class="flex gap-1">
-          <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full" />
-          <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full delay-150" />
-          <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full delay-300" />
-        </div>
-        <span class="text-sm">
-          {{
-            props.streamPhase === 'tool_calling'
-              ? t('projects.chatView.toolCalling')
-              : t('projects.chatView.generating')
-          }}
-        </span>
-      </div>
 
       <div
         v-if="events.length > 0 || showStreamingIndicator"
@@ -208,7 +220,8 @@ const showStreamingIndicator = computed(
           {{ t('projects.chatView.stopping') }}
         </div>
         <ChatTurnActions
-          :visible="hovered && !isStreaming"
+          v-if="!props.isStreaming"
+          :visible="hovered"
           align="end"
           :show-edit="false"
           :fork-loading="props.forkLoading"

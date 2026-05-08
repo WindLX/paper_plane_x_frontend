@@ -67,10 +67,6 @@
 
 ### 加载动画
 
-- **LoadingDots 组件**：三个点脉冲动画，模拟 ChatGPT 打字指示器。
-  ```vue
-  <LoadingDots color="text-ppx-text-soft" />
-  ```
 - **Skeleton**：使用 `animate-shimmer` 为骨架屏添加流光效果。
 - **Spinner**：使用 `animate-spin-ring` 为环形加载添加旋转动画。
 

@@ -37,8 +37,8 @@ const { t } = useI18n()
     class="duration-ppx-fast flex items-center gap-1 transition-opacity"
     :class="[
       props.visible
-        ? 'visible pointer-events-auto opacity-100'
-        : 'invisible pointer-events-none opacity-0 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100',
+        ? 'pointer-events-auto visible opacity-100'
+        : 'pointer-events-none invisible opacity-0',
       props.align === 'start' ? 'justify-start' : 'justify-end',
     ]"
   >

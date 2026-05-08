@@ -155,9 +155,15 @@ watch(
             v-if="turn.assistant_events.length > 0"
             :turn="turn"
             :is-streaming="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id"
-            :is-tool-calling="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id && ctrl.isToolCalling"
-            :stream-phase="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id ? ctrl.streamPhase : 'idle'"
-            :pending-stop="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id ? ctrl.pendingStop : false"
+            :is-tool-calling="
+              ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id && ctrl.isToolCalling
+            "
+            :stream-phase="
+              ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id ? ctrl.streamPhase : 'idle'
+            "
+            :pending-stop="
+              ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id ? ctrl.pendingStop : false
+            "
             :fork-loading="ctrl.forkingTurnId === turn.turn_id"
             @stop-stream="ctrl.stopStream"
             @rerun="ctrl.rerunTurn(turn)"

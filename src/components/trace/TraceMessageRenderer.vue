@@ -104,24 +104,27 @@ const firstToolCall = computed(() => {
 const hasToolCalls = computed(() => firstToolCall.value !== null)
 
 const isToolResult = computed(
-  () =>
-    props.message.role === 'tool' ||
-    Boolean(props.message.tool_call_id),
+  () => props.message.role === 'tool' || Boolean(props.message.tool_call_id),
 )
 
 const toolCallTitle = computed(() => {
   const fn = firstToolCall.value?.function
-  if (typeof fn === 'object' && fn !== null && typeof (fn as Record<string, unknown>).name === 'string') {
+  if (
+    typeof fn === 'object' &&
+    fn !== null &&
+    typeof (fn as Record<string, unknown>).name === 'string'
+  ) {
     return (fn as Record<string, string>).name
   }
   return props.message.name || t('traces.role.tool')
 })
 
 const previewText = computed(() => {
-  if (hasToolCalls.value) {
-    return toolCallTitle.value
-  }
-  if (isToolResult.value && typeof props.message.name === 'string' && props.message.name.length > 0) {
+  if (
+    isToolResult.value &&
+    typeof props.message.name === 'string' &&
+    props.message.name.length > 0
+  ) {
     return props.message.name
   }
   const content = props.message.content
@@ -164,7 +167,7 @@ function handleToggle(event: Event): void {
 
 const hasVisibleParts = computed(() => {
   if (typeof props.message.content === 'string') {
-    return props.message.content.length > 0
+    return props.message.content.trim().length > 0
   }
   return parsedParts.value.length > 0
 })
@@ -177,7 +180,7 @@ const showEmptyState = computed(() => {
     return false
   }
   if (typeof props.message.content === 'string') {
-    return props.message.content.length === 0
+    return props.message.content.trim().length === 0
   }
   return parsedParts.value.length === 0
 })
@@ -243,7 +246,7 @@ const showEmptyState = computed(() => {
         {{ t('traces.emptyContent') }}
       </div>
 
-      <div v-else-if="hasVisibleParts && !hasToolCalls && !isToolResult" class="space-y-3">
+      <div v-if="hasVisibleParts" class="space-y-3">
         <template v-for="(part, index2) in parsedParts" :key="index2">
           <div v-if="part.type === 'text'" class="workspace-subpanel px-3 py-2.5">
             <MarkdownContent :markdown="part.text" />

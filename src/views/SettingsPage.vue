@@ -82,10 +82,12 @@ async function onSaveAgent(
     provider_name: string
     temperature?: number | null
     max_tokens?: number | null
+    timeout?: number | null
     thinking_enabled?: boolean | null
     reasoning_effort?: string | null
     extra_body?: Record<string, unknown> | null
     is_vlm?: boolean | null
+    short_memory_window?: number | null
   },
 ) {
   await ctrl.updateAgentConfig(agentName, payload)

@@ -26,6 +26,7 @@ const emit = defineEmits<{
       reasoning_effort?: string | null
       extra_body?: Record<string, unknown> | null
       is_vlm?: boolean | null
+      short_memory_window?: number | null
     },
   ]
 }>()
@@ -79,6 +80,7 @@ watch(
         reasoning_effort: undefined,
         extra_body: undefined,
         is_vlm: undefined,
+        short_memory_window: undefined,
       } as Partial<AgentLLMConfig>
     }
   },
@@ -96,6 +98,7 @@ function onSave() {
     reasoning_effort: agentForm.value.reasoning_effort ?? null,
     extra_body: agentForm.value.extra_body ?? null,
     is_vlm: agentForm.value.is_vlm ?? null,
+    short_memory_window: agentForm.value.short_memory_window ?? null,
   })
 }
 </script>
@@ -112,7 +115,7 @@ function onSave() {
         <label class="workspace-label">{{ t('settings.agents.provider') }}</label>
         <AppSelect v-model="agentForm.provider_name" :options="providerOptions" />
       </div>
-      <div class="grid grid-cols-3 gap-3">
+      <div class="grid grid-cols-4 gap-3">
         <div>
           <label class="workspace-label">{{ t('settings.agents.temperature') }}</label>
           <input
@@ -129,6 +132,15 @@ function onSave() {
         <div>
           <label class="workspace-label">{{ t('settings.agents.timeout') }}</label>
           <input v-model.number="agentForm.timeout" type="number" class="workspace-input" />
+        </div>
+        <div>
+          <label class="workspace-label">{{ t('settings.agents.shortMemoryWindow') }}</label>
+          <input
+            v-model.number="agentForm.short_memory_window"
+            type="number"
+            min="1"
+            class="workspace-input"
+          />
         </div>
       </div>
       <div class="grid grid-cols-2 gap-3">
