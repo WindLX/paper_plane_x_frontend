@@ -25,7 +25,6 @@ const emit = defineEmits<{
   'update:agentSummary': [content: string]
   'delete:agentSummary': []
   forceAgentSummary: []
-  'open-conversation': []
   'update:project': [payload: { name?: string | null; description?: string | null }]
   'delete:project': []
   'export:project': [payload: { fields: ProjectExportField[]; citationsMode: 'keep' | 'strip' }]
@@ -127,7 +126,6 @@ function handleSaveProject(payload: { name: string | null; description: string |
     :has-conversation="props.hasConversation"
     @open-panel="openPanel"
     @delete-project="emit('delete:project')"
-    @open-conversation="emit('open-conversation')"
   />
 
   <ProjectPanelShell :open="!!activePanel" :title="panelTitle" @close="closePanel">

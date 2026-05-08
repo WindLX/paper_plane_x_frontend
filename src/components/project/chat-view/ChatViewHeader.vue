@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil, Trash2, PanelRightClose, LoaderCircle, Check, X } from 'lucide-vue-next'
+import { Pencil, Trash2, PanelRightClose, PanelsTopLeft, Check, X } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
@@ -9,8 +9,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggleSidebar: []
-  stopStream: []
   delete: []
+  openDetails: []
 }>()
 
 const title = defineModel<string | null>('title', { default: null })
@@ -102,18 +102,14 @@ function onDelete(): void {
         </div>
       </template>
     </div>
-    <div
-      v-if="props.isStreaming"
-      class="text-ppx-text-soft flex shrink-0 items-center gap-1.5 text-xs"
-    >
-      <LoaderCircle class="h-3.5 w-3.5 animate-spin" />
-      <span>{{ t('projects.chatView.thinking') }}</span>
+    <div v-if="props.hasConversation" class="ml-3 flex shrink-0 items-center gap-1">
       <button
         type="button"
-        class="text-ppx-text-soft ml-1 rounded-md px-1.5 py-0.5 text-xs"
-        @click="emit('stopStream')"
+        class="workspace-icon-button h-8 w-8 shrink-0"
+        :title="t('projects.chatView.openDetails')"
+        @click="emit('openDetails')"
       >
-        {{ t('projects.chatView.stop') }}
+        <PanelsTopLeft class="h-4 w-4" />
       </button>
     </div>
   </div>

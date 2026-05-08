@@ -20,6 +20,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggleSidebar: []
   openPaper: [paperId: string]
+  openDetails: []
 }>()
 
 const { t } = useI18n()
@@ -92,7 +93,7 @@ watch(
       :is-streaming="ctrl.isStreaming"
       :has-conversation="Boolean(ctrl.conversation)"
       @toggle-sidebar="emit('toggleSidebar')"
-      @stop-stream="ctrl.stopStream"
+      @open-details="emit('openDetails')"
       @update:title="ctrl.updateTitle"
       @delete="ctrl.deleteConversation"
     />
@@ -105,7 +106,7 @@ watch(
     >
       <!-- Empty state -->
       <ChatEmptyState
-        v-if="ctrl.status !== 'streaming' && !ctrl.turns.length"
+        v-if="!ctrl.currentQuestion && !ctrl.isStreaming && !ctrl.renderedTurns.length"
         v-model="ctrl.inputValue"
         v-model:paper-ids="ctrl.inputPaperIds"
         :project-id="props.projectId"
@@ -122,15 +123,15 @@ watch(
       </template>
 
       <!-- Turn list -->
-      <template v-for="(turn, idx) in ctrl.turns" :key="turn.turn_id">
+      <template v-for="(turn, idx) in ctrl.renderedTurns" :key="turn.turn_id">
         <ChatDateSeparator
-          v-if="ctrl.isNewDay(ctrl.turns[idx - 1], turn)"
+          v-if="ctrl.isNewDay(ctrl.renderedTurns[idx - 1], turn)"
           :date="turn.user_message?.created_at ?? turn.assistant_events[0]?.created_at ?? ''"
         />
 
         <section :id="`turn-${turn.turn_id}`">
           <ChatUserMessage
-            v-if="turn.user_message && !(ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id)"
+            v-if="turn.user_message"
             v-model:edit-content="ctrl.editingContent"
             v-model:edit-images="ctrl.editingImages"
             v-model:edit-paper-ids="ctrl.editingPaperIds"
@@ -153,9 +154,12 @@ watch(
           <ChatAssistantTurn
             v-if="turn.assistant_events.length > 0"
             :turn="turn"
-            :is-streaming="false"
-            :is-tool-calling="false"
+            :is-streaming="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id"
+            :is-tool-calling="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id && ctrl.isToolCalling"
+            :stream-phase="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id ? ctrl.streamPhase : 'idle'"
+            :pending-stop="ctrl.isStreaming && ctrl.streamingTurnId === turn.turn_id ? ctrl.pendingStop : false"
             :fork-loading="ctrl.forkingTurnId === turn.turn_id"
+            @stop-stream="ctrl.stopStream"
             @rerun="ctrl.rerunTurn(turn)"
             @delete="ctrl.deleteAssistantMessages(turn)"
             @fork="ctrl.forkTurn(turn)"
@@ -164,11 +168,11 @@ watch(
         </section>
       </template>
 
-      <template v-if="ctrl.isStreaming && ctrl.streamingTurn">
+      <template v-if="ctrl.showStreamingTurn && ctrl.streamingTurn">
         <ChatDateSeparator
           v-if="
-            !ctrl.turns.length ||
-            ctrl.isNewDay(ctrl.turns[ctrl.turns.length - 1], ctrl.streamingTurn)
+            !ctrl.renderedTurns.length ||
+            ctrl.isNewDay(ctrl.renderedTurns[ctrl.renderedTurns.length - 1], ctrl.streamingTurn)
           "
           :date="
             ctrl.streamingTurn.user_message?.created_at ??
@@ -188,12 +192,16 @@ watch(
           :turn="ctrl.streamingTurn"
           :is-streaming="true"
           :is-tool-calling="ctrl.isToolCalling"
+          :stream-phase="ctrl.streamPhase"
+          :pending-stop="ctrl.pendingStop"
+          @stop-stream="ctrl.stopStream"
+          @open-paper="emit('openPaper', $event)"
         />
       </template>
 
       <!-- Waiting-for-agent indicator -->
       <div
-        v-if="ctrl.status === 'waiting_hitl'"
+        v-if="ctrl.status === 'waiting_hitl' && !ctrl.currentQuestion"
         class="animate-fade-in-up border-ppx-border-strong mx-auto mt-6 max-w-3xl rounded-lg border border-dashed px-4 py-3 text-center"
       >
         <span class="text-ppx-text-muted text-sm">
@@ -214,7 +222,7 @@ watch(
 
     <!-- Input area -->
     <div
-      v-if="ctrl.turns.length > 0 || ctrl.status === 'streaming'"
+      v-if="ctrl.renderedTurns.length > 0 || ctrl.isStreaming || ctrl.currentQuestion"
       class="dark:bg-ppx-bg-elevated border-ppx-border shrink-0 border-t bg-white px-4 py-4"
     >
       <div class="mx-auto max-w-3xl">

@@ -93,7 +93,37 @@ const hasReasoning = computed(
     props.message.reasoning_content.length > 0,
 )
 
+const firstToolCall = computed(() => {
+  if (!Array.isArray(props.message.tool_calls) || props.message.tool_calls.length === 0) {
+    return null
+  }
+  const first = props.message.tool_calls[0]
+  return typeof first === 'object' && first !== null ? (first as Record<string, unknown>) : null
+})
+
+const hasToolCalls = computed(() => firstToolCall.value !== null)
+
+const isToolResult = computed(
+  () =>
+    props.message.role === 'tool' ||
+    Boolean(props.message.tool_call_id),
+)
+
+const toolCallTitle = computed(() => {
+  const fn = firstToolCall.value?.function
+  if (typeof fn === 'object' && fn !== null && typeof (fn as Record<string, unknown>).name === 'string') {
+    return (fn as Record<string, string>).name
+  }
+  return props.message.name || t('traces.role.tool')
+})
+
 const previewText = computed(() => {
+  if (hasToolCalls.value) {
+    return toolCallTitle.value
+  }
+  if (isToolResult.value && typeof props.message.name === 'string' && props.message.name.length > 0) {
+    return props.message.name
+  }
   const content = props.message.content
   if (typeof content === 'string') {
     const text = content.replace(/\s+/g, ' ').trim()
@@ -143,6 +173,9 @@ const showEmptyState = computed(() => {
   if (!open.value) {
     return false
   }
+  if (hasReasoning.value || hasToolCalls.value || isToolResult.value) {
+    return false
+  }
   if (typeof props.message.content === 'string') {
     return props.message.content.length === 0
   }
@@ -190,11 +223,27 @@ const showEmptyState = computed(() => {
         </div>
       </details>
 
+      <JsonPanel
+        v-if="hasToolCalls"
+        :title="toolCallTitle"
+        :value="firstToolCall ?? message.tool_calls"
+      />
+
+      <JsonPanel
+        v-else-if="isToolResult && (message.tool_call_id || message.content)"
+        :title="message.name || t('traces.role.tool')"
+        :value="{
+          tool_call_id: message.tool_call_id,
+          name: message.name,
+          content: message.content,
+        }"
+      />
+
       <div v-if="showEmptyState" class="workspace-body text-ppx-text-muted text-xs">
         {{ t('traces.emptyContent') }}
       </div>
 
-      <div v-else-if="hasVisibleParts" class="space-y-3">
+      <div v-else-if="hasVisibleParts && !hasToolCalls && !isToolResult" class="space-y-3">
         <template v-for="(part, index2) in parsedParts" :key="index2">
           <div v-if="part.type === 'text'" class="workspace-subpanel px-3 py-2.5">
             <MarkdownContent :markdown="part.text" />

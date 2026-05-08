@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 
 import { useConversationStore } from '@/stores/conversation'
 import { useConversationWsStore } from '@/stores/conversationWs'
+import { useHitlWsStore } from '@/stores/hitlWs'
 import { useNotify } from '@/composables/useNotify'
 import { useDialog } from '@/composables/useDialog'
 import { useHitlWs } from '@/composables/useHitlWs'
@@ -14,6 +15,7 @@ export function useChatViewController(projectId: Ref<string>) {
   const router = useRouter()
   const chatStore = useConversationStore()
   const conversationWsStore = useConversationWsStore()
+  const hitlWsStore = useHitlWsStore()
   const { currentQuestion, answerQuestion } = useHitlWs(() => chatStore.currentConversationId)
   const notify = useNotify()
   const dialog = useDialog()
@@ -34,10 +36,6 @@ export function useChatViewController(projectId: Ref<string>) {
   const editingTitleValue = ref('')
   const forkingTurnId = ref<string | null>(null)
 
-  // ── Waiting-for-agent state ────────────────────────────────────────────
-  const isWaitingForAgent = ref(false)
-  let waitingForAgentTimeout: ReturnType<typeof setTimeout> | null = null
-
   // ── Computed: conversation data ────────────────────────────────────────
   const conversation = computed(() => chatStore.currentConversation)
   const messages = computed(() => chatStore.messages)
@@ -54,7 +52,7 @@ export function useChatViewController(projectId: Ref<string>) {
     const ss = currentSocketState.value
     if (ss?.error) return 'error'
     if (ss?.isStreaming) return 'streaming'
-    if (isWaitingForAgent.value) return 'waiting_hitl'
+    if (currentQuestion.value) return 'waiting_hitl'
     return 'ready'
   })
 
@@ -65,8 +63,44 @@ export function useChatViewController(projectId: Ref<string>) {
   })
   const isStreaming = computed(() => currentSocketState.value?.isStreaming ?? false)
   const isToolCalling = computed(() => currentSocketState.value?.isToolCalling ?? false)
+  const streamPhase = computed(() => currentSocketState.value?.streamPhase ?? 'idle')
+  const pendingStop = computed(() => currentSocketState.value?.pendingStop ?? false)
   const streamingTurn = computed(() => currentSocketState.value?.streamingTurn ?? null)
   const streamingTurnId = computed(() => streamingTurn.value?.turn_id ?? null)
+  const renderedTurns = computed(() => {
+    if (!isStreaming.value || !streamingTurn.value?.turn_id) {
+      return turns.value
+    }
+
+    const targetIndex = turns.value.findIndex((turn) => turn.turn_id === streamingTurn.value?.turn_id)
+    if (targetIndex === -1) {
+      return turns.value
+    }
+
+    const nextTurns = [...turns.value]
+    const existingTurn = nextTurns[targetIndex]
+    nextTurns[targetIndex] = {
+      ...existingTurn,
+      user_message: streamingTurn.value.user_message ?? existingTurn.user_message,
+      assistant_events:
+        streamingTurn.value.assistant_events.length > 0
+          ? streamingTurn.value.assistant_events
+          : existingTurn.assistant_events,
+      trace_ids:
+        streamingTurn.value.trace_ids.length > 0
+          ? streamingTurn.value.trace_ids
+          : existingTurn.trace_ids,
+    }
+    return nextTurns
+  })
+  const showStreamingTurn = computed(
+    () =>
+      Boolean(
+        isStreaming.value &&
+          streamingTurn.value &&
+          !turns.value.some((turn) => turn.turn_id === streamingTurn.value?.turn_id),
+      ),
+  )
 
   // ── Socket helper ──────────────────────────────────────────────────────
   async function ensureSocketReady(convId: string): Promise<void> {
@@ -120,7 +154,7 @@ export function useChatViewController(projectId: Ref<string>) {
 
   function stopStream(): void {
     const convId = currentConversationId.value
-    if (!convId) return
+    if (!convId || pendingStop.value) return
     conversationWsStore.stopGeneration(convId)
   }
 
@@ -169,15 +203,18 @@ export function useChatViewController(projectId: Ref<string>) {
       return
     }
     try {
-      chatStore.prepareTurnReplay(msg.message_id)
       await ensureSocketReady(convId)
-      conversationWsStore.sendMessage(
+      const sent = conversationWsStore.sendMessage(
         convId,
         content,
         msg.message_id,
         editingImages.value.length > 0 ? [...editingImages.value] : undefined,
         editingPaperIds.value.length > 0 ? [...editingPaperIds.value] : undefined,
       )
+      if (!sent) {
+        throw new Error(t('projects.errors.requestFailed'))
+      }
+      chatStore.prepareTurnReplay(msg.message_id)
       notify.push(t('projects.chatView.messageEdited'), 'success', 2000)
     } catch (err) {
       notify.push(
@@ -270,21 +307,30 @@ export function useChatViewController(projectId: Ref<string>) {
     const userMessage = turn.user_message
     const convId = conversation.value?.conversation_id
     if (!userMessage || !convId) return
+    await ensureSocketReady(convId)
+    const sent = conversationWsStore.sendMessage(
+      convId,
+      userMessage.content ?? '',
+      userMessage.message_id,
+      userMessage.images ?? undefined,
+      userMessage.paper_ids ?? undefined,
+    )
+    if (!sent) {
+      notify.push(t('projects.errors.requestFailed'), 'error', 3600)
+      return
+    }
     conversationWsStore.resetStreamingState(convId)
     chatStore.prepareTurnReplay(userMessage.message_id)
-    await ensureSocketReady(convId)
-    conversationWsStore.sendMessage(convId, userMessage.content ?? '', userMessage.message_id)
   }
 
   // ── HITL ───────────────────────────────────────────────────────────────
   function submitHitlAnswer(answers: HITLAnswer[]): void {
     const questionId = currentQuestion.value?.question_id
     if (!questionId) return
-    isWaitingForAgent.value = true
     answerQuestion(questionId, answers)
     const convId = currentConversationId.value
     if (convId) {
-      ensureSocketReady(convId)
+      void ensureSocketReady(convId)
     }
   }
 
@@ -332,34 +378,37 @@ export function useChatViewController(projectId: Ref<string>) {
   watch(
     () => chatStore.currentConversationId,
     (newId, oldId) => {
-      if (newId && newId !== oldId) {
-        conversationWsStore.switchActiveConversation(newId, oldId)
+      if (!newId) return
+      conversationWsStore.switchActiveConversation(newId, oldId)
+      if (newId !== oldId) {
         inputValue.value = ''
         inputImages.value = []
         inputPaperIds.value = []
         inputExpanded.value = false
       }
     },
+    { immediate: true },
   )
 
-  // ── Watchers: isWaitingForAgent ⇄ isStreaming ──────────────────────────
-  watch(isStreaming, (streaming) => {
-    if (streaming) {
-      isWaitingForAgent.value = false
-    }
-  })
-
-  watch(isWaitingForAgent, (waiting) => {
-    if (waiting) {
-      if (waitingForAgentTimeout) clearTimeout(waitingForAgentTimeout)
-      waitingForAgentTimeout = setTimeout(() => {
-        isWaitingForAgent.value = false
-      }, 30000)
-    } else {
-      if (waitingForAgentTimeout) clearTimeout(waitingForAgentTimeout)
-      waitingForAgentTimeout = null
-    }
-  })
+  watch(
+    () => [currentConversationId.value, turns.value.map((turn) => turn.turn_id).join(',')] as const,
+    ([conversationId]) => {
+      if (!conversationId) return
+      const socketState = conversationWsStore.getState(conversationId)
+      const persistedTurnIds = new Set(chatStore.currentTurns(conversationId).map((turn) => turn.turn_id))
+      if (
+        !socketState.isStreaming &&
+        socketState.streamingTurn?.turn_id &&
+        persistedTurnIds.has(socketState.streamingTurn.turn_id)
+      ) {
+        conversationWsStore.resetStreamingState(conversationId)
+        return
+      }
+      if (socketState.completionStatus === 'stopped' && !hitlWsStore.questionForConversation(conversationId)) {
+        conversationWsStore.resetStreamingState(conversationId)
+      }
+    },
+  )
 
   return reactive({
     // Reactive state
@@ -375,18 +424,21 @@ export function useChatViewController(projectId: Ref<string>) {
     editingTitle,
     editingTitleValue,
     forkingTurnId,
-    isWaitingForAgent,
     // Computed
     conversation,
     messages,
     turns,
+    renderedTurns,
     currentConversationId,
     currentSocketState,
     status,
     isStreaming,
     isToolCalling,
+    streamPhase,
+    pendingStop,
     streamingTurn,
     streamingTurnId,
+    showStreamingTurn,
     currentQuestion,
     // Methods
     sendMessage,

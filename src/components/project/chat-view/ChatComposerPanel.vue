@@ -15,6 +15,7 @@ withDefaults(
     selectedPapers: Map<string, PaperResponse>
     images: string[]
     attachmentsCollapsed?: boolean
+    compactCollapsed?: boolean
   }>(),
   {
     expanded: false,
@@ -23,6 +24,7 @@ withDefaults(
     showBackdrop: true,
     hintText: '',
     attachmentsCollapsed: false,
+    compactCollapsed: false,
   },
 )
 
@@ -50,6 +52,7 @@ const emit = defineEmits<{
       :selected-papers="selectedPapers"
       :images="images"
       :attachments-collapsed="attachmentsCollapsed"
+      :compact-collapsed="compactCollapsed"
       @update:attachments-collapsed="emit('update:attachmentsCollapsed', $event)"
       @open-paper="emit('open-paper', $event)"
       @remove-paper="emit('remove-paper', $event)"

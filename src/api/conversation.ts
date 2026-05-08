@@ -30,6 +30,8 @@ export interface ConversationSocketMessage {
   content?: string | null
   trace_ids?: string[]
   detail?: string
+  completion_status?: 'completed' | 'stopped' | 'error'
+  stopped_by_user?: boolean
 }
 
 export class ConversationWebSocketClient extends BaseWebSocketClient<ConversationSocketMessage> {
@@ -42,7 +44,12 @@ export class ConversationWebSocketClient extends BaseWebSocketClient<Conversatio
     this.conversationId = conversationId
   }
 
-  sendMessage(content: string, messageId?: string, images?: string[], paperIds?: string[]): void {
+  sendMessage(
+    content: string,
+    messageId?: string,
+    images?: string[],
+    paperIds?: string[],
+  ): boolean {
     const payload: Record<string, unknown> = {
       type: 'user_message',
       content,
@@ -54,11 +61,11 @@ export class ConversationWebSocketClient extends BaseWebSocketClient<Conversatio
     if (paperIds && paperIds.length > 0) {
       payload.paper_ids = paperIds
     }
-    this.sendJson(payload)
+    return this.sendJson(payload)
   }
 
-  stopGeneration(): void {
-    this.sendJson({ type: 'stop' })
+  stopGeneration(): boolean {
+    return this.sendJson({ type: 'stop' })
   }
 
   get id(): string {

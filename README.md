@@ -118,7 +118,7 @@ pnpm build:console
 - [x] tasks websocket
 - [x] websocket 收入 pinia 全局状态管理
 - [ ] 小 button 组件复用
-- [ ] 前端消息管理
+- [x] 前端消息管理
 - [x] 侧边栏无限滚动，涉及到两个侧边栏 + 搜索项目 + 搜索对话
 - [x] 重整 project store, conversation store
 - [ ] project 的 button 复用
@@ -141,11 +141,11 @@ pnpm build:console
 - [x] 修复sidebar 横向宽度 overflow 省略的问题
 - [ ] project 的日志面板整治
 - [ ] chatview 渲染问题
-  - [ ] 使用工具的时候生成ing 消失
-  - [ ] 用户气泡过长
-  - [ ] ![alt text](image.png) 对话中进入别的页面再跳转回来渲染 bug，似乎只会由 hitl 触发
-  - [ ] hitl 还会留下 empty state
-  - [ ] 终止对话按钮位置应该放在气泡下面，且终止对话无效
+  - [x] 使用工具的时候生成ing 消失
+  - [x] 用户气泡过长
+  - [x] ![alt text](image.png) 对话中进入别的页面再跳转回来渲染 bug，似乎只会由 hitl 触发
+  - [x] hitl 还会留下 empty state
+  - [x] 终止对话按钮位置应该放在气泡下面，且终止对话无效
   - [ ] 对话中点击 paper 无法跳转
   - [ ] 对话详情按钮可以放到 chattopbar 里
   - [ ] ![alt text](image-1.png) trace 记录存在 bug

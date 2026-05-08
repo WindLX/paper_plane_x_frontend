@@ -208,6 +208,7 @@ onBeforeUnmount(() => {
       :title="t('library.title')"
       :subtitle="t('library.subtitles')"
       :drawer-open="drawerOpen"
+      @close-drawer="closePaperDrawer"
     >
       <section class="space-y-4">
         <LibrarySummaryCards :cards="summaryCards" />

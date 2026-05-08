@@ -32,6 +32,7 @@ export interface ConversationTurnEventResponse {
   role: 'assistant' | 'tool'
   message_kind: 'assistant_reasoning' | 'assistant_tool_call' | 'tool_result' | 'assistant_final'
   content: string | null
+  reasoning_content?: string | null
   name: string | null
   tool_calls: Array<Record<string, unknown>> | null
   tool_call_id: string | null

@@ -25,18 +25,18 @@ const refsOpen = ref(true)
 
 const paperReferences = computed(() => {
   const refs = new Map<string, string>()
+  const paperPattern = /\[\[(pap-[a-f0-9]{32})(?:\s*\|\s*([^\]\n]+?))?\s*\]\]/g
   for (const turn of props.turns) {
     for (const event of turn.assistant_events) {
-      if (event.message_kind !== 'assistant_final' || !event.content) continue
-      for (const line of event.content.split('\n')) {
-        const trimmed = line.trim().replace(/^[-*]\s*/, '')
-        if (!trimmed) continue
-        const pipeIdx = trimmed.indexOf('|')
-        const paperId = (pipeIdx === -1 ? trimmed : trimmed.slice(0, pipeIdx)).trim()
-        const label = (pipeIdx === -1 ? trimmed : trimmed.slice(pipeIdx + 1)).trim()
-        if (paperId.startsWith('pap-')) {
-          refs.set(paperId, label || paperId)
-        }
+      const source =
+        event.message_kind === 'assistant_reasoning'
+          ? (event.reasoning_content ?? event.content ?? '')
+          : (event.content ?? '')
+      if (!source) continue
+      for (const match of source.matchAll(paperPattern)) {
+        const paperId = match[1]
+        const label = match[2]?.trim() ?? paperId
+        refs.set(paperId, label)
       }
     }
   }

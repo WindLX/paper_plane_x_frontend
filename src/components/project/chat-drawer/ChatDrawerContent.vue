@@ -107,7 +107,7 @@ watch(
 </script>
 
 <template>
-  <section class="animate-fade-in-up flex h-full min-h-0 flex-col space-y-3">
+  <section class="animate-fade-in-up flex h-full min-h-0 min-w-0 flex-col space-y-3 overflow-x-hidden">
     <nav class="workspace-panel flex shrink-0 items-center gap-1 p-1.5">
       <button
         v-for="tab in tabs"
@@ -126,7 +126,7 @@ watch(
       </button>
     </nav>
 
-    <div class="min-h-0 flex-1 overflow-hidden">
+    <div class="min-h-0 min-w-0 flex-1 overflow-hidden">
       <OverviewTabPanel
         v-show="activeTab === 'overview'"
         :conversation="conversation"

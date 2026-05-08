@@ -82,7 +82,12 @@ onMounted(async () => {
 
 <template>
   <div class="h-full w-full">
-    <PageLayout :title="t('tasks.title')" :subtitle="t('tasks.subtitle')" :drawer-open="drawerOpen">
+    <PageLayout
+      :title="t('tasks.title')"
+      :subtitle="t('tasks.subtitle')"
+      :drawer-open="drawerOpen"
+      @close-drawer="closeTaskDrawer"
+    >
       <section class="space-y-4">
         <TaskQueueCards
           :total="list.paginated.total"

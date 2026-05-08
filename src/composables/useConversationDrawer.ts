@@ -60,12 +60,6 @@ export function useConversationDrawer() {
     }
   }
 
-  function closeDrawer(): void {
-    drawerOpen.value = false
-    selectedPaperId.value = null
-    drawerData.value = createEmptyDrawerData()
-  }
-
   function handleScrollToTurn(turnId: string): void {
     scrollToTurnId.value = turnId
   }
@@ -75,10 +69,24 @@ export function useConversationDrawer() {
     await loadDrawerContent()
   }
 
+  function closeDrawer(): void {
+    drawerOpen.value = false
+    selectedPaperId.value = null
+    drawerData.value = createEmptyDrawerData()
+  }
+
   async function openDrawerPaper(paperId: string): Promise<void> {
     selectedPaperId.value = paperId
     selectedPaperNonce.value += 1
     await loadDrawerContent()
+  }
+
+  async function toggleDrawer(): Promise<void> {
+    if (drawerOpen.value) {
+      closeDrawer()
+    } else {
+      await openDrawer()
+    }
   }
 
   return reactive({
@@ -87,9 +95,10 @@ export function useConversationDrawer() {
     scrollToTurnId,
     selectedPaperId,
     selectedPaperNonce,
-    closeDrawer,
     handleScrollToTurn,
     openDrawer,
+    closeDrawer,
     openDrawerPaper,
+    toggleDrawer,
   })
 }

@@ -22,13 +22,17 @@ const uiStore = useUiStore()
 const ctrl = useProjectSidebarController()
 
 function toggleSidebar(): void {
+  if (uiStore.mobileSidebarOpen) {
+    uiStore.closeMobileSidebar()
+    return
+  }
   uiStore.toggleSidebar()
 }
 </script>
 
 <template>
   <aside
-    class="text-ppx-text-soft border-ppx-border flex h-full flex-col border-r px-2 py-3 backdrop-blur"
+    class="text-ppx-text-soft border-ppx-border bg-ppx-bg flex h-full flex-col border-r px-2 py-3"
   >
     <SidebarHeader :collapsed="props.collapsed" @toggle-sidebar="toggleSidebar" />
 

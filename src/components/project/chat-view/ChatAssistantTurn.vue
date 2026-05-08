@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BrainCircuit, ChevronDown, ChevronRight, LoaderCircle, Wrench } from 'lucide-vue-next'
+import { BrainCircuit, ChevronDown, ChevronRight, LoaderCircle, Square, Wrench } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -12,6 +12,8 @@ const props = defineProps<{
   turn: ConversationTurnResponse
   isStreaming: boolean
   isToolCalling: boolean
+  streamPhase?: 'idle' | 'reasoning' | 'tool_calling' | 'finalizing'
+  pendingStop?: boolean
   forkLoading?: boolean
 }>()
 
@@ -19,6 +21,7 @@ const emit = defineEmits<{
   rerun: []
   delete: []
   fork: []
+  stopStream: []
   openPaper: [paperId: string]
 }>()
 
@@ -77,6 +80,10 @@ function toolResultValue(event: ConversationTurnEventResponse): Record<string, u
 function openPaperReference(paperId: string): void {
   emit('openPaper', paperId)
 }
+
+const showStreamingIndicator = computed(
+  () => props.isStreaming && (events.value.length === 0 || props.streamPhase !== 'idle'),
+)
 </script>
 
 <template>
@@ -109,9 +116,12 @@ function openPaperReference(paperId: string): void {
                 </div>
               </summary>
               <div
-                class="bg-ppx-bg-inset/72 text-ppx-text-soft px-3 py-2.5 text-sm leading-relaxed whitespace-pre-wrap"
+                class="bg-ppx-bg-inset/72 px-3 py-2.5"
               >
-                {{ event.content ?? '' }}
+                <MarkdownContent
+                  :markdown="event.reasoning_content ?? event.content ?? ''"
+                  @paper-click="openPaperReference($event)"
+                />
               </div>
             </details>
           </div>
@@ -147,33 +157,55 @@ function openPaperReference(paperId: string): void {
               :markdown="event.content ?? ''"
               @paper-click="openPaperReference($event)"
             />
-            <div
-              v-if="isStreaming && !isToolCalling && event === events[events.length - 1]"
-              class="mt-2 flex items-center gap-1.5"
-            >
-              <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
-              <span class="text-xs">{{ t('projects.chatView.generating') }}</span>
-            </div>
           </div>
         </template>
       </template>
 
-      <div v-else-if="isStreaming" class="text-ppx-text-soft flex items-center gap-3 px-1 py-2">
+      <div
+        v-else-if="showStreamingIndicator"
+        class="text-ppx-text-soft flex items-center gap-3 px-1 py-2"
+      >
         <div class="flex gap-1">
           <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full" />
           <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full delay-150" />
           <span class="bg-ppx-text-muted h-2 w-2 animate-bounce rounded-full delay-300" />
         </div>
-        <span class="text-sm">{{ t('projects.chatView.thinking') }}</span>
+        <span class="text-sm">
+          {{
+            props.streamPhase === 'tool_calling'
+              ? t('projects.chatView.toolCalling')
+              : t('projects.chatView.generating')
+          }}
+        </span>
       </div>
 
       <div
-        v-if="events.length > 0"
+        v-if="events.length > 0 || showStreamingIndicator"
         class="text-ppx-text-soft flex items-center justify-end gap-2 text-xs"
       >
-        <div v-if="isStreaming && isToolCalling" class="flex items-center gap-1.5">
+        <div v-if="showStreamingIndicator" class="mr-auto flex items-center gap-1.5">
           <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
-          <span>{{ t('projects.chatView.toolCalling') }}</span>
+          <span>
+            {{
+              props.streamPhase === 'tool_calling'
+                ? t('projects.chatView.toolCalling')
+                : t('projects.chatView.generating')
+            }}
+          </span>
+        </div>
+        <button
+          v-if="props.isStreaming"
+          type="button"
+          class="workspace-icon-button h-8 w-8"
+          :title="t('projects.chatView.stop')"
+          :disabled="props.pendingStop"
+          @click="emit('stopStream')"
+        >
+          <LoaderCircle v-if="props.pendingStop" class="h-4 w-4 animate-spin" />
+          <Square v-else class="h-4 w-4" />
+        </button>
+        <div v-if="props.isStreaming && props.pendingStop" class="text-ppx-text-muted text-xs">
+          {{ t('projects.chatView.stopping') }}
         </div>
         <ChatTurnActions
           :visible="hovered && !isStreaming"

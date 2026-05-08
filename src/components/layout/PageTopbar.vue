@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { Menu } from 'lucide-vue-next'
 
+import { useUiStore } from '@/stores/ui'
+
 const props = defineProps<{
   title: string
   subtitle?: string
 }>()
+
+const uiStore = useUiStore()
 </script>
 
 <template>
@@ -13,7 +17,12 @@ const props = defineProps<{
   >
     <div class="flex items-center justify-between gap-4 px-4 py-3 lg:px-6">
       <div class="flex min-w-0 items-center gap-3">
-        <button type="button" aria-label="Open navigation" class="workspace-icon-button lg:hidden">
+        <button
+          type="button"
+          aria-label="Open navigation"
+          class="workspace-icon-button lg:hidden"
+          @click="uiStore.openMobileSidebar()"
+        >
           <Menu class="h-4 w-4" />
         </button>
         <div class="min-w-0">

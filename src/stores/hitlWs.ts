@@ -154,6 +154,8 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
 
   function answerQuestion(questionId: string, answers: HITLAnswer[]): void {
     connect()
+    delete pendingQuestionsById[questionId]
+    notifiedQuestionIds.delete(questionId)
     getClient().sendAnswer(questionId, answers)
   }
 

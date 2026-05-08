@@ -85,6 +85,7 @@ onMounted(async () => {
       :title="t('traces.title')"
       :subtitle="t('traces.subtitle')"
       :drawer-open="drawerOpen"
+      @close-drawer="closeTraceDrawer"
     >
       <section class="space-y-4">
         <TraceSummaryCards :stats="list.stats" :total="list.paginated.total" />

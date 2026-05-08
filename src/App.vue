@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, watchEffect } from 'vue'
-import { RouterView } from 'vue-router'
+import { onMounted, watch, watchEffect } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 
 import AppDialog from './components/AppDialog.vue'
 import AppNotify from './components/AppNotify.vue'
@@ -10,6 +10,7 @@ import { useUiStore } from './stores/ui'
 
 const uiStore = useUiStore()
 const hitlWsStore = useHitlWsStore()
+const route = useRoute()
 
 watchEffect(() => {
   const classList = document.documentElement.classList
@@ -23,6 +24,13 @@ watchEffect(() => {
 onMounted(() => {
   hitlWsStore.connect()
 })
+
+watch(
+  () => route.fullPath,
+  () => {
+    uiStore.closeMobileSidebar()
+  },
+)
 </script>
 
 <template>
@@ -50,6 +58,38 @@ onMounted(() => {
         </Transition>
       </RouterView>
     </div>
+
+    <Teleport to="body">
+      <Transition
+        enter-active-class="duration-ppx-standard ease-ppx transition-opacity"
+        enter-from-class="opacity-0"
+        enter-to-class="opacity-100"
+        leave-active-class="duration-ppx-fast ease-ppx transition-opacity"
+        leave-from-class="opacity-100"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="uiStore.mobileSidebarOpen"
+          class="fixed inset-0 z-60 bg-black/35 lg:hidden"
+          @click="uiStore.closeMobileSidebar()"
+        />
+      </Transition>
+      <Transition
+        enter-active-class="duration-ppx-standard ease-ppx transition-all"
+        enter-from-class="-translate-x-6 opacity-0"
+        enter-to-class="translate-x-0 opacity-100"
+        leave-active-class="duration-ppx-fast ease-ppx transition-all"
+        leave-from-class="translate-x-0 opacity-100"
+        leave-to-class="-translate-x-6 opacity-0"
+      >
+        <div
+          v-if="uiStore.mobileSidebarOpen"
+          class="fixed inset-y-0 left-0 z-70 w-[min(18rem,calc(100vw-1.25rem))] max-w-full lg:hidden"
+        >
+          <AppSidebar :collapsed="false" />
+        </div>
+      </Transition>
+    </Teleport>
 
     <AppDialog />
     <AppNotify />

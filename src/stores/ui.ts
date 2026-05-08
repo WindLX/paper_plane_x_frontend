@@ -21,6 +21,7 @@ function resolveInitialSidebarCollapsed(): boolean {
 export const useUiStore = defineStore('ui', () => {
   const darkMode = ref(resolveInitialDarkMode())
   const sidebarCollapsed = ref(resolveInitialSidebarCollapsed())
+  const mobileSidebarOpen = ref(false)
 
   function setDarkMode(nextValue: boolean): void {
     darkMode.value = nextValue
@@ -44,12 +45,28 @@ export const useUiStore = defineStore('ui', () => {
     setSidebarCollapsed(!sidebarCollapsed.value)
   }
 
+  function openMobileSidebar(): void {
+    mobileSidebarOpen.value = true
+  }
+
+  function closeMobileSidebar(): void {
+    mobileSidebarOpen.value = false
+  }
+
+  function toggleMobileSidebar(): void {
+    mobileSidebarOpen.value = !mobileSidebarOpen.value
+  }
+
   return {
     darkMode,
     sidebarCollapsed,
+    mobileSidebarOpen,
     setDarkMode,
     toggleDarkMode,
     setSidebarCollapsed,
     toggleSidebar,
+    openMobileSidebar,
+    closeMobileSidebar,
+    toggleMobileSidebar,
   }
 })

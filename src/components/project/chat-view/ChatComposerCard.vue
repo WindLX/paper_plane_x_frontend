@@ -9,11 +9,13 @@ withDefaults(
     selectedPapers: Map<string, PaperResponse>
     images: string[]
     attachmentsCollapsed?: boolean
+    compactCollapsed?: boolean
   }>(),
   {
     expanded: false,
     hintText: '',
     attachmentsCollapsed: false,
+    compactCollapsed: false,
   },
 )
 
@@ -41,7 +43,10 @@ const emit = defineEmits<{
 
     <div
       class="border-ppx-border bg-ppx-bg-elevated shadow-ppx-border/50 duration-ppx-fast text-ppx-text-soft focus-within:shadow-ppx-border/60 dark:bg-ppx-bg-inset flex gap-2 rounded-3xl border px-4 py-3 shadow-lg transition-all focus-within:shadow-xl dark:shadow-none"
-      :class="expanded ? 'flex-col rounded-2xl p-5 shadow-2xl' : ''"
+      :class="[
+        expanded ? 'flex-col rounded-2xl p-5 shadow-2xl' : '',
+        !expanded && compactCollapsed ? 'flex-col gap-3' : '',
+      ]"
     >
       <div v-if="expanded" class="flex items-center justify-between">
         <span class="text-ppx-text-muted text-xs font-medium">{{ hintText }}</span>
@@ -50,11 +55,14 @@ const emit = defineEmits<{
 
       <slot />
 
-      <div class="flex items-center justify-between gap-2">
+      <div
+        class="flex items-center justify-between gap-2"
+        :class="!expanded && compactCollapsed ? 'w-full justify-end' : ''"
+      >
         <div v-if="expanded" class="text-ppx-text-muted flex items-center gap-3 text-xs">
           <slot name="expanded-hint" />
         </div>
-        <div v-else class="flex-1" />
+        <div v-else-if="!compactCollapsed" class="flex-1" />
 
         <div class="flex items-center gap-2">
           <slot name="footer-left" />

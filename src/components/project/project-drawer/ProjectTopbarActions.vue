@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LibraryBig, Download, Pencil, FileText, Trash2, Info } from 'lucide-vue-next'
+import { LibraryBig, Download, Pencil, FileText, Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '@/components/AppButton.vue'
@@ -12,7 +12,6 @@ defineProps<{
 const emit = defineEmits<{
   openPanel: [name: string]
   deleteProject: []
-  openConversation: []
 }>()
 
 const { t } = useI18n()
@@ -44,16 +43,6 @@ const buttons = [
     <AppButton size="xs" variant="outline" tone="rose" @click="emit('deleteProject')">
       <Trash2 class="h-3.5 w-3.5" />
       <span class="hidden sm:inline">{{ t('projects.delete') }}</span>
-    </AppButton>
-
-    <AppButton
-      v-if="hasConversation"
-      size="xs"
-      variant="outline"
-      @click="emit('openConversation')"
-    >
-      <Info class="h-3.5 w-3.5" />
-      <span class="hidden sm:inline">{{ t('projects.chatDrawer.conversationTitle') }}</span>
     </AppButton>
   </div>
 </template>

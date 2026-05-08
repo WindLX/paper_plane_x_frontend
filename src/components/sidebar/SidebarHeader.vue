@@ -52,7 +52,7 @@ const { t } = useI18n()
       v-if="!props.collapsed"
       type="button"
       aria-label="Collapse navigation"
-      class="workspace-icon-button hidden lg:inline-flex"
+      class="workspace-icon-button inline-flex"
       @click="emit('toggleSidebar')"
     >
       <PanelLeftClose class="h-4 w-4" />

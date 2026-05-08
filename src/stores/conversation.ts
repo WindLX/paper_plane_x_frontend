@@ -405,26 +405,16 @@ export const useConversationStore = defineStore('conversation', () => {
     const turn = currentTurnsList.find((item) => item.user_message?.message_id === userMessageId)
     if (!turn?.user_message) return
 
-    const cutoff = turn.user_message.sequence_no
-    setMessages(
-      currentMessages(conversationId).filter(
-        (message) => message.role === 'system' || message.sequence_no <= cutoff,
-      ),
-      conversationId,
-    )
-
     setTurns(
-      currentTurnsList
-        .filter((item) => (item.user_message?.sequence_no ?? Number.MAX_SAFE_INTEGER) <= cutoff)
-        .map((item) =>
-          item.turn_id === turn.turn_id
-            ? {
-                ...item,
-                assistant_events: [],
-                trace_ids: [],
-              }
-            : item,
-        ),
+      currentTurnsList.map((item) =>
+        item.turn_id === turn.turn_id
+          ? {
+              ...item,
+              assistant_events: [],
+              trace_ids: [],
+            }
+          : item,
+      ),
       conversationId,
     )
   }

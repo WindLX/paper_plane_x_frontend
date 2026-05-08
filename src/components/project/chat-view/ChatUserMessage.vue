@@ -201,7 +201,13 @@ watch(editExpanded, () => {
     @mouseenter="localHovered = true"
     @mouseleave="localHovered = false"
   >
-    <div class="w-full max-w-[85%] sm:max-w-[75%] lg:max-w-[60%]">
+    <div
+      :class="
+        props.editing
+          ? 'w-full max-w-[85%] sm:max-w-[75%] lg:max-w-[60%]'
+          : 'ml-auto w-fit max-w-full sm:max-w-[82%] lg:max-w-[68%]'
+      "
+    >
       <ChatComposerPanel
         v-if="props.editing"
         :open="editExpanded"
@@ -212,6 +218,7 @@ watch(editExpanded, () => {
         :selected-papers="editingPapers"
         :images="editImages"
         :attachments-collapsed="editAttachmentsCollapsed"
+        :compact-collapsed="true"
         @close="editExpanded = false"
         @update:attachments-collapsed="editAttachmentsCollapsed = $event"
         @open-paper="emit('openPaper', $event)"
@@ -219,126 +226,126 @@ watch(editExpanded, () => {
         @remove-image="removeEditImage"
         @preview-image="previewSrc = $event"
       >
-          <template #header-actions>
-            <button
-              type="button"
-              class="workspace-icon-button h-7 w-7"
-              :title="t('projects.chatView.collapseInput')"
-              @click="editExpanded = false"
-            >
-              <X class="h-3.5 w-3.5" />
-            </button>
-          </template>
+        <template #header-actions>
+          <button
+            type="button"
+            class="workspace-icon-button h-7 w-7"
+            :title="t('projects.chatView.collapseInput')"
+            @click="editExpanded = false"
+          >
+            <X class="h-3.5 w-3.5" />
+          </button>
+        </template>
 
-          <textarea
-            ref="textareaRef"
-            v-model="editContent"
-            rows="2"
-            class="text-ppx-text min-h-6 w-full resize-none border-0 bg-transparent px-0 py-1 text-base leading-relaxed outline-none"
-            :class="editExpanded ? 'min-h-64 max-h-144' : 'min-h-0'"
-            @keydown.esc="emit('cancelEdit')"
-            @keydown.meta.enter.prevent="emit('confirmEdit')"
-            @keydown.ctrl.enter.prevent="emit('confirmEdit')"
+        <textarea
+          ref="textareaRef"
+          v-model="editContent"
+          rows="2"
+          class="text-ppx-text min-h-6 w-full resize-none border-0 bg-transparent px-0 py-1 text-base leading-relaxed outline-none"
+          :class="editExpanded ? 'max-h-144 min-h-64' : 'min-h-0'"
+          @keydown.esc="emit('cancelEdit')"
+          @keydown.meta.enter.prevent="emit('confirmEdit')"
+          @keydown.ctrl.enter.prevent="emit('confirmEdit')"
+        />
+
+        <template #expanded-hint>
+          <span class="flex items-center gap-1">
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Enter</kbd
+            >
+            <span>{{ t('projects.chatView.keyboardNewLine') }}</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Ctrl</kbd
+            >
+            <span>+</span>
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Enter</kbd
+            >
+            <span>{{ t('projects.chatView.keyboardSend') }}</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Esc</kbd
+            >
+            <span>{{ t('projects.chatView.keyboardCollapse') }}</span>
+          </span>
+        </template>
+
+        <template #footer-left>
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            @change="onEditFileSelected"
           />
+          <button
+            v-if="attachmentCount > 0"
+            type="button"
+            class="workspace-icon-button h-8 w-8"
+            :title="t('projects.chatView.attachments')"
+            @click="editAttachmentsCollapsed = !editAttachmentsCollapsed"
+          >
+            <ChevronUp v-if="!editAttachmentsCollapsed" class="h-4 w-4" />
+            <ChevronDown v-else class="h-4 w-4" />
+          </button>
+          <button
+            v-if="props.projectId"
+            type="button"
+            class="workspace-icon-button h-8 w-8"
+            :title="t('projects.chatView.attachPaper')"
+            @click="openEditPaperPicker"
+          >
+            <FileText class="h-4 w-4" />
+          </button>
+          <button
+            v-if="editImages.length < MAX_IMAGES"
+            type="button"
+            class="workspace-icon-button h-8 w-8"
+            :title="t('projects.chatView.attachImage')"
+            @click="openEditFilePicker"
+          >
+            <ImagePlus class="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            class="workspace-icon-button h-8 w-8"
+            :title="
+              editExpanded
+                ? t('projects.chatView.collapseInput')
+                : t('projects.chatView.expandInput')
+            "
+            @click="editExpanded = !editExpanded"
+          >
+            <Expand class="h-4 w-4" />
+          </button>
+        </template>
 
-          <template #expanded-hint>
-            <span class="flex items-center gap-1">
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Enter</kbd
-              >
-              <span>{{ t('projects.chatView.keyboardNewLine') }}</span>
-            </span>
-            <span class="flex items-center gap-1">
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Ctrl</kbd
-              >
-              <span>+</span>
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Enter</kbd
-              >
-              <span>{{ t('projects.chatView.keyboardSend') }}</span>
-            </span>
-            <span class="flex items-center gap-1">
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Esc</kbd
-              >
-              <span>{{ t('projects.chatView.keyboardCollapse') }}</span>
-            </span>
-          </template>
-
-          <template #footer-left>
-            <input
-              ref="fileInputRef"
-              type="file"
-              accept="image/*"
-              multiple
-              class="hidden"
-              @change="onEditFileSelected"
-            />
-            <button
-              v-if="attachmentCount > 0"
-              type="button"
-              class="workspace-icon-button h-8 w-8"
-              :title="t('projects.chatView.attachments')"
-              @click="editAttachmentsCollapsed = !editAttachmentsCollapsed"
-            >
-              <ChevronUp v-if="!editAttachmentsCollapsed" class="h-4 w-4" />
-              <ChevronDown v-else class="h-4 w-4" />
-            </button>
-            <button
-              v-if="props.projectId"
-              type="button"
-              class="workspace-icon-button h-8 w-8"
-              :title="t('projects.chatView.attachPaper')"
-              @click="openEditPaperPicker"
-            >
-              <FileText class="h-4 w-4" />
-            </button>
-            <button
-              v-if="editImages.length < MAX_IMAGES"
-              type="button"
-              class="workspace-icon-button h-8 w-8"
-              :title="t('projects.chatView.attachImage')"
-              @click="openEditFilePicker"
-            >
-              <ImagePlus class="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              class="workspace-icon-button h-8 w-8"
-              :title="
-                editExpanded
-                  ? t('projects.chatView.collapseInput')
-                  : t('projects.chatView.expandInput')
-              "
-              @click="editExpanded = !editExpanded"
-            >
-              <Expand class="h-4 w-4" />
-            </button>
-          </template>
-
-          <template #footer-right>
-            <button
-              type="button"
-              class="workspace-icon-button h-8 w-8"
-              :title="t('projects.chatView.keyboardCollapse')"
-              @click="emit('cancelEdit')"
-            >
-              <X class="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              class="workspace-icon-button h-8 w-8"
-              :title="t('projects.chatView.keyboardSend')"
-              @click="emit('confirmEdit')"
-            >
-              <Check class="h-4 w-4" />
-            </button>
-          </template>
+        <template #footer-right>
+          <button
+            type="button"
+            class="workspace-icon-button h-8 w-8"
+            :title="t('projects.chatView.keyboardCollapse')"
+            @click="emit('cancelEdit')"
+          >
+            <X class="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            class="workspace-icon-button h-8 w-8"
+            :title="t('projects.chatView.keyboardSend')"
+            @click="emit('confirmEdit')"
+          >
+            <Check class="h-4 w-4" />
+          </button>
+        </template>
       </ChatComposerPanel>
 
       <template v-else>
@@ -372,7 +379,7 @@ watch(editExpanded, () => {
             />
           </div>
           <div
-            class="workspace-subpanel text-ppx-text rounded-ppx-panel shadow-ppx-rest px-5 py-3 text-base leading-relaxed"
+            class="workspace-subpanel text-ppx-text rounded-ppx-panel shadow-ppx-rest w-fit max-w-full px-5 py-3 text-base leading-relaxed wrap-break-word whitespace-pre-wrap"
           >
             {{ props.msg.content ?? '' }}
           </div>

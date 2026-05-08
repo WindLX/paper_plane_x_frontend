@@ -26,6 +26,7 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
       :subtitle="ctrl.pageSubtitle"
       :drawer-open="ctrl.conversationDrawer.drawerOpen"
       no-padding
+      @close-drawer="ctrl.conversationDrawer.closeDrawer"
     >
       <template #topbar-actions>
         <ProjectTopbarDrawer
@@ -39,7 +40,6 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
           @update:project="ctrl.updateProject"
           @delete:project="ctrl.openDeleteConfirm"
           @export:project="ctrl.exportProject"
-          @open-conversation="ctrl.conversationDrawer.openDrawer"
         />
       </template>
 
@@ -49,15 +49,18 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
           :active-conversation-id="ctrl.conversations.activeConversationId"
           :loading="ctrl.conversations.loading"
           :collapsed="!ctrl.conversations.sidebarOpen"
+          :mobile="ctrl.conversations.isMobile"
+          :open="ctrl.conversations.sidebarOpen"
           @select="ctrl.conversations.selectConversation"
           @create="ctrl.handleCreateConversation"
-          @toggle="ctrl.conversations.sidebarOpen = !ctrl.conversations.sidebarOpen"
+          @toggle="ctrl.conversations.toggleSidebar"
         />
 
         <ProjectChatView
           :project-id="props.projectId"
           :scroll-to-turn-id="ctrl.conversationDrawer.scrollToTurnId"
-          @toggle-sidebar="ctrl.conversations.sidebarOpen = !ctrl.conversations.sidebarOpen"
+          @toggle-sidebar="ctrl.conversations.toggleSidebar"
+          @open-details="ctrl.conversationDrawer.toggleDrawer"
           @open-paper="ctrl.conversationDrawer.openDrawerPaper"
         />
       </section>

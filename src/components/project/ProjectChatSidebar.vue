@@ -15,6 +15,8 @@ const props = defineProps<{
   activeConversationId?: string | null
   collapsed?: boolean
   loading?: boolean
+  mobile?: boolean
+  open?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -125,15 +127,46 @@ function handleSelectFromModal(conversationId: string): void {
 </script>
 
 <template>
+  <Teleport to="body">
+    <Transition
+      enter-active-class="duration-ppx-standard ease-ppx transition-opacity"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="duration-ppx-fast ease-ppx transition-opacity"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="props.mobile && props.open"
+        class="fixed inset-0 z-45 bg-black/30 lg:hidden"
+        @click="emit('toggle')"
+      />
+    </Transition>
+  </Teleport>
+
   <aside
-    class="border-ppx-border bg-ppx-bg duration-ppx-standard ease-ppx flex h-full shrink-0 flex-col border-r transition-[width]"
-    :class="props.collapsed ? 'w-15 items-center' : 'w-60'"
+    class="border-ppx-border bg-ppx-bg duration-ppx-standard ease-ppx flex h-full shrink-0 flex-col border-r transition-all"
+    :class="
+      props.mobile
+        ? [
+            'fixed inset-y-0 left-0 z-50 w-[min(18rem,calc(100vw-1rem))] max-w-full shadow-2xl lg:hidden',
+            props.open
+              ? 'translate-x-0 opacity-100'
+              : 'pointer-events-none -translate-x-full opacity-0',
+          ]
+        : props.collapsed
+          ? 'w-15 items-center'
+          : 'w-60'
+    "
   >
-    <ChatSidebarHeader :collapsed="props.collapsed" @toggle="emit('toggle')" />
+    <ChatSidebarHeader
+      :collapsed="Boolean(props.mobile ? false : props.collapsed)"
+      @toggle="emit('toggle')"
+    />
 
     <div class="border-ppx-border flex min-h-0 flex-1 flex-col border-t pt-3">
       <SidebarButton
-        v-if="!props.collapsed"
+        v-if="!props.collapsed || props.mobile"
         variant="toggle"
         :open="chatsOpen"
         @click="chatsOpen = !chatsOpen"
@@ -145,7 +178,11 @@ function handleSelectFromModal(conversationId: string): void {
         v-show="chatsOpen"
         class="mt-1 flex min-h-0 flex-col space-y-1 overflow-hidden px-2 pb-2"
       >
-        <SidebarButton variant="action" :collapsed="props.collapsed" @click="emit('create')">
+        <SidebarButton
+          variant="action"
+          :collapsed="Boolean(props.mobile ? false : props.collapsed)"
+          @click="emit('create')"
+        >
           <template #icon>
             <MessageSquarePlus class="text-ppx-text-soft h-4.5 w-4.5 group-hover:text-current" />
           </template>
@@ -154,7 +191,7 @@ function handleSelectFromModal(conversationId: string): void {
 
         <SidebarButton
           variant="action"
-          :collapsed="props.collapsed"
+          :collapsed="Boolean(props.mobile ? false : props.collapsed)"
           @click="searchModalOpen = true"
         >
           <template #icon>
@@ -163,7 +200,7 @@ function handleSelectFromModal(conversationId: string): void {
           {{ t('projects.chatSidebar.searchPlaceholder') }}
         </SidebarButton>
 
-        <template v-if="!props.collapsed">
+        <template v-if="!props.collapsed || props.mobile">
           <div
             v-if="props.loading && flatItems.length === 0"
             class="flex flex-col items-center justify-center py-12 text-center"

@@ -166,9 +166,14 @@ export function useProjectPageController(projectId: Ref<string>) {
     }
   }
 
-  watch(projectId, () => {
-    void loadData()
-  }, { immediate: true })
+  watch(
+    projectId,
+    () => {
+      conversationDrawer.closeDrawer()
+      void loadData()
+    },
+    { immediate: true },
+  )
 
   return reactive({
     loading,
