@@ -19,19 +19,7 @@ const props = withDefaults(
 )
 
 const uiStore = useUiStore()
-const {
-  projects,
-  loading,
-  activeProjectId,
-  createModalOpen,
-  searchModalOpen,
-  projectKeyword,
-  submitting,
-  openCreateModal,
-  openSearchModal,
-  handleCreate,
-  openProject,
-} = useProjectSidebarController()
+const ctrl = useProjectSidebarController()
 
 function toggleSidebar(): void {
   uiStore.toggleSidebar()
@@ -46,33 +34,33 @@ function toggleSidebar(): void {
 
     <div class="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden px-1">
       <SidebarProjectList
-        :projects="projects"
-        :active-project-id="activeProjectId"
+        :projects="ctrl.projects"
+        :active-project-id="ctrl.activeProjectId"
         :collapsed="props.collapsed"
-        :loading="loading"
-        @open-project="openProject"
-        @open-create-modal="openCreateModal"
-        @open-search-modal="openSearchModal"
+        :loading="ctrl.loading"
+        @open-project="ctrl.openProject"
+        @open-create-modal="ctrl.openCreateModal"
+        @open-search-modal="ctrl.openSearchModal"
       />
 
       <SidebarNav :collapsed="props.collapsed" />
     </div>
 
     <SidebarProjectCreateForm
-      :open="createModalOpen"
-      :submitting="submitting"
-      @close="createModalOpen = false"
-      @submit="handleCreate"
+      :open="ctrl.createModalOpen"
+      :submitting="ctrl.submitting"
+      @close="ctrl.createModalOpen = false"
+      @submit="ctrl.handleCreate"
     />
 
     <SidebarProjectSearchModal
-      v-model:keyword="projectKeyword"
-      :open="searchModalOpen"
-      :projects="projects"
-      @update:keyword="projectKeyword = $event"
-      @close="searchModalOpen = false"
-      @create-project="((createModalOpen = true), (searchModalOpen = false))"
-      @open-project="openProject"
+      v-model:keyword="ctrl.projectKeyword"
+      :open="ctrl.searchModalOpen"
+      :projects="ctrl.projects"
+      @update:keyword="ctrl.projectKeyword = $event"
+      @close="ctrl.searchModalOpen = false"
+      @create-project="((ctrl.createModalOpen = true), (ctrl.searchModalOpen = false))"
+      @open-project="ctrl.openProject"
     />
   </aside>
 </template>

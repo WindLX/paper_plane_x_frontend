@@ -21,9 +21,37 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
 
   const status = ref<HitlSocketStatus>('idle')
   const error = ref<string | null>(null)
+  let reconnectTimer: number | null = null
+  let visibilityListenerBound = false
   const pendingQuestions = computed(() =>
     Object.values(pendingQuestionsById).sort((left, right) => left.created_at - right.created_at),
   )
+
+  function clearReconnectTimer(): void {
+    if (reconnectTimer !== null) {
+      window.clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+  }
+
+  function scheduleReconnect(): void {
+    if (typeof window === 'undefined') return
+    if (reconnectTimer !== null) return
+    reconnectTimer = window.setTimeout(() => {
+      reconnectTimer = null
+      connect()
+    }, 1500)
+  }
+
+  function bindVisibilityReconnect(): void {
+    if (visibilityListenerBound || typeof document === 'undefined') return
+    visibilityListenerBound = true
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        connect()
+      }
+    })
+  }
 
   function currentRouteConversationId(): string | null {
     const route = router.currentRoute.value
@@ -67,6 +95,12 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
   function attachClient(nextClient: ReturnType<typeof hitlApi.createWebSocketClient>): void {
     nextClient.onStatusChange((nextStatus) => {
       status.value = nextStatus
+      if (nextStatus === 'connected') {
+        clearReconnectTimer()
+      }
+      if (nextStatus === 'disconnected' || nextStatus === 'error') {
+        scheduleReconnect()
+      }
     })
 
     nextClient.onQuestion((question) => {
@@ -103,6 +137,7 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
   }
 
   function connect(): void {
+    bindVisibilityReconnect()
     const wsClient = getClient()
     if (wsClient.currentStatus === 'idle' || wsClient.currentStatus === 'disconnected') {
       wsClient.connect()
@@ -110,6 +145,7 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
   }
 
   function disconnect(): void {
+    clearReconnectTimer()
     client.value?.disconnect()
     client.value = null
     status.value = 'idle'

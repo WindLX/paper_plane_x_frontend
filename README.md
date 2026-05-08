@@ -123,23 +123,33 @@ pnpm build:console
 - [x] 重整 project store, conversation store
 - [ ] project 的 button 复用
 - [ ] topbar i18n 问题，可以收起，button 复用
-- [ ] drawer ui 优化，状态保持
-  - [ ] 沙箱文件展示优化
-  - [ ] 沙箱文件可以打开展示
+- [x] drawer ui 优化，状态保持
+  - [x] 沙箱文件展示优化
+  - [x] 沙箱文件可以打开展示
 - [x] message card 的缩略文案宽度优化
 - [x] hitl 全局占用优化
-- [ ] 删除项目后的跳转问题
+- [x] 删除项目后的跳转问题
 - [ ] dialog 整治
-- [ ] chatinputbox 组件的复用化，同步给消息编辑
-- [ ] 消息编辑/重新运行/删除/fork的bug整治
+- [x] chatinputbox 组件的复用化，同步给消息编辑
+- [x] 消息编辑/重新运行/删除/fork的bug整治
 - [ ] pandoc 文件格式导出问题
-- [ ] chat 的对话跳转 topbar 状态
+- [x] chat 的对话跳转 topbar 状态
 - [x] chat drawer traces 滚动 lazy load
 - [x] chat drawer markdown 高度问题
 - [x] chattopbar 的 icon 位置
 - [x] 新对话的 chat topbar icon 不显示
 - [x] 修复sidebar 横向宽度 overflow 省略的问题
 - [ ] project 的日志面板整治
+- [ ] chatview 渲染问题
+  - [ ] 使用工具的时候生成ing 消失
+  - [ ] 用户气泡过长
+  - [ ] ![alt text](image.png) 对话中进入别的页面再跳转回来渲染 bug，似乎只会由 hitl 触发
+  - [ ] hitl 还会留下 empty state
+  - [ ] 终止对话按钮位置应该放在气泡下面，且终止对话无效
+  - [ ] 对话中点击 paper 无法跳转
+  - [ ] 对话详情按钮可以放到 chattopbar 里
+  - [ ] ![alt text](image-1.png) trace 记录存在 bug
+- [ ] 右侧边栏的宽度问题
 
 ### new feature
 

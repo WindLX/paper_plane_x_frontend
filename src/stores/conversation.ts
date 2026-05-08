@@ -34,7 +34,6 @@ export const useConversationStore = defineStore('conversation', () => {
   const currentConversationId = ref<string | null>(null)
   const loadingProjectLists = reactive<Record<string, boolean>>({})
   const loadingConversationContent = reactive<Record<string, boolean>>({})
-  const streamingConversationId = ref<string | null>(null)
 
   const loading = computed(
     () =>
@@ -47,11 +46,13 @@ export const useConversationStore = defineStore('conversation', () => {
   )
 
   const messages = computed<ConversationMessageResponse[]>(() =>
-    currentConversationId.value ? messagesByConversationId[currentConversationId.value] ?? [] : [],
+    currentConversationId.value
+      ? (messagesByConversationId[currentConversationId.value] ?? [])
+      : [],
   )
 
   const turns = computed<ConversationTurnResponse[]>(() =>
-    currentConversationId.value ? turnsByConversationId[currentConversationId.value] ?? [] : [],
+    currentConversationId.value ? (turnsByConversationId[currentConversationId.value] ?? []) : [],
   )
 
   function setProjectConversationIds(projectId: string, conversationIds: string[]): void {
@@ -67,7 +68,10 @@ export const useConversationStore = defineStore('conversation', () => {
         ...currentIds,
       ]
     }
-    setProjectConversationIds(conversation.project_id, conversationsByProjectId[conversation.project_id])
+    setProjectConversationIds(
+      conversation.project_id,
+      conversationsByProjectId[conversation.project_id],
+    )
     return conversation
   }
 
@@ -271,8 +275,16 @@ export const useConversationStore = defineStore('conversation', () => {
     conversationId: string,
     messageId: string,
     content: string,
+    options?: {
+      images?: string[] | null
+      paperIds?: string[] | null
+    },
   ): Promise<void> {
-    const message = await api.updateMessage(conversationId, messageId, { content })
+    const message = await api.updateMessage(conversationId, messageId, {
+      content,
+      images: options?.images ?? undefined,
+      paper_ids: options?.paperIds ?? undefined,
+    })
     const currentMessagesList = currentMessages(conversationId)
     const messageIndex = currentMessagesList.findIndex((item) => item.message_id === messageId)
     if (messageIndex !== -1) {
@@ -311,15 +323,34 @@ export const useConversationStore = defineStore('conversation', () => {
   async function deleteMessage(conversationId: string, messageId: string): Promise<void> {
     await api.deleteMessage(conversationId, messageId)
     setMessages(
-      currentMessages(conversationId).filter((message) => message.message_id !== messageId),
+      currentMessages(conversationId).filter((message) => {
+        if (message.message_id === messageId) return false
+        const matchedTurn = currentTurns(conversationId).find((turn) => turn.user_message?.message_id === messageId)
+        if (!matchedTurn) return true
+        return message.turn_id !== matchedTurn.turn_id || message.role !== 'user'
+      }),
       conversationId,
     )
     setTurns(
-      currentTurns(conversationId).filter(
-        (turn) =>
-          turn.user_message?.message_id !== messageId &&
-          !turn.assistant_events.some((event) => event.message_id === messageId),
-      ),
+      currentTurns(conversationId)
+        .map((turn) => {
+          if (turn.user_message?.message_id === messageId) {
+            return {
+              ...turn,
+              user_message: null,
+            }
+          }
+
+          if (turn.assistant_events.some((event) => event.message_id === messageId)) {
+            return {
+              ...turn,
+              assistant_events: turn.assistant_events.filter((event) => event.message_id !== messageId),
+            }
+          }
+
+          return turn
+        })
+        .filter((turn) => turn.user_message !== null || turn.assistant_events.length > 0),
       conversationId,
     )
     touchConversation(conversationId)
@@ -343,10 +374,15 @@ export const useConversationStore = defineStore('conversation', () => {
     syncConversation(conversation)
   }
 
-  function removeMessagesAfter(messageId: string, conversationId = currentConversationId.value): void {
+  function removeMessagesAfter(
+    messageId: string,
+    conversationId = currentConversationId.value,
+  ): void {
     if (!conversationId) return
     const currentMessagesList = currentMessages(conversationId)
-    const messageIndex = currentMessagesList.findIndex((message) => message.message_id === messageId)
+    const messageIndex = currentMessagesList.findIndex(
+      (message) => message.message_id === messageId,
+    )
     if (messageIndex !== -1) {
       const nextMessages = currentMessagesList.slice(0, messageIndex + 1)
       setMessages(nextMessages, conversationId)
@@ -405,7 +441,6 @@ export const useConversationStore = defineStore('conversation', () => {
     loading,
     loadingProjectLists,
     loadingConversationContent,
-    streamingConversationId,
     clearCurrentConversation,
     projectConversations,
     currentMessages,

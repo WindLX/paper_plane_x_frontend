@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import ImagePreview from '@/components/ImagePreview.vue'
 import type { PaperResponse } from '@/types/api'
 
-import ChatAttachmentPanel from './ChatAttachmentPanel.vue'
+import ChatComposerPanel from './ChatComposerPanel.vue'
 import ChatPaperPicker from './ChatPaperPicker.vue'
 
 const props = defineProps<{
@@ -202,42 +202,22 @@ function toggleExpanded(): void {
 
 <template>
   <div class="relative">
-    <!-- Expanded overlay backdrop -->
-    <Transition name="fade">
-      <div
-        v-if="expanded"
-        class="fixed inset-0 z-40 bg-black/40 backdrop-blur-md"
-        @click="expanded = false"
-      />
-    </Transition>
-
-    <!-- Content wrapper -->
-    <div
-      :class="[
-        'flex flex-col gap-2',
-        expanded ? 'fixed bottom-6 left-1/2 z-50 w-[min(95vw,72rem)] -translate-x-1/2' : '',
-      ]"
+    <ChatComposerPanel
+      :open="expanded"
+      :expanded="expanded"
+      width-class="max-w-[72rem]"
+      :hint-text="hintText"
+      :selected-papers="selectedPapers"
+      :images="images"
+      :attachments-collapsed="attachmentsCollapsed"
+      @close="expanded = false"
+      @update:attachments-collapsed="attachmentsCollapsed = $event"
+      @open-paper="onOpenPaper"
+      @remove-paper="onRemovePaper"
+      @remove-image="onRemoveImage"
+      @preview-image="previewSrc = $event"
     >
-      <!-- Attachment Panel -->
-      <ChatAttachmentPanel
-        :selected-papers="selectedPapers"
-        :images="images"
-        :collapsed="attachmentsCollapsed"
-        @update:collapsed="attachmentsCollapsed = $event"
-        @open-paper="onOpenPaper"
-        @remove-paper="onRemovePaper"
-        @remove-image="onRemoveImage"
-        @preview-image="previewSrc = $event"
-      />
-
-      <!-- Input container -->
-      <div
-        class="border-ppx-border bg-ppx-bg-elevated shadow-ppx-border/50 duration-ppx-fast text-ppx-text-soft focus-within:shadow-ppx-border/60 dark:bg-ppx-bg-inset flex gap-2 rounded-3xl border px-4 py-3 shadow-lg transition-all focus-within:shadow-xl dark:shadow-none"
-        :class="expanded ? 'flex-col rounded-2xl p-5 shadow-2xl' : ''"
-      >
-        <!-- Expanded header -->
-        <div v-if="expanded" class="flex items-center justify-between">
-          <span class="text-ppx-text-muted text-xs font-medium">{{ hintText }}</span>
+        <template #header-actions>
           <button
             type="button"
             class="workspace-icon-button h-7 w-7"
@@ -246,9 +226,8 @@ function toggleExpanded(): void {
           >
             <X class="h-3.5 w-3.5" />
           </button>
-        </div>
+        </template>
 
-        <!-- Textarea -->
         <textarea
           ref="textareaRef"
           v-model="modelValue"
@@ -261,40 +240,36 @@ function toggleExpanded(): void {
           @dragover="onDragOver"
         />
 
-        <!-- Footer row -->
-        <div class="flex items-center justify-between gap-2">
-          <!-- Hint (expanded only) -->
-          <div v-if="expanded" class="text-ppx-text-muted flex items-center gap-3 text-xs">
-            <span class="flex items-center gap-1">
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Enter</kbd
-              >
-              <span>{{ t('projects.chatView.keyboardNewLine') }}</span>
-            </span>
-            <span class="flex items-center gap-1">
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Ctrl</kbd
-              >
-              <span>+</span>
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Enter</kbd
-              >
-              <span>{{ t('projects.chatView.keyboardSend') }}</span>
-            </span>
-            <span class="flex items-center gap-1">
-              <kbd
-                class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-                >Esc</kbd
-              >
-              <span>{{ t('projects.chatView.keyboardCollapse') }}</span>
-            </span>
-          </div>
-          <div v-else class="flex-1" />
+        <template #expanded-hint>
+          <span class="flex items-center gap-1">
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Enter</kbd
+            >
+            <span>{{ t('projects.chatView.keyboardNewLine') }}</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Ctrl</kbd
+            >
+            <span>+</span>
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Enter</kbd
+            >
+            <span>{{ t('projects.chatView.keyboardSend') }}</span>
+          </span>
+          <span class="flex items-center gap-1">
+            <kbd
+              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+              >Esc</kbd
+            >
+            <span>{{ t('projects.chatView.keyboardCollapse') }}</span>
+          </span>
+        </template>
 
-          <div class="flex items-center gap-2">
+        <template #footer-left>
             <input
               ref="fileInputRef"
               type="file"
@@ -340,6 +315,9 @@ function toggleExpanded(): void {
             >
               <Expand class="h-4 w-4" />
             </button>
+        </template>
+
+        <template #footer-right>
             <button
               type="button"
               class="duration-ppx-fast flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all"
@@ -353,10 +331,8 @@ function toggleExpanded(): void {
             >
               <ArrowUp class="h-4 w-4" />
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
+        </template>
+    </ChatComposerPanel>
   </div>
 
   <!-- Paper Picker Modal -->
@@ -370,14 +346,3 @@ function toggleExpanded(): void {
   <!-- Image Preview -->
   <ImagePreview v-if="previewSrc" :src="previewSrc" @close="previewSrc = null" />
 </template>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 180ms var(--ppx-ease);
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>

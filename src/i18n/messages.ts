@@ -48,5 +48,3 @@ export const messages = {
     redirect: redirect['en-US'],
   },
 } as const
-
-export type AppMessages = typeof messages

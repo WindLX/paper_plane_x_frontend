@@ -7,24 +7,18 @@ import JsonPanel from '@/components/JsonPanel.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
 import ChatTurnActions from './ChatTurnActions.vue'
 import type { ConversationTurnEventResponse, ConversationTurnResponse } from '@/types/api'
-import { Check, X } from 'lucide-vue-next'
 
 const props = defineProps<{
   turn: ConversationTurnResponse
   isStreaming: boolean
   isToolCalling: boolean
-  editing?: boolean
+  forkLoading?: boolean
 }>()
 
-const editContent = defineModel<string>('editContent', { default: '' })
-
 const emit = defineEmits<{
-  edit: []
   rerun: []
   delete: []
   fork: []
-  confirmEdit: []
-  cancelEdit: []
   openPaper: [paperId: string]
 }>()
 
@@ -149,47 +143,17 @@ function openPaperReference(paperId: string): void {
             v-else-if="event.message_kind === 'assistant_final'"
             class="text-ppx-text text-base leading-relaxed"
           >
-            <template v-if="editing">
-              <div class="workspace-panel-inset rounded-ppx-panel px-4 py-3">
-                <textarea
-                  v-model="editContent"
-                  rows="6"
-                  class="workspace-textarea min-h-0 w-full resize-y border-0 bg-transparent px-0 py-0 text-base leading-relaxed shadow-none"
-                  @keydown.esc="emit('cancelEdit')"
-                  @keydown.meta.enter.prevent="emit('confirmEdit')"
-                  @keydown.ctrl.enter.prevent="emit('confirmEdit')"
-                />
-                <div class="mt-2 flex gap-1.5">
-                  <button
-                    type="button"
-                    class="workspace-icon-button h-7 w-7"
-                    @click="emit('cancelEdit')"
-                  >
-                    <X class="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    class="workspace-icon-button h-7 w-7"
-                    @click="emit('confirmEdit')"
-                  >
-                    <Check class="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </template>
-            <template v-else>
-              <MarkdownContent
-                :markdown="event.content ?? ''"
-                @paper-click="openPaperReference($event)"
-              />
-              <div
-                v-if="isStreaming && !isToolCalling && event === events[events.length - 1]"
-                class="mt-2 flex items-center gap-1.5"
-              >
-                <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
-                <span class="text-xs">{{ t('projects.chatView.generating') }}</span>
-              </div>
-            </template>
+            <MarkdownContent
+              :markdown="event.content ?? ''"
+              @paper-click="openPaperReference($event)"
+            />
+            <div
+              v-if="isStreaming && !isToolCalling && event === events[events.length - 1]"
+              class="mt-2 flex items-center gap-1.5"
+            >
+              <LoaderCircle class="text-ppx-accent h-3.5 w-3.5 animate-spin" />
+              <span class="text-xs">{{ t('projects.chatView.generating') }}</span>
+            </div>
           </div>
         </template>
       </template>
@@ -214,7 +178,8 @@ function openPaperReference(paperId: string): void {
         <ChatTurnActions
           :visible="hovered && !isStreaming"
           align="end"
-          @edit="emit('edit')"
+          :show-edit="false"
+          :fork-loading="props.forkLoading"
           @rerun="emit('rerun')"
           @delete="emit('delete')"
           @fork="emit('fork')"

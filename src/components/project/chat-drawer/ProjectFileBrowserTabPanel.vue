@@ -149,7 +149,7 @@ function openPaperReference(paperId: string): void {
     <!-- File list -->
     <div
       v-if="!ctrl.selectedFile && !ctrl.createMode && !ctrl.createDirMode"
-      class="workspace-panel min-h-0 flex-1 overflow-auto p-0"
+      class="workspace-panel max-h-full min-h-0 overflow-auto p-0"
     >
       <div
         v-if="ctrl.loading && ctrl.items.length === 0"
@@ -164,7 +164,7 @@ function openPaperReference(paperId: string): void {
         <div
           v-for="item in ctrl.items"
           :key="item.name"
-          class="group flex cursor-pointer items-center justify-between gap-3 px-3.5 py-2.5 transition-colors"
+          class="group flex shrink-0 cursor-pointer items-center justify-between gap-3 px-3.5 py-2.5 transition-colors"
           :class="item.is_dir ? 'hover:bg-ppx-bg-subtle/60 cursor-pointer' : ''"
           @click="item.is_dir ? ctrl.enterDir(item) : ctrl.openFile(item)"
         >

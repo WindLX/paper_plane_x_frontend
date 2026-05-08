@@ -1,15 +1,11 @@
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 
-import { useNotify } from '@/composables/useNotify'
 import { useProjectStore } from '@/stores/projects'
 
 export function useProjectSidebarController() {
   const route = useRoute()
   const router = useRouter()
-  const { t } = useI18n()
-  const notify = useNotify()
   const projectStore = useProjectStore()
 
   const createModalOpen = ref(false)
@@ -47,7 +43,6 @@ export function useProjectSidebarController() {
     const project = await projectStore.createProject(name, description)
     if (project) {
       createModalOpen.value = false
-      notify.push(t('sidebar.project.created'), 'success')
       await router.push(`/projects/${project.project_id}`)
     }
     submitting.value = false
@@ -62,7 +57,7 @@ export function useProjectSidebarController() {
     void ensureProjects()
   })
 
-  return {
+  return reactive({
     projects,
     loading,
     error,
@@ -75,5 +70,5 @@ export function useProjectSidebarController() {
     openSearchModal,
     handleCreate,
     openProject,
-  }
+  })
 }

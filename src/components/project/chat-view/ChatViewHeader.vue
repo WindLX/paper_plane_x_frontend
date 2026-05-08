@@ -77,7 +77,7 @@ function onDelete(): void {
       <template v-else>
         <div class="flex min-w-0 flex-1 items-center gap-2">
           <h2
-            class="hover:bg-ppx-bg-elevated/60 text-ppx-text min-w-0 flex-1 truncate rounded-md px-1.5 py-0.5 text-base font-semibold transition-colors"
+            class="text-ppx-text min-w-0 flex-1 truncate rounded-md px-1.5 py-0.5 text-base font-semibold transition-colors"
           >
             {{ title ?? t('projects.chatView.newConversation') }}
           </h2>
