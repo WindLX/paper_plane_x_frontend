@@ -6,6 +6,7 @@ import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
 
 import { safePrettyJson } from '@/utils/format'
+import { useNotify } from '@/composables/useNotify'
 
 const props = defineProps<{
   title: string
@@ -15,6 +16,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const { push: notifyPush } = useNotify()
 const open = ref(Boolean(props.defaultOpen))
 
 type JsonValue = Record<string, unknown> | unknown[] | string | number | boolean | null
@@ -22,9 +24,23 @@ type JsonValue = Record<string, unknown> | unknown[] | string | number | boolean
 const jsonData = computed(() => props.value as JsonValue)
 
 const text = computed(() => safePrettyJson(props.value))
+const copied = ref(false)
+let timer: number | null = null
 
 async function copyToClipboard(): Promise<void> {
-  await navigator.clipboard.writeText(text.value)
+  try {
+    await navigator.clipboard.writeText(text.value)
+    copied.value = true
+    if (timer !== null) {
+      window.clearTimeout(timer)
+    }
+    timer = window.setTimeout(() => {
+      copied.value = false
+      timer = null
+    }, 1200)
+  } catch {
+    notifyPush(t('copyable.copyFailed'), 'warning')
+  }
 }
 </script>
 

@@ -1,4 +1,4 @@
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 import { api } from '@/api'
 import { useConversationStore } from '@/stores/conversation'
@@ -88,6 +88,15 @@ export function useConversationDrawer() {
       await openDrawer()
     }
   }
+
+  watch(
+    () => chatStore.currentConversationId,
+    (newId, oldId) => {
+      if (newId !== oldId && drawerOpen.value) {
+        void loadDrawerContent()
+      }
+    },
+  )
 
   return reactive({
     drawerOpen,

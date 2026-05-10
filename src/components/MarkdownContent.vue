@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DOMPurify from 'dompurify'
 import katex from 'katex'
 import MarkdownIt from 'markdown-it'
 import texmath from 'markdown-it-texmath'
 
+import { useNotify } from '@/composables/useNotify'
 import 'katex/dist/katex.min.css'
+
+const { t } = useI18n()
+const { push: notifyPush } = useNotify()
 
 const props = withDefaults(
   defineProps<{
@@ -182,14 +187,7 @@ function handleClick(e: MouseEvent): void {
       setTimeout(() => btn.classList.remove('is-copied'), 2000)
     })
     .catch(() => {
-      const textarea = document.createElement('textarea')
-      textarea.value = text
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-      btn.classList.add('is-copied')
-      setTimeout(() => btn.classList.remove('is-copied'), 2000)
+      notifyPush(t('copyable.copyFailed'), 'warning')
     })
 }
 </script>

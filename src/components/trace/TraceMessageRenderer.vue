@@ -127,35 +127,55 @@ const previewText = computed(() => {
   ) {
     return props.message.name
   }
+
+  // 1. content
   const content = props.message.content
   if (typeof content === 'string') {
     const text = content.replace(/\s+/g, ' ').trim()
-    if (!text) return t('traces.emptyContent')
+    if (text) {
+      if (text.length <= 40) return text
+      return `${text.slice(0, 40)}...`
+    }
+  } else if (Array.isArray(content)) {
+    for (const item of content) {
+      if (typeof item !== 'object' || item === null) {
+        continue
+      }
+      const part = item as Record<string, unknown>
+      if (part.type === 'text' && typeof part.text === 'string') {
+        const text = part.text.replace(/\s+/g, ' ').trim()
+        if (text) {
+          if (text.length <= 40) return text
+          return `${text.slice(0, 40)}...`
+        }
+      }
+    }
+    if (content.length > 0) {
+      return t('traces.multimodalMessage')
+    }
+  }
+
+  // 2. reasoning_content
+  const reasoning = props.message.reasoning_content
+  if (typeof reasoning === 'string' && reasoning.trim().length > 0) {
+    const text = reasoning.replace(/\s+/g, ' ').trim()
     if (text.length <= 40) return text
     return `${text.slice(0, 40)}...`
   }
 
-  if (!Array.isArray(content)) {
-    return t('traces.emptyContent')
-  }
-
-  for (const item of content) {
-    if (typeof item !== 'object' || item === null) {
-      continue
-    }
-    const part = item as Record<string, unknown>
-    if (part.type === 'text' && typeof part.text === 'string') {
-      const text = part.text.replace(/\s+/g, ' ').trim()
-      if (!text) {
-        continue
+  // 3. tool_calls[0].function.name
+  if (Array.isArray(props.message.tool_calls) && props.message.tool_calls.length > 0) {
+    const first = props.message.tool_calls[0]
+    if (typeof first === 'object' && first !== null) {
+      const fn = (first as Record<string, unknown>).function
+      if (
+        typeof fn === 'object' &&
+        fn !== null &&
+        typeof (fn as Record<string, unknown>).name === 'string'
+      ) {
+        return (fn as Record<string, string>).name
       }
-      if (text.length <= 40) return text
-      return `${text.slice(0, 40)}...`
     }
-  }
-
-  if (content.length > 0) {
-    return t('traces.multimodalMessage')
   }
 
   return t('traces.emptyContent')

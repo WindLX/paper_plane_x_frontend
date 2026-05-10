@@ -279,10 +279,9 @@ export const useConversationWsStore = defineStore('conversationWs', () => {
       content: (nextEvents[eventIndex].content ?? '') + delta,
       reasoning_content:
         messageKind === 'assistant_reasoning'
-          ? (nextEvents[eventIndex].reasoning_content ??
-              nextEvents[eventIndex].content ??
-              '') + delta
-          : nextEvents[eventIndex].reasoning_content ?? null,
+          ? (nextEvents[eventIndex].reasoning_content ?? nextEvents[eventIndex].content ?? '') +
+            delta
+          : (nextEvents[eventIndex].reasoning_content ?? null),
     }
     turn.assistant_events = nextEvents
   }
@@ -318,7 +317,7 @@ export const useConversationWsStore = defineStore('conversationWs', () => {
         const messageId = data.message_id ?? ''
         const sequenceNo = data.sequence_no ?? 0
         const messageKind = data.message_kind ?? 'assistant_final'
-        const delta = data.delta ?? data.reasoning_delta ?? ''
+        const delta = data.reasoning_delta || data.delta || ''
         if (messageId && delta) {
           updateEventContent(conversationId, messageId, messageKind, sequenceNo, delta)
         }
@@ -383,9 +382,12 @@ export const useConversationWsStore = defineStore('conversationWs', () => {
         state.pendingStop = false
         state.completionStatus = data.completion_status ?? 'completed'
         state.needsRefreshOnReconnect = false
-        const existingTurnIds = new Set(chatStore.currentTurns(conversationId).map((turn) => turn.turn_id))
+        const existingTurnIds = new Set(
+          chatStore.currentTurns(conversationId).map((turn) => turn.turn_id),
+        )
         const replayedExistingTurn =
-          Boolean(state.streamingTurn?.turn_id) && existingTurnIds.has(state.streamingTurn?.turn_id ?? '')
+          Boolean(state.streamingTurn?.turn_id) &&
+          existingTurnIds.has(state.streamingTurn?.turn_id ?? '')
         if (state.streamingTurn) {
           state.streamingTurn.trace_ids = data.trace_ids ?? []
           chatStore.upsertTurn(
