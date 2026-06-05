@@ -7,8 +7,8 @@ import AppButton from '../AppButton.vue'
 import CopyableText from '../CopyableText.vue'
 import TraceMessageRenderer from './TraceMessageRenderer.vue'
 import JsonPanel from '../JsonPanel.vue'
-import type { AgentTraceResponse } from '../../types/api'
-import { formatDateTime } from '../../utils/format'
+import type { AgentTraceResponse } from '@/types/api'
+import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
   trace: AgentTraceResponse

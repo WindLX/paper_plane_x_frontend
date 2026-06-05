@@ -17,7 +17,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  submit: [name: string, description: string | null]
+  submit: [[name: string, description: string | null]]
 }>()
 
 const { t } = useI18n()
@@ -28,7 +28,7 @@ async function submit(): Promise<void> {
     notify.push(t('sidebar.project.error.createValidationNameRequired'), 'error', 3600)
     return
   }
-  emit('submit', name.value.trim(), description.value.trim() || null)
+  emit('submit', [name.value.trim(), description.value.trim() || null])
   name.value = ''
   description.value = ''
 }

@@ -1,3 +1,7 @@
+export type ExtractionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'HUMAN_COMPLETED' | 'FAILED'
+
+export type FactCheckStatus = 'PENDING' | 'PASSED' | 'HUMAN_PASSED' | 'FAILED'
+
 export interface PaperResponse {
   paper_id: string
   project_ids: string[]
@@ -10,9 +14,9 @@ export interface PaperResponse {
   raw_pdf_path: string | null
   raw_pdf_sha256: string | null
   images_paths: string[]
-  extraction_status: string
-  extraction_fact_check_status: string
-  analysis_fact_check_status: string
+  extraction_status: ExtractionStatus
+  extraction_fact_check_status: FactCheckStatus
+  analysis_fact_check_status: FactCheckStatus
   extraction_retry_count: number
   analysis_retry_count: number
   agent_note: string | null

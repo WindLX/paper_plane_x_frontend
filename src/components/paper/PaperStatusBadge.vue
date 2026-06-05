@@ -1,23 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { DataProcessTaskStatus } from '@/types/api'
+import type { ExtractionStatus, FactCheckStatus } from '@/types/api'
 
 const props = defineProps<{
-  status: DataProcessTaskStatus
+  status: ExtractionStatus | FactCheckStatus
 }>()
 
 const colorClass = computed(() => {
   switch (props.status) {
-    case 'RUNNING':
-    case 'CANCELING':
-      return 'workspace-badge--warning'
     case 'COMPLETED':
+    case 'HUMAN_COMPLETED':
+    case 'PASSED':
+    case 'HUMAN_PASSED':
       return 'workspace-badge--success'
     case 'FAILED':
       return 'workspace-badge--danger'
-    case 'CANCELED':
-      return 'workspace-badge--neutral'
+    case 'PROCESSING':
+      return 'workspace-badge--warning'
+    case 'PENDING':
+      return 'workspace-badge--info'
     default:
       return 'workspace-badge--info'
   }

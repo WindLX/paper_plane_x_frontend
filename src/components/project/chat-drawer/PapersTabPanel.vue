@@ -13,14 +13,14 @@ defineProps<{
 
 const emit = defineEmits<{
   link: [paperId: string]
-  linkToProject: [projectId: string, paperId: string]
+  linkToProject: [[projectId: string, paperId: string]]
   unlink: [paperId: string]
 }>()
 
 const { t } = useI18n()
 
-function onLinkToProject(projectId: string, paperId: string) {
-  emit('linkToProject', projectId, paperId)
+function onLinkToProject([projectId, paperId]: [string, string]) {
+  emit('linkToProject', [projectId, paperId])
 }
 </script>
 
@@ -28,7 +28,9 @@ function onLinkToProject(projectId: string, paperId: string) {
   <div class="h-full min-h-0 overflow-y-auto">
     <div v-if="loading" class="flex h-full min-h-64 flex-col items-center justify-center gap-3">
       <LoaderCircle class="text-ppx-accent h-8 w-8 animate-spin" />
-      <span class="text-ppx-text-muted text-sm font-medium">{{ t('projects.common.loading') }}</span>
+      <span class="text-ppx-text-muted text-sm font-medium">{{
+        t('projects.common.loading')
+      }}</span>
     </div>
     <PaperDetailPanel
       v-else

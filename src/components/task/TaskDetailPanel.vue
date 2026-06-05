@@ -2,11 +2,12 @@
 import { Ban, RotateCcw, Trash2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
+import TaskStatusBadge from './TaskStatusBadge.vue'
 import AppButton from '../AppButton.vue'
 import CopyableText from '../CopyableText.vue'
 import JsonPanel from '../JsonPanel.vue'
-import type { DataProcessTaskResponse } from '../../types/api'
-import { formatDateTime } from '../../utils/format'
+import type { DataProcessTaskResponse } from '@/types/api'
+import { formatDateTime } from '@/utils/format'
 
 const props = defineProps<{
   task: DataProcessTaskResponse
@@ -44,7 +45,7 @@ const { t } = useI18n()
           <span class="text-ppx-text-muted shrink-0 font-semibold">{{
             t('tasks.detail.status')
           }}</span>
-          <span>{{ t(`tasks.status.${props.task.status}`) }}</span>
+          <TaskStatusBadge :status="props.task.status" />
         </div>
         <div class="flex items-center gap-2">
           <span class="text-ppx-text-muted shrink-0 font-semibold">{{

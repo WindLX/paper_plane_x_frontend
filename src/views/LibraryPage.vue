@@ -125,19 +125,13 @@ async function refreshLibrary(): Promise<void> {
   await ctrl.fetchPapers()
 }
 
-async function handleLinkPaperToProject(projectId: string, paperId: string): Promise<void> {
+async function handleLinkPaperToProject([projectId, paperId]: [string, string]): Promise<void> {
   const ok = await ctrl.linkPaperToProject(projectId, paperId)
   if (!ok) {
     return
   }
   refreshDrawer()
   await refreshLibrary()
-}
-
-async function handleLinkPaper(paperId: string): Promise<void> {
-  const projectId = ctrl.searchProjectId.trim()
-  if (!projectId) return
-  await handleLinkPaperToProject(projectId, paperId)
 }
 
 async function handleUnlinkPaper(paperId: string): Promise<void> {
@@ -256,9 +250,7 @@ onBeforeUnmount(() => {
           <PaperDrawerContent
             v-if="selectedPaperId"
             :paper-id="selectedPaperId"
-            :project-id="ctrl.searchProjectId || undefined"
             :reload-key="drawerReloadKey"
-            @link="handleLinkPaper"
             @unlink="handleUnlinkPaper"
             @link-to-project="handleLinkPaperToProject"
             @refresh-list="refreshLibrary"

@@ -15,8 +15,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  link: [paperId: string]
-  linkToProject: [projectId: string, paperId: string]
+  linkToProject: [[projectId: string, paperId: string]]
   unlink: [paperId: string]
   refreshList: []
   close: []
@@ -84,8 +83,7 @@ watch(
       <PaperDetailPanel
         :paper="detail.paper"
         :project-id="props.projectId"
-        @link="emit('link', $event)"
-        @link-to-project="emit('linkToProject', $event[0], $event[1])"
+        @link-to-project="emit('linkToProject', $event)"
         @unlink="emit('unlink', $event)"
         @delete="handleDelete"
       />

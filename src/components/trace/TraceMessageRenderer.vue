@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import MarkdownContent from '../MarkdownContent.vue'
 import JsonPanel from '../JsonPanel.vue'
-import type { TraceMessage } from '../../types/api'
+import type { TraceMessage } from '@/types/api'
 
 const props = defineProps<{
   message: TraceMessage

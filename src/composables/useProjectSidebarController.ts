@@ -38,7 +38,7 @@ export function useProjectSidebarController() {
     searchModalOpen.value = true
   }
 
-  async function handleCreate(name: string, description: string | null): Promise<void> {
+  async function handleCreate([name, description]: [string, string | null]): Promise<void> {
     submitting.value = true
     const project = await projectStore.createProject(name, description)
     if (project) {

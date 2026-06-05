@@ -305,7 +305,7 @@ textarea {
   .workspace-page {
     @apply border p-5;
     border-radius: var(--ppx-radius-page);
-    border-color: var(--ppx-border);
+    border-color: var(--ppx-border-strong);
     background: var(--ppx-bg-elevated);
     box-shadow: var(--ppx-shadow-rest);
   }
@@ -530,6 +530,7 @@ textarea {
 
   .workspace-badge {
     @apply inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold;
+    border-color: var(--ppx-border);
   }
 
   .workspace-badge--neutral {

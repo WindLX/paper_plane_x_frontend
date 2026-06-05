@@ -16,7 +16,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   save: [
-    agentName: string,
+    [agentName: string,
     payload: {
       provider_name: string
       temperature?: number | null
@@ -27,7 +27,7 @@ const emit = defineEmits<{
       extra_body?: Record<string, unknown> | null
       is_vlm?: boolean | null
       short_memory_window?: number | null
-    },
+    }]
   ]
 }>()
 
@@ -89,7 +89,7 @@ watch(
 
 function onSave() {
   if (!props.editingAgent) return
-  emit('save', props.editingAgent.agent_name, {
+  emit('save', [props.editingAgent.agent_name, {
     provider_name: agentForm.value.provider_name ?? 'default',
     temperature: agentForm.value.temperature ?? null,
     max_tokens: agentForm.value.max_tokens ?? null,
@@ -99,7 +99,7 @@ function onSave() {
     extra_body: agentForm.value.extra_body ?? null,
     is_vlm: agentForm.value.is_vlm ?? null,
     short_memory_window: agentForm.value.short_memory_window ?? null,
-  })
+  }])
 }
 </script>
 

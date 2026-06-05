@@ -54,7 +54,11 @@ async function openPaperReference(paperId: string): Promise<void> {
   try {
     selectedPaper.value = await api.getPaper(paperId)
   } catch (err) {
-    notify.push(err instanceof Error ? err.message : t('projects.errors.requestFailed'), 'error', 3600)
+    notify.push(
+      err instanceof Error ? err.message : t('projects.errors.requestFailed'),
+      'error',
+      3600,
+    )
     selectedPaper.value = null
   } finally {
     paperLoading.value = false
@@ -76,10 +80,13 @@ async function handleLinkPaper(paperId: string): Promise<void> {
   }
 }
 
-async function handleLinkPaperToProject(projectId: string, paperId: string): Promise<void> {
+async function handleLinkPaperToProject([projectId, paperId]: [string, string]): Promise<void> {
   try {
     await api.linkProjectPaper(projectId, paperId)
-    notify.push(t('projects.chatDrawer.paperLinkedToProject', { paperId, projectName: projectId }), 'success')
+    notify.push(
+      t('projects.chatDrawer.paperLinkedToProject', { paperId, projectName: projectId }),
+      'success',
+    )
     await reloadSelectedPaper()
   } catch (err) {
     notify.push(err instanceof Error ? err.message : String(err), 'error', 3600)
@@ -107,7 +114,9 @@ watch(
 </script>
 
 <template>
-  <section class="animate-fade-in-up flex h-full min-h-0 min-w-0 flex-col space-y-3 overflow-x-hidden">
+  <section
+    class="animate-fade-in-up flex h-full min-h-0 min-w-0 flex-col space-y-3 overflow-x-hidden"
+  >
     <nav class="workspace-panel flex shrink-0 items-center gap-1 p-1.5">
       <button
         v-for="tab in tabs"

@@ -12,14 +12,6 @@ export const tasks = {
       failed: '失败',
       canceled: '已取消',
     },
-    status: {
-      QUEUED: '排队中',
-      RUNNING: '运行中',
-      CANCELING: '取消中',
-      COMPLETED: '已完成',
-      FAILED: '失败',
-      CANCELED: '已取消',
-    },
     table: {
       taskId: '任务 ID',
       paperId: '论文 ID',

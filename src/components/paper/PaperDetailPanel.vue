@@ -21,8 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   unlink: [paperId: string]
-  link: [paperId: string]
-  linkToProject: [projectId: string, paperId: string]
+  linkToProject: [[projectId: string, paperId: string]]
   delete: [paperId: string]
 }>()
 
@@ -33,7 +32,7 @@ const linkModal = useProjectLinkModal(props.paper)
 
 async function handleLinkToProject(projectId: string): Promise<void> {
   if (!props.paper || linkModal.isPaperLinkedToProject(projectId)) return
-  emit('linkToProject', projectId, props.paper.paper_id)
+  emit('linkToProject', [projectId, props.paper.paper_id])
   linkModal.projectLinkModalOpen.value = false
 }
 </script>
@@ -47,7 +46,6 @@ async function handleLinkToProject(projectId: string): Promise<void> {
         :unlinking-paper-id="unlinkingPaperId"
         :linking-paper-id="linkingPaperId"
         @unlink="emit('unlink', $event)"
-        @link="emit('link', $event)"
         @open-project-link-modal="linkModal.openProjectLinkModal()"
         @delete="emit('delete', $event)"
       />

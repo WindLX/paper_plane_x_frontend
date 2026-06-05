@@ -7,11 +7,13 @@ const props = withDefaults(
     title: string
     description?: string
     widthClass?: string
+    zIndex?: string
   }>(),
   {
     open: true,
     description: '',
     widthClass: 'max-w-5xl',
+    zIndex: 'z-50',
   },
 )
 
@@ -30,7 +32,10 @@ const emit = defineEmits<{
     >
       <div
         v-if="props.open"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/38 px-4 py-6 backdrop-blur-xs"
+        :class="[
+          'fixed inset-0 flex items-center justify-center bg-black/38 px-4 py-6 backdrop-blur-xs',
+          props.zIndex,
+        ]"
         @click="emit('close')"
       >
         <Transition

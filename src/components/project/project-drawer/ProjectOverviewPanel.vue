@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   AlertTriangle,
   Calendar,
@@ -36,6 +36,14 @@ const { t } = useI18n()
 
 const isEditingAgentSummary = ref(false)
 const agentSummaryDraft = ref('')
+const isUpdatingAgentSummary = ref(false)
+
+watch(
+  () => props.project?.agent_summary,
+  () => {
+    isUpdatingAgentSummary.value = false
+  },
+)
 
 const summaryCards = computed(() => {
   const stats = props.globalFinder?.stats
@@ -125,19 +133,27 @@ function fmtNum(value: number | null): string {
         <h4 class="workspace-label mb-0">{{ t('projects.librarian.globalFinder.yearStats') }}</h4>
         <div class="text-ppx-text-soft grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
           <div>
-            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.mean') }}:</span>
+            <span class="text-ppx-text font-medium"
+              >{{ t('projects.librarian.globalFinder.mean') }}:</span
+            >
             {{ fmtNum(yearDistribution.mean) }}
           </div>
           <div>
-            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.median') }}:</span>
+            <span class="text-ppx-text font-medium"
+              >{{ t('projects.librarian.globalFinder.median') }}:</span
+            >
             {{ fmtNum(yearDistribution.median) }}
           </div>
           <div>
-            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.q25') }}:</span>
+            <span class="text-ppx-text font-medium"
+              >{{ t('projects.librarian.globalFinder.q25') }}:</span
+            >
             {{ fmtNum(yearDistribution.q25) }}
           </div>
           <div>
-            <span class="text-ppx-text font-medium">{{ t('projects.librarian.globalFinder.q75') }}:</span>
+            <span class="text-ppx-text font-medium"
+              >{{ t('projects.librarian.globalFinder.q75') }}:</span
+            >
             {{ fmtNum(yearDistribution.q75) }}
           </div>
           <div>
@@ -176,15 +192,24 @@ function fmtNum(value: number | null): string {
 
       <div class="workspace-panel-inset space-y-2 rounded-xl p-3">
         <div class="flex items-center justify-between">
-          <h4 class="workspace-label mb-0">{{ t('projects.summaryTitle') }}</h4>
+          <div class="flex items-center gap-2">
+            <h4 class="workspace-label mb-0">{{ t('projects.summaryTitle') }}</h4>
+            <div v-if="isUpdatingAgentSummary" class="flex items-center gap-1.5">
+              <LoaderCircle class="text-ppx-accent h-4 w-4 animate-spin" />
+              <span class="text-ppx-text-soft text-xs">{{
+                t('projects.agentSummaryLoading')
+              }}</span>
+            </div>
+          </div>
           <div v-if="!isEditingAgentSummary" class="flex items-center gap-1">
             <AppButton
               v-if="agentSummary"
               size="xs"
               variant="outline"
-              @click="emit('forceAgentSummary')"
+              :disabled="isUpdatingAgentSummary"
+              @click="((isUpdatingAgentSummary = true), emit('forceAgentSummary'))"
             >
-              <RefreshCw class="h-3 w-3" />
+              <RefreshCw class="h-3 w-3" :class="{ 'animate-spin': isUpdatingAgentSummary }" />
             </AppButton>
             <AppButton
               size="xs"
@@ -215,8 +240,11 @@ function fmtNum(value: number | null): string {
               size="xs"
               variant="solid"
               tone="sky"
+              :disabled="isUpdatingAgentSummary"
               @click="
-                (emit('update:agentSummary', agentSummaryDraft), (isEditingAgentSummary = false))
+                ((isUpdatingAgentSummary = true),
+                emit('update:agentSummary', agentSummaryDraft),
+                (isEditingAgentSummary = false))
               "
               >{{ t('projects.actions.save') }}</AppButton
             >

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import type { PaperResponse } from '../../types/api'
-import type { SortOrder, PaperSortKey } from '../../types/sort'
-import { formatDateTime } from '../../utils/format'
+import type { PaperResponse } from '@/types/api'
+import type { SortOrder, PaperSortKey } from '@/types/sort'
+import { formatDateTime } from '@/utils/format'
 import CopyableText from '../CopyableText.vue'
 import SortButton from '../SortButton.vue'
+import PaperStatusBadge from './PaperStatusBadge.vue'
 
 const selectedPaperId = defineModel<string | null>('selectedPaperId')
 
@@ -33,42 +34,6 @@ function handleToggle(paperId: string): void {
     selectedPaperId.value = paperId
     emit('open', paperId)
   }
-}
-
-function statusClass(status: string | null | undefined): string {
-  const normalized = (status ?? '').toUpperCase()
-
-  // Success states: COMPLETED, HUMAN_COMPLETED, PASSED, HUMAN_PASSED
-  if (
-    normalized.includes('COMPLETED') ||
-    normalized.includes('HUMAN_COMPLETED') ||
-    normalized.includes('PASSED') ||
-    normalized.includes('HUMAN_PASSED')
-  ) {
-    return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
-  }
-
-  // Failure states: FAILED, FAIL, ERROR
-  if (
-    normalized.includes('FAILED') ||
-    normalized.includes('FAIL') ||
-    normalized.includes('ERROR')
-  ) {
-    return 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-200'
-  }
-
-  // In-progress states: PROCESSING, RUNNING
-  if (normalized.includes('PROCESSING') || normalized.includes('RUNNING')) {
-    return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'
-  }
-
-  // Pending / unknown -> neutral
-  if (normalized.includes('PENDING') || normalized === '') {
-    return 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-200'
-  }
-
-  // Fallback
-  return 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-200'
 }
 </script>
 
@@ -144,34 +109,19 @@ function statusClass(status: string | null | undefined): string {
               <span class="text-ppx-text mr-1 font-medium"
                 >{{ t('paper.rawPaperStatus.extraction') }}:</span
               >
-              <span
-                class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
-                :class="statusClass(paper.extraction_status)"
-              >
-                {{ paper.extraction_status }}
-              </span>
+              <PaperStatusBadge :status="paper.extraction_status" />
             </div>
             <div class="mb-1">
               <span class="text-ppx-text mr-1 font-medium"
                 >{{ t('paper.rawPaperStatus.extractionFactCheck') }}:</span
               >
-              <span
-                class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
-                :class="statusClass(paper.extraction_fact_check_status)"
-              >
-                {{ paper.extraction_fact_check_status }}
-              </span>
+              <PaperStatusBadge :status="paper.extraction_fact_check_status" />
             </div>
             <div>
               <span class="text-ppx-text mr-1 font-medium"
                 >{{ t('paper.rawPaperStatus.analysisFactCheck') }}:</span
               >
-              <span
-                class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
-                :class="statusClass(paper.analysis_fact_check_status)"
-              >
-                {{ paper.analysis_fact_check_status }}
-              </span>
+              <PaperStatusBadge :status="paper.analysis_fact_check_status" />
             </div>
           </td>
           <td class="px-3 py-2 text-sm">{{ formatDateTime(paper.created_at) }}</td>

@@ -4,9 +4,9 @@ import { useI18n } from 'vue-i18n'
 import CopyableText from '../CopyableText.vue'
 import SortButton from '../SortButton.vue'
 import TaskStatusBadge from './TaskStatusBadge.vue'
-import type { DataProcessTaskResponse } from '../../types/api'
-import type { SortOrder, TaskSortKey } from '../../types/sort'
-import { formatDateTime } from '../../utils/format'
+import type { DataProcessTaskResponse } from '@/types/api'
+import type { SortOrder, TaskSortKey } from '@/types/sort'
+import { formatDateTime } from '@/utils/format'
 
 const selectedTaskId = defineModel<string | null>('selectedTaskId')
 
