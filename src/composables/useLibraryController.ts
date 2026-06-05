@@ -123,11 +123,13 @@ export function useLibraryList() {
     }
   }
 
-  async function fetchStatusCounts(force = false): Promise<void> {
+  async function fetchStatusCounts(force = false, projectId?: string): Promise<void> {
     if (!force && statusCounts.value !== null) return
     statusCountsLoading.value = true
     try {
-      statusCounts.value = await api.getPaperStatusCounts()
+      statusCounts.value = projectId
+        ? await api.getProjectPaperStatusCounts(projectId)
+        : await api.getPaperStatusCounts()
     } catch (err) {
       statusCounts.value = null
       const message =

@@ -13,12 +13,14 @@ import type {
   LibrarianGlobalFinderResponse,
   ProjectExportField,
 } from '@/types/api'
+import type { ProjectPageTab } from '@/composables/useProjectPageController'
 
 const props = defineProps<{
   project: ProjectResponse | null
   globalFinder: LibrarianGlobalFinderResponse | null
   loading: boolean
   hasConversation?: boolean
+  activeTab: ProjectPageTab
 }>()
 
 const emit = defineEmits<{
@@ -28,6 +30,7 @@ const emit = defineEmits<{
   'update:project': [payload: { name?: string | null; description?: string | null }]
   'delete:project': []
   'export:project': [payload: { fields: ProjectExportField[]; citationsMode: 'keep' | 'strip' }]
+  openTab: [tab: ProjectPageTab]
 }>()
 
 const { t } = useI18n()
@@ -123,8 +126,9 @@ function handleSaveProject(payload: { name: string | null; description: string |
 <template>
   <ProjectTopbarActions
     :active-panel="activePanel"
-    :has-conversation="props.hasConversation"
+    :active-tab="activeTab"
     @open-panel="openPanel"
+    @open-tab="emit('openTab', $event)"
     @delete-project="emit('delete:project')"
   />
 

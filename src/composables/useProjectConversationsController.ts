@@ -21,7 +21,8 @@ export function useProjectConversationsController(projectId: Ref<string>) {
   })
 
   const loading = computed(
-    () => (projectId.value ? conversationStore.loadingProjectLists[projectId.value] : false) ?? false,
+    () =>
+      (projectId.value ? conversationStore.loadingProjectLists[projectId.value] : false) ?? false,
   )
 
   watch(

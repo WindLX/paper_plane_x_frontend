@@ -5,10 +5,7 @@ import { translate } from '@/i18n'
 import { api } from '@/api'
 import type { ProjectResponse, ProjectUpdateRequest } from '@/types/api'
 
-function sortProjectIds(
-  ids: string[],
-  projectsById: Record<string, ProjectResponse>,
-): string[] {
+function sortProjectIds(ids: string[], projectsById: Record<string, ProjectResponse>): string[] {
   return [...ids].sort((leftId, rightId) => {
     const left = projectsById[leftId]
     const right = projectsById[rightId]
@@ -28,9 +25,7 @@ export const useProjectStore = defineStore('projects', () => {
   const mutating = ref(false)
   const error = ref<string | null>(null)
 
-  const loading = computed(
-    () => listLoading.value || detailLoading.value || mutating.value,
-  )
+  const loading = computed(() => listLoading.value || detailLoading.value || mutating.value)
 
   const projects = computed(() =>
     orderedProjectIds.value
@@ -39,7 +34,7 @@ export const useProjectStore = defineStore('projects', () => {
   )
 
   const currentProject = computed(() =>
-    currentProjectId.value ? projectsById[currentProjectId.value] ?? null : null,
+    currentProjectId.value ? (projectsById[currentProjectId.value] ?? null) : null,
   )
 
   function syncProject(project: ProjectResponse): ProjectResponse {

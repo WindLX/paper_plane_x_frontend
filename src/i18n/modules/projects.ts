@@ -97,6 +97,9 @@ export const projects = {
     dirDeleted: '文件夹 {name} 已删除',
     noFiles: '暂无文件',
 
+    // -- Project papers ──────────────────────────────────────────
+    papers: '文献',
+
     // ── Chat drawer ────────────────────────────────────────────
     chatDrawer: {
       conversationTitle: '对话详情',
@@ -369,6 +372,9 @@ export const projects = {
     confirmDeleteDir: 'Delete folder "{name}" and all its contents?',
     dirDeleted: 'Folder {name} deleted',
     noFiles: 'No files',
+
+    // -- Project papers ──────────────────────────────────────────
+    papers: 'Papers',
 
     // ── Chat drawer ────────────────────────────────────────────
     chatDrawer: {

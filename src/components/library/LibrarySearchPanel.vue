@@ -10,6 +10,7 @@ const advancedOpen = defineModel<boolean>('advancedOpen', { required: true })
 
 const props = defineProps<{
   aiPolishing?: boolean
+  hideProjectScope?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -78,7 +79,7 @@ const { t } = useI18n()
               class="workspace-textarea"
             />
           </div>
-          <div>
+          <div v-if="!props.hideProjectScope">
             <label class="workspace-label mb-1">
               {{ t('library.search.projectScope') }}
             </label>

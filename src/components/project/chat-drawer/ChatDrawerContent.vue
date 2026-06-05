@@ -13,7 +13,7 @@ import type {
 } from '@/types/api'
 
 import OverviewTabPanel from './OverviewTabPanel.vue'
-import PapersTabPanel from './PapersTabPanel.vue'
+import PapersTabPanel from '../PapersTabPanel.vue'
 import ProjectFileBrowserTabPanel from './ProjectFileBrowserTabPanel.vue'
 import TracesTabPanel from './TracesTabPanel.vue'
 

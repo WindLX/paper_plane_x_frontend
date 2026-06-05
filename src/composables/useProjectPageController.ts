@@ -9,6 +9,8 @@ import { useProjectConversationsController } from '@/composables/useProjectConve
 import { useProjectStore } from '@/stores/projects'
 import type { LibrarianGlobalFinderResponse, ProjectExportField } from '@/types/api'
 
+export type ProjectPageTab = 'conversations' | 'files' | 'papers'
+
 export function useProjectPageController(projectId: Ref<string>) {
   const router = useRouter()
   const { t } = useI18n()
@@ -21,13 +23,16 @@ export function useProjectPageController(projectId: Ref<string>) {
   const loading = ref(false)
   const globalFinder = ref<LibrarianGlobalFinderResponse | null>(null)
   const deleteConfirmOpen = ref(false)
+  const activeTab = ref<ProjectPageTab>('conversations')
+  const fileDrawerOpen = ref(false)
+  const fileDrawerPaperId = ref<string | null>(null)
+  const paperDrawerOpen = ref(false)
+  const paperDrawerPaperId = ref<string | null>(null)
 
   const project = computed(() => projectStore.currentProject)
   const pageTitle = computed(() => project.value?.name ?? projectId.value)
   const pageSubtitle = computed(() => project.value?.description ?? '')
-  const hasCurrentConversation = computed(
-    () => conversations.activeConversationId !== null,
-  )
+  const hasCurrentConversation = computed(() => conversations.activeConversationId !== null)
 
   async function loadGlobalFinder(): Promise<void> {
     globalFinder.value = await api.librarianGlobalFinder(projectId.value)
@@ -166,14 +171,83 @@ export function useProjectPageController(projectId: Ref<string>) {
     }
   }
 
+  const drawerOpen = computed(() => {
+    if (activeTab.value === 'conversations') return conversationDrawer.drawerOpen
+    if (activeTab.value === 'files') return fileDrawerOpen.value
+    if (activeTab.value === 'papers') return paperDrawerOpen.value
+    return false
+  })
+
+  function closeDrawer(): void {
+    if (activeTab.value === 'conversations') {
+      conversationDrawer.closeDrawer()
+    } else if (activeTab.value === 'files') {
+      closeFileDrawer()
+    } else if (activeTab.value === 'papers') {
+      closePaperDrawer()
+    }
+  }
+
+  function openFileDrawer(paperId?: string): void {
+    if (paperId) {
+      fileDrawerPaperId.value = paperId
+    }
+    fileDrawerOpen.value = true
+  }
+
+  function closeFileDrawer(): void {
+    fileDrawerOpen.value = false
+    fileDrawerPaperId.value = null
+  }
+
+  function toggleFileDrawer(): void {
+    if (fileDrawerOpen.value) {
+      closeFileDrawer()
+    } else {
+      openFileDrawer()
+    }
+  }
+
+  function openPaperDrawer(paperId?: string): void {
+    if (paperId) {
+      paperDrawerPaperId.value = paperId
+    }
+    paperDrawerOpen.value = true
+  }
+
+  function closePaperDrawer(): void {
+    paperDrawerOpen.value = false
+    paperDrawerPaperId.value = null
+  }
+
+  function togglePaperDrawer(): void {
+    if (paperDrawerOpen.value) {
+      closePaperDrawer()
+    } else {
+      openPaperDrawer()
+    }
+  }
+
+  function openTab(tab: ProjectPageTab): void {
+    activeTab.value = tab
+  }
+
   watch(
     projectId,
     () => {
       conversationDrawer.closeDrawer()
+      closeFileDrawer()
+      closePaperDrawer()
       void loadData()
     },
     { immediate: true },
   )
+
+  watch(activeTab, () => {
+    conversationDrawer.closeDrawer()
+    closeFileDrawer()
+    closePaperDrawer()
+  })
 
   return reactive({
     loading,
@@ -182,6 +256,12 @@ export function useProjectPageController(projectId: Ref<string>) {
     pageTitle,
     pageSubtitle,
     deleteConfirmOpen,
+    activeTab,
+    drawerOpen,
+    fileDrawerOpen,
+    fileDrawerPaperId,
+    paperDrawerOpen,
+    paperDrawerPaperId,
     hasCurrentConversation,
     conversationDrawer,
     conversations,
@@ -195,5 +275,13 @@ export function useProjectPageController(projectId: Ref<string>) {
     closeDeleteConfirm,
     confirmDeleteProject,
     exportProject,
+    openTab,
+    closeDrawer,
+    openFileDrawer,
+    closeFileDrawer,
+    toggleFileDrawer,
+    openPaperDrawer,
+    closePaperDrawer,
+    togglePaperDrawer,
   })
 }
