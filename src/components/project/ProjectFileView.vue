@@ -40,7 +40,11 @@ function handleToggleDrawer(): void {
 
     <!-- File browser -->
     <div class="min-h-0 flex-1 overflow-hidden p-4">
-      <ProjectFileBrowser :project-id="props.projectId" @paper-click="handlePaperClick" />
+      <ProjectFileBrowser
+        :key="props.projectId"
+        :project-id="props.projectId"
+        @paper-click="handlePaperClick"
+      />
     </div>
   </section>
 </template>

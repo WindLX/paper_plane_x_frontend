@@ -146,6 +146,17 @@ watch(
   },
 )
 
+watch(
+  () => props.projectId,
+  () => {
+    ctrl.searchProjectId = props.projectId
+    searchState.value.projectScope = props.projectId
+    selectedPaperId.value = null
+    void refreshLibrary()
+    void ctrl.fetchStatusCounts(false, props.projectId)
+  },
+)
+
 onMounted(async () => {
   ctrl.searchProjectId = props.projectId
   ctrl.searchPaperId = ''
