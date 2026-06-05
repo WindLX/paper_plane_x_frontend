@@ -16,18 +16,20 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   save: [
-    [agentName: string,
-    payload: {
-      provider_name: string
-      temperature?: number | null
-      max_tokens?: number | null
-      timeout?: number | null
-      thinking_enabled?: boolean | null
-      reasoning_effort?: string | null
-      extra_body?: Record<string, unknown> | null
-      is_vlm?: boolean | null
-      short_memory_window?: number | null
-    }]
+    [
+      agentName: string,
+      payload: {
+        provider_name: string
+        temperature?: number | null
+        max_tokens?: number | null
+        timeout?: number | null
+        thinking_enabled?: boolean | null
+        reasoning_effort?: string | null
+        extra_body?: Record<string, unknown> | null
+        is_vlm?: boolean | null
+        short_memory_window?: number | null
+      },
+    ],
   ]
 }>()
 
@@ -89,17 +91,20 @@ watch(
 
 function onSave() {
   if (!props.editingAgent) return
-  emit('save', [props.editingAgent.agent_name, {
-    provider_name: agentForm.value.provider_name ?? 'default',
-    temperature: agentForm.value.temperature ?? null,
-    max_tokens: agentForm.value.max_tokens ?? null,
-    timeout: agentForm.value.timeout ?? null,
-    thinking_enabled: agentForm.value.thinking_enabled ?? null,
-    reasoning_effort: agentForm.value.reasoning_effort ?? null,
-    extra_body: agentForm.value.extra_body ?? null,
-    is_vlm: agentForm.value.is_vlm ?? null,
-    short_memory_window: agentForm.value.short_memory_window ?? null,
-  }])
+  emit('save', [
+    props.editingAgent.agent_name,
+    {
+      provider_name: agentForm.value.provider_name ?? 'default',
+      temperature: agentForm.value.temperature ?? null,
+      max_tokens: agentForm.value.max_tokens ?? null,
+      timeout: agentForm.value.timeout ?? null,
+      thinking_enabled: agentForm.value.thinking_enabled ?? null,
+      reasoning_effort: agentForm.value.reasoning_effort ?? null,
+      extra_body: agentForm.value.extra_body ?? null,
+      is_vlm: agentForm.value.is_vlm ?? null,
+      short_memory_window: agentForm.value.short_memory_window ?? null,
+    },
+  ])
 }
 </script>
 
