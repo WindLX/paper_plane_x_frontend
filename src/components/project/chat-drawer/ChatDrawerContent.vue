@@ -93,9 +93,11 @@ async function handleLinkPaperToProject([projectId, paperId]: [string, string]):
   }
 }
 
-async function handleUnlinkPaper(paperId: string): Promise<void> {
+async function handleUnlinkPaper(projectId: string): Promise<void> {
+  const paperId = selectedPaper.value?.paper_id
+  if (!paperId) return
   try {
-    await api.unlinkProjectPaper(props.conversation.project_id, paperId)
+    await api.unlinkProjectPaper(projectId, paperId)
     notify.push(t('projects.chatDrawer.paperUnlinked', { paperId }), 'success')
     await reloadSelectedPaper()
   } catch (err) {
@@ -147,7 +149,6 @@ watch(
 
       <PapersTabPanel
         v-show="activeTab === 'papers'"
-        :project-id="conversation.project_id"
         :loading="paperLoading"
         :paper="selectedPaper"
         @link="handleLinkPaper"

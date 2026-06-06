@@ -134,9 +134,9 @@ async function handleLinkPaperToProject([projectId, paperId]: [string, string]):
   await refreshLibrary()
 }
 
-async function handleUnlinkPaper(paperId: string): Promise<void> {
-  const projectId = ctrl.searchProjectId.trim()
-  if (!projectId) return
+async function handleUnlinkPaper(projectId: string): Promise<void> {
+  const paperId = selectedPaperId.value
+  if (!paperId) return
   const ok = await ctrl.unlinkPaperFromProject(projectId, paperId)
   if (!ok) {
     return

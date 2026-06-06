@@ -14,13 +14,10 @@ import PaperSynthesis from './PaperSynthesis.vue'
 
 const props = defineProps<{
   paper: PaperDetailResponse | null
-  projectId?: string
-  unlinkingPaperId?: string | null
-  linkingPaperId?: string | null
 }>()
 
 const emit = defineEmits<{
-  unlink: [paperId: string]
+  unlink: [projectId: string]
   linkToProject: [[projectId: string, paperId: string]]
   delete: [paperId: string]
 }>()
@@ -42,9 +39,6 @@ async function handleLinkToProject(projectId: string): Promise<void> {
     <template v-if="paper">
       <PaperDetailHeader
         :paper="paper"
-        :project-id="projectId"
-        :unlinking-paper-id="unlinkingPaperId"
-        :linking-paper-id="linkingPaperId"
         @unlink="emit('unlink', $event)"
         @open-project-link-modal="linkModal.openProjectLinkModal()"
         @delete="emit('delete', $event)"

@@ -55,7 +55,7 @@ function handleLinkToProject(): void {
   notify.push(t('projects.chatDrawer.paperLinkNotSupported'), 'info', 2000)
 }
 
-function handleUnlink(): void {
+function handleUnlink(_projectId: string): void {
   notify.push(t('projects.chatDrawer.paperLinkNotSupported'), 'info', 2000)
 }
 </script>
@@ -74,7 +74,6 @@ function handleUnlink(): void {
 
     <div class="min-h-0 min-w-0 flex-1 overflow-hidden">
       <PapersTabPanel
-        :project-id="props.projectId"
         :loading="paperLoading"
         :paper="selectedPaper"
         @link="handleLink"

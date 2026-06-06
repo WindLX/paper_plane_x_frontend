@@ -113,6 +113,7 @@ export const projects = {
       paperLinked: '论文 {paperId} 已关联到当前项目',
       paperLinkedToProject: '论文 {paperId} 已关联到项目 {projectName}',
       paperUnlinked: '论文 {paperId} 已从当前项目解除关联',
+      paperLinkNotSupported: '此操作暂不支持',
     },
 
     // ── Chat sidebar ────────────────────────────────────────────
@@ -389,6 +390,7 @@ export const projects = {
       paperLinked: 'Paper {paperId} linked to the current project',
       paperLinkedToProject: 'Paper {paperId} linked to project {projectName}',
       paperUnlinked: 'Paper {paperId} unlinked from the current project',
+      paperLinkNotSupported: 'This operation is not supported',
     },
 
     // ── Chat sidebar ────────────────────────────────────────────

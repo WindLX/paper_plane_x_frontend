@@ -10,13 +10,12 @@ import { useNotify } from '@/composables/useNotify'
 
 const props = defineProps<{
   paperId: string | null
-  projectId?: string
   reloadKey?: number
 }>()
 
 const emit = defineEmits<{
   linkToProject: [[projectId: string, paperId: string]]
-  unlink: [paperId: string]
+  unlink: [projectId: string]
   refreshList: []
   close: []
 }>()
@@ -82,7 +81,6 @@ watch(
     <div v-else-if="detail.paper">
       <PaperDetailPanel
         :paper="detail.paper"
-        :project-id="props.projectId"
         @link-to-project="emit('linkToProject', $event)"
         @unlink="emit('unlink', $event)"
         @delete="handleDelete"

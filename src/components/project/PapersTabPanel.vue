@@ -6,7 +6,6 @@ import PaperDetailPanel from '@/components/paper/PaperDetailPanel.vue'
 import type { PaperDetailResponse } from '@/types/api'
 
 defineProps<{
-  projectId: string
   loading: boolean
   paper: PaperDetailResponse | null
 }>()
@@ -14,7 +13,7 @@ defineProps<{
 const emit = defineEmits<{
   link: [paperId: string]
   linkToProject: [[projectId: string, paperId: string]]
-  unlink: [paperId: string]
+  unlink: [projectId: string]
 }>()
 
 const { t } = useI18n()
@@ -35,7 +34,6 @@ function onLinkToProject([projectId, paperId]: [string, string]) {
     <PaperDetailPanel
       v-else
       :paper="paper"
-      :project-id="projectId"
       @link="emit('link', $event)"
       @link-to-project="onLinkToProject"
       @unlink="emit('unlink', $event)"

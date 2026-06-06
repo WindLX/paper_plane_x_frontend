@@ -12,24 +12,16 @@ import PaperStatusBadge from './PaperStatusBadge.vue'
 
 const props = defineProps<{
   paper: PaperDetailResponse
-  projectId?: string
-  unlinkingPaperId?: string | null
-  linkingPaperId?: string | null
 }>()
 
 const emit = defineEmits<{
-  unlink: [paperId: string]
+  unlink: [projectId: string]
   openProjectLinkModal: []
   delete: [paperId: string]
 }>()
 
 const { t } = useI18n()
 const projectStore = useProjectStore()
-
-const isInProject = computed<boolean>(() => {
-  if (!props.projectId) return false
-  return props.paper.project_ids.includes(props.projectId)
-})
 
 const paperProjects = computed(() => {
   return props.paper.project_ids
@@ -80,6 +72,14 @@ const zoteroUrl = computed<string | null>(() => {
           >
             <Folder class="h-3 w-3" />
             <span>{{ project.name }}</span>
+            <button
+              type="button"
+              class="hover:text-ppx-danger text-ppx-text-muted ml-0.5 cursor-pointer transition-colors"
+              :title="t('actions.unlink')"
+              @click="emit('unlink', project.project_id)"
+            >
+              <Unlink2 class="h-3 w-3" />
+            </button>
           </span>
         </div>
       </div>
@@ -92,18 +92,7 @@ const zoteroUrl = computed<string | null>(() => {
           <ExternalLink class="h-3.5 w-3.5" />
           <span>Zotero</span>
         </a>
-        <AppButton
-          v-if="isInProject"
-          variant="outline"
-          tone="rose"
-          size="xs"
-          :disabled="unlinkingPaperId === paper.paper_id"
-          @click="emit('unlink', paper.paper_id)"
-        >
-          <Unlink2 class="h-3.5 w-3.5" />
-          <span>{{ t('actions.unlink') }}</span>
-        </AppButton>
-        <AppButton v-else variant="outline" size="xs" @click="emit('openProjectLinkModal')">
+        <AppButton variant="outline" size="xs" @click="emit('openProjectLinkModal')">
           <Link2 class="h-3.5 w-3.5" />
           <span>{{ t('actions.linkToProject') }}</span>
         </AppButton>
