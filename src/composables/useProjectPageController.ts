@@ -7,7 +7,7 @@ import { useConversationDrawer } from '@/composables/useConversationDrawer'
 import { useNotify } from '@/composables/useNotify'
 import { useProjectConversationsController } from '@/composables/useProjectConversationsController'
 import { useProjectStore } from '@/stores/projects'
-import type { LibrarianGlobalFinderResponse, ProjectExportField } from '@/types/api'
+import type { LibrarianGlobalFinderResponse, ProjectExportRequest } from '@/types/api'
 
 export type ProjectPageTab = 'conversations' | 'files' | 'papers'
 
@@ -144,14 +144,12 @@ export function useProjectPageController(projectId: Ref<string>) {
     await router.push('/')
   }
 
-  async function exportProject(payload: {
-    fields: ProjectExportField[]
-    citationsMode: 'keep' | 'strip'
-  }): Promise<void> {
+  async function exportProject(payload: ProjectExportRequest): Promise<void> {
     try {
       const blob = await api.exportProject(projectId.value, {
         fields: payload.fields,
-        citations_mode: payload.citationsMode,
+        citations_mode: payload.citations_mode,
+        include_sandbox_files: payload.include_sandbox_files,
       })
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')

@@ -5,14 +5,14 @@ import { useI18n } from 'vue-i18n'
 import AppButton from '@/components/AppButton.vue'
 import AppSelect from '@/components/AppSelect.vue'
 import { ALL_FIELDS } from '@/constants/export'
-import type { ProjectExportField } from '@/types/api'
+import type { ProjectExportField, ProjectExportRequest } from '@/types/api'
 
 defineProps<{
   exporting: boolean
 }>()
 
 const emit = defineEmits<{
-  export: [payload: { fields: ProjectExportField[]; citationsMode: 'keep' | 'strip' }]
+  export: [payload: ProjectExportRequest]
 }>()
 
 const { t } = useI18n()
@@ -21,6 +21,7 @@ const selectedFields = defineModel<ProjectExportField[]>('selectedFields', {
   default: () => [...ALL_FIELDS],
 })
 const citationsMode = defineModel<'keep' | 'strip'>('citationsMode', { default: 'keep' })
+const includeSandboxFiles = defineModel<boolean>('includeSandboxFiles', { default: true })
 
 function toggleField(field: ProjectExportField): void {
   const idx = selectedFields.value.indexOf(field)
@@ -41,7 +42,11 @@ function clearAll(): void {
 
 function handleExport(): void {
   if (selectedFields.value.length === 0) return
-  emit('export', { fields: selectedFields.value, citationsMode: citationsMode.value })
+  emit('export', {
+    fields: selectedFields.value,
+    citations_mode: citationsMode.value,
+    include_sandbox_files: includeSandboxFiles.value,
+  })
 }
 </script>
 
@@ -86,7 +91,23 @@ function handleExport(): void {
           class="accent-ppx-accent h-3.5 w-3.5"
           @change="toggleField(field)"
         />
-        <span class="truncate">{{ t(`paper.exportFields.${field}`) || field }}</span>
+        <span class="truncate">{{ t(`projects.exportFields.${field}`) || field }}</span>
+      </label>
+      <label
+        class="rounded-ppx-interactive duration-ppx-fast flex cursor-pointer items-center gap-1.5 border px-2.5 py-1.5 text-xs transition-colors"
+        :class="
+          includeSandboxFiles
+            ? 'border-ppx-accent bg-ppx-accent-soft/40 text-ppx-accent'
+            : 'border-ppx-border bg-ppx-bg-elevated text-ppx-text-soft hover:bg-ppx-bg-subtle'
+        "
+      >
+        <input
+          type="checkbox"
+          :checked="includeSandboxFiles"
+          class="accent-ppx-accent h-3.5 w-3.5"
+          @change="includeSandboxFiles = !includeSandboxFiles"
+        />
+        <span class="truncate">{{ t('projects.includeSandboxFiles') }}</span>
       </label>
     </div>
 
@@ -112,9 +133,7 @@ function handleExport(): void {
       <Download class="h-4 w-4" />
       <span>
         {{
-          exporting
-            ? t('projects.exporting')
-            : `${t('projects.export')} (${selectedFields.length})`
+          exporting ? t('projects.exporting') : `${t('projects.export')} (${selectedFields.length})`
         }}
       </span>
     </AppButton>

@@ -39,6 +39,7 @@ async function submit(): Promise<void> {
     :open="props.open"
     :title="t('sidebar.project.createModalTitle')"
     width-class="max-w-2xl"
+    z-index="z-[80]"
     @close="emit('close')"
   >
     <form class="grid gap-4 md:grid-cols-1" @submit.prevent="submit">

@@ -78,7 +78,11 @@ export const projectsApi = {
 
   exportProject(
     projectId: string,
-    payload: { fields: ProjectExportField[]; citations_mode: 'keep' | 'strip' },
+    payload: {
+      fields: ProjectExportField[]
+      citations_mode: 'keep' | 'strip'
+      include_sandbox_files: boolean
+    },
   ): Promise<Blob> {
     return requestBlob(`/projects/${projectId}/export`, {
       method: 'POST',

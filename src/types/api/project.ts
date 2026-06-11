@@ -53,6 +53,12 @@ export type ProjectExportField =
   | 'extraction_fact_check_result'
   | 'analysis_fact_check_result'
 
+export interface ProjectExportRequest {
+  fields: ProjectExportField[]
+  citations_mode: 'keep' | 'strip'
+  include_sandbox_files: boolean
+}
+
 // ---- Project Sandbox File Types ----
 
 export interface ProjectFileItem {

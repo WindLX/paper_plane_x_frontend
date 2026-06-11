@@ -70,7 +70,7 @@ watch(
       >
         <div
           v-if="uiStore.mobileSidebarOpen"
-          class="fixed inset-0 z-60 bg-black/35 lg:hidden"
+          class="fixed inset-0 z-50 bg-black/35 lg:hidden"
           @click="uiStore.closeMobileSidebar()"
         />
       </Transition>

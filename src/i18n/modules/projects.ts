@@ -49,6 +49,7 @@ export const projects = {
       extraction_fact_check_result: 'extraction_fact_check_result',
       analysis_fact_check_result: 'analysis_fact_check_result',
     },
+    includeSandboxFiles: '包含沙箱文件',
 
     // ── Project edit panel ──────────────────────────────────────
     edit: '编辑',
@@ -323,6 +324,7 @@ export const projects = {
       extraction_fact_check_result: 'extraction_fact_check_result',
       analysis_fact_check_result: 'analysis_fact_check_result',
     },
+    includeSandboxFiles: 'Include sandbox files',
 
     // ── Project edit panel ──────────────────────────────────────
     edit: 'Edit',

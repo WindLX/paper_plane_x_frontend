@@ -12,6 +12,7 @@ import type {
   ProjectResponse,
   LibrarianGlobalFinderResponse,
   ProjectExportField,
+  ProjectExportRequest,
 } from '@/types/api'
 import type { ProjectPageTab } from '@/composables/useProjectPageController'
 
@@ -29,7 +30,7 @@ const emit = defineEmits<{
   forceAgentSummary: []
   'update:project': [payload: { name?: string | null; description?: string | null }]
   'delete:project': []
-  'export:project': [payload: { fields: ProjectExportField[]; citationsMode: 'keep' | 'strip' }]
+  'export:project': [payload: ProjectExportRequest]
   openTab: [tab: ProjectPageTab]
 }>()
 
@@ -65,6 +66,7 @@ const selectedFields = ref<ProjectExportField[]>([
   'analysis_fact_check_result',
 ])
 const citationsMode = ref<'keep' | 'strip'>('keep')
+const includeSandboxFiles = ref(true)
 
 // Edit state
 const editName = ref('')
@@ -109,10 +111,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown)
 })
 
-function handleExport(payload: {
-  fields: ProjectExportField[]
-  citationsMode: 'keep' | 'strip'
-}): void {
+function handleExport(payload: ProjectExportRequest): void {
   exporting.value = true
   emit('export:project', payload)
 }
@@ -147,6 +146,7 @@ function handleSaveProject(payload: { name: string | null; description: string |
       v-else-if="activePanel === 'export'"
       v-model:selected-fields="selectedFields"
       v-model:citations-mode="citationsMode"
+      v-model:include-sandbox-files="includeSandboxFiles"
       :exporting="exporting"
       @export="handleExport"
     />
