@@ -118,7 +118,7 @@ onMounted(async () => {
       </section>
 
       <template #drawer>
-        <SlidePanel :title="t('drawer.traceTitle')" @close="closeTraceDrawer">
+        <SlidePanel :title="t('traces.detail.title')" @close="closeTraceDrawer">
           <TraceDrawerContent
             v-if="selectedTraceId"
             :trace-id="selectedTraceId"

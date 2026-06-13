@@ -11,7 +11,7 @@ import {
 import { useI18n } from 'vue-i18n'
 import type { Component } from 'vue'
 
-import AppButton from '@/components/AppButton.vue'
+import ProjectTopbarButton from './ProjectTopbarButton.vue'
 import type { ProjectPageTab } from '@/composables/useProjectPageController'
 
 const props = defineProps<{
@@ -46,38 +46,34 @@ function openTab(tab: ProjectPageTab): void {
 </script>
 
 <template>
-  <div class="flex items-center gap-1.5">
-    <AppButton
+  <div class="flex shrink-0 flex-nowrap items-center gap-1.5">
+    <ProjectTopbarButton
       v-for="btn in panelButtons"
       :key="btn.key"
-      size="xs"
-      variant="outline"
-      :class="props.activePanel === btn.key ? 'bg-ppx-bg-subtle ring-ppx-border-strong ring-1' : ''"
+      :icon="btn.icon"
+      :label="btn.label"
+      :active="props.activePanel === btn.key"
       @click="emit('openPanel', btn.key)"
-    >
-      <component :is="btn.icon" class="h-3.5 w-3.5" />
-      <span class="hidden sm:inline">{{ btn.label }}</span>
-    </AppButton>
+    />
 
     <div class="bg-ppx-border h-5 w-px" />
 
-    <AppButton
+    <ProjectTopbarButton
       v-for="tab in tabButtons"
       :key="tab.key"
-      size="xs"
-      variant="outline"
-      :class="props.activeTab === tab.key ? 'bg-ppx-bg-subtle ring-ppx-border-strong ring-1' : ''"
+      :icon="tab.icon"
+      :label="tab.label"
+      :active="props.activeTab === tab.key"
       @click="openTab(tab.key)"
-    >
-      <component :is="tab.icon" class="h-3.5 w-3.5" />
-      <span class="hidden sm:inline">{{ tab.label }}</span>
-    </AppButton>
+    />
 
     <div class="bg-ppx-border h-5 w-px" />
 
-    <AppButton size="xs" variant="outline" tone="rose" @click="emit('deleteProject')">
-      <Trash2 class="h-3.5 w-3.5" />
-      <span class="hidden sm:inline">{{ t('projects.delete') }}</span>
-    </AppButton>
+    <ProjectTopbarButton
+      :icon="Trash2"
+      :label="t('projects.delete')"
+      tone="rose"
+      @click="emit('deleteProject')"
+    />
   </div>
 </template>

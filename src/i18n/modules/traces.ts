@@ -53,6 +53,7 @@ export const traces = {
       fetchTraces: '获取 Trace 列表失败',
     },
     detail: {
+      title: 'Trace 详情',
       messages: '消息列表',
       usage: '用量信息',
       errors: {

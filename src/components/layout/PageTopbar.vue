@@ -13,10 +13,12 @@ const uiStore = useUiStore()
 
 <template>
   <header
-    class="border-ppx-border/80 bg-ppx-bg-elevated/95 sticky top-0 z-10 border-b backdrop-blur"
+    class="border-ppx-border/80 bg-ppx-bg-elevated/95 sticky top-0 z-10 min-w-0 border-b backdrop-blur"
   >
-    <div class="flex items-center justify-between gap-4 px-4 py-3 lg:px-6">
-      <div class="flex min-w-0 items-center gap-3">
+    <div
+      class="@container/ppx-topbar flex min-w-0 items-center justify-between gap-4 px-4 py-3 lg:px-6"
+    >
+      <div class="flex min-w-0 flex-1 items-center gap-3">
         <button
           type="button"
           aria-label="Open navigation"

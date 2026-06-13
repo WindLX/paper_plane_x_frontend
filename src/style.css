@@ -40,6 +40,9 @@
   --duration-ppx-fast: var(--ppx-motion-fast);
   --duration-ppx-standard: var(--ppx-motion-standard);
   --duration-ppx-slow: var(--ppx-motion-slow);
+
+  /* Layout */
+  --width-drawer: 32rem;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));

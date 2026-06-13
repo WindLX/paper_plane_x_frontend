@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { LoaderCircle } from 'lucide-vue-next'
 
 import AppButton from '@/components/AppButton.vue'
 

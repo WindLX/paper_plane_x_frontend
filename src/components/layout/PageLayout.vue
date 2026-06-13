@@ -25,21 +25,18 @@ const emit = defineEmits<{
   closeDrawer: []
 }>()
 
-const useFloatingDrawer = useMediaQuery('(max-width: 1279px)')
+const useFloatingDrawer = useMediaQuery('(max-width: 1750px)')
 
 const desktopDrawerClass = computed(() =>
-  props.drawerOpen
-    ? 'border-ppx-border/80 w-[min(34rem,calc(100vw-4rem))] border-l'
-    : 'w-0 border-l-0',
+  props.drawerOpen ? 'border-ppx-border/80 w-lg border-l' : 'w-0 border-l-0',
 )
 </script>
 
 <template>
   <div class="flex h-full flex-1">
-    <div class="flex flex-1 flex-col">
+    <div class="flex min-w-0 flex-1 flex-col">
       <PageTopbar :title="props.title" :subtitle="props.subtitle">
         <template #actions><slot name="topbar-actions" /></template>
-        <template #actions-meta><slot name="topbar-actions-meta" /></template>
       </PageTopbar>
       <main
         id="app-main"
@@ -55,7 +52,7 @@ const desktopDrawerClass = computed(() =>
     <!-- Right drawer area  -->
     <div
       v-if="!useFloatingDrawer"
-      class="duration-ppx-standard ease-ppx shrink-0 overflow-hidden transition-all"
+      class="duration-ppx-standard ease-ppx shrink-0 transition-all"
       :class="desktopDrawerClass"
     >
       <slot name="drawer" />
@@ -86,7 +83,7 @@ const desktopDrawerClass = computed(() =>
       >
         <div
           v-if="props.drawerOpen && useFloatingDrawer"
-          class="fixed inset-y-0 right-0 z-60 w-[min(36rem,calc(100vw-1rem))] max-w-full"
+          class="fixed inset-y-0 right-0 z-60 w-lg max-w-full"
         >
           <slot name="drawer" />
         </div>
