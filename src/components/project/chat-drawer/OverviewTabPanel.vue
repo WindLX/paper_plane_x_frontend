@@ -25,7 +25,7 @@ const refsOpen = ref(true)
 
 const paperReferences = computed(() => {
   const refs = new Map<string, string>()
-  const paperPattern = /\[\[(pap-[a-f0-9]{32})(?:\s*\|\s*([^\]\n]+?))?\s*\]\]/g
+  const paperPattern = /\[\[\s*(pap-[^\]\\\s|]+)(?:\s*\\?\|\s*([^\]\n]+?))?\s*\\?\]\\?\]/gi
   for (const turn of props.turns) {
     for (const event of turn.assistant_events) {
       const source =
@@ -34,8 +34,8 @@ const paperReferences = computed(() => {
           : (event.content ?? '')
       if (!source) continue
       for (const match of source.matchAll(paperPattern)) {
-        const paperId = match[1]
-        const label = match[2]?.trim() ?? paperId
+        const paperId = match[1].replace(/[\\.,;:，。；：]+$/g, '')
+        const label = match[2]?.replace(/\\+$/g, '').trim() || paperId
         refs.set(paperId, label)
       }
     }

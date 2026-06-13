@@ -32,9 +32,11 @@ function escapeHtml(text: string): string {
 
 function preprocessPapers(markdown: string): string {
   return markdown.replace(
-    /\[\[(pap-[a-f0-9]{32})(?:\s*\|\s*([^\]\n]+?))?\s*\]\]/g,
-    (_match, paperId: string, label: string | undefined) => {
-      const displayText = label ? `${paperId} | ${label.trim()}` : paperId
+    /\[\[\s*(pap-[^\]\\\s|]+)(?:\s*\\?\|\s*([^\]\n]+?))?\s*\\?\]\\?\]/gi,
+    (_match, rawPaperId: string, label: string | undefined) => {
+      const paperId = rawPaperId.replace(/[\\.,;:，。；：]+$/g, '')
+      const cleanLabel = label?.replace(/\\+$/g, '').trim()
+      const displayText = cleanLabel ? `${paperId} | ${cleanLabel}` : paperId
       return `<a href="#paper/${paperId}" class="paper-link">${displayText}</a>`
     },
   )
