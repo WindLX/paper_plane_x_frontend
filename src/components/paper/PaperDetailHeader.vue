@@ -126,6 +126,9 @@ const zoteroUrl = computed<string | null>(() => {
       >
     </div>
     <div class="flex flex-wrap gap-2">
+      <span class="workspace-badge workspace-badge--neutral">{{ paper.custom_meta }}</span>
+    </div>
+    <div class="flex flex-wrap gap-2">
       <div class="mb-1">
         <span class="text-ppx-text mr-1 font-medium"
           >{{ t('paper.rawPaperStatus.extraction') }}:</span
