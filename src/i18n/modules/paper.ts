@@ -17,6 +17,7 @@ export const paper = {
       publication: '期刊 / 会议',
       year: '年份',
       doi: 'DOI',
+      customMeta: '自定义元数据',
     },
     sections: {
       quickScan: '快速扫描',
@@ -95,6 +96,7 @@ export const paper = {
       publication: 'Publication',
       year: 'Year',
       doi: 'DOI',
+      customMeta: 'Custom Meta',
     },
     sections: {
       quickScan: 'Quick Scan',

@@ -9,6 +9,7 @@ import { useProjectStore } from '@/stores/projects'
 import AppButton from '../AppButton.vue'
 import CopyableText from '../CopyableText.vue'
 import PaperStatusBadge from './PaperStatusBadge.vue'
+import JsonPanel from '../JsonPanel.vue'
 
 const props = defineProps<{
   paper: PaperDetailResponse
@@ -120,13 +121,11 @@ const zoteroUrl = computed<string | null>(() => {
         <div class="workspace-body">{{ paper.doi ?? '-' }}</div>
       </div>
     </div>
+    <JsonPanel :title="t('paper.labels.customMeta')" :value="customMeta" :default-open="true" />
     <div class="flex flex-wrap gap-2">
       <span class="workspace-badge workspace-badge--neutral"
         >{{ formatDateTime(paper.created_at) }} — {{ formatDateTime(paper.updated_at) }}</span
       >
-    </div>
-    <div class="flex flex-wrap gap-2">
-      <span class="workspace-badge workspace-badge--neutral">{{ paper.custom_meta }}</span>
     </div>
     <div class="flex flex-wrap gap-2">
       <div class="mb-1">
