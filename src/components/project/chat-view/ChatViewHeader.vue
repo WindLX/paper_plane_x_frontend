@@ -47,7 +47,6 @@ function onDelete(): void {
   <div class="border-ppx-border flex shrink-0 items-center justify-between border-b px-4 py-2.5">
     <div class="flex min-w-0 flex-1 items-center gap-2">
       <button
-        v-if="props.hasConversation"
         type="button"
         class="workspace-icon-button lg:hidden"
         :title="t('projects.chatView.toggleSidebar')"
