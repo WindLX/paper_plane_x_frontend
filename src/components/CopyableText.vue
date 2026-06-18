@@ -15,9 +15,35 @@ const { push: notifyPush } = useNotify()
 const copied = ref(false)
 let timer: number | null = null
 
+function legacyCopy(text: string): boolean {
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.top = '-9999px'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.focus()
+  textarea.select()
+  var ok
+  try {
+    ok = document.execCommand('copy')
+  } catch {
+    ok = false
+  }
+  document.body.removeChild(textarea)
+  return ok
+}
+
 async function copyText(): Promise<void> {
   try {
-    await navigator.clipboard.writeText(props.text)
+    // navigator.clipboard is only available in secure contexts (HTTPS/localhost);
+    // fall back to execCommand('copy') when serving over plain HTTP.
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(props.text)
+    } else if (!legacyCopy(props.text)) {
+      throw new Error('legacy copy failed')
+    }
     copied.value = true
     if (timer !== null) {
       window.clearTimeout(timer)
