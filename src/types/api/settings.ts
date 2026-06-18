@@ -1,8 +1,8 @@
 export interface LLMProvider {
   name: string
   model: string
-  api_key?: string | null
   base_url?: string | null
+  has_api_key: boolean
 }
 
 export interface LLMProviderCreateRequest {

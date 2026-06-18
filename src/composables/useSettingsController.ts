@@ -2,7 +2,13 @@ import { reactive, ref } from 'vue'
 
 import { api } from '@/api'
 import { translate } from '@/i18n'
-import type { AgentLLMConfig, AppSettingsResponse, LLMProvider } from '@/types/api'
+import type {
+  AgentLLMConfig,
+  AppSettingsResponse,
+  LLMProvider,
+  LLMProviderCreateRequest,
+  LLMProviderUpdateRequest,
+} from '@/types/api'
 
 import { useNotify } from './useNotify'
 
@@ -35,7 +41,7 @@ export function useSettingsController() {
     }
   }
 
-  async function createProvider(payload: Omit<LLMProvider, 'name'> & { name: string }) {
+  async function createProvider(payload: LLMProviderCreateRequest) {
     saving.value = true
     error.value = null
     try {
@@ -49,7 +55,7 @@ export function useSettingsController() {
     }
   }
 
-  async function updateProvider(name: string, payload: Partial<Omit<LLMProvider, 'name'>>) {
+  async function updateProvider(name: string, payload: LLMProviderUpdateRequest) {
     saving.value = true
     error.value = null
     try {

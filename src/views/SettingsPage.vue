@@ -16,7 +16,12 @@ import MinerUCard from '@/components/settings/MinerUCard.vue'
 import { useDialog } from '@/composables/useDialog'
 import { useSettingsController } from '@/composables/useSettingsController'
 
-import type { AgentLLMConfig, LLMProvider } from '@/types/api'
+import type {
+  AgentLLMConfig,
+  LLMProvider,
+  LLMProviderCreateRequest,
+  LLMProviderUpdateRequest,
+} from '@/types/api'
 
 const { t } = useI18n()
 const ctrl = useSettingsController()
@@ -42,16 +47,20 @@ function openEditProvider(p: LLMProvider) {
   showProviderModal.value = true
 }
 
-async function onSaveProvider(payload: LLMProvider) {
+async function onSaveProvider(
+  payload: LLMProviderCreateRequest | (LLMProviderUpdateRequest & { name?: string }),
+) {
   if (editingProvider.value) {
     const oldName = editingProvider.value.name
     const { name: newName, ...rest } = payload
-    if (newName !== oldName) {
-      await ctrl.renameProvider(oldName, newName)
+    const resolvedName = newName ?? oldName
+    if (resolvedName !== oldName) {
+      await ctrl.renameProvider(oldName, resolvedName)
     }
-    await ctrl.updateProvider(newName, rest)
+    await ctrl.updateProvider(resolvedName, rest)
   } else {
-    await ctrl.createProvider(payload)
+    const { name, ...data } = payload as LLMProviderCreateRequest
+    await ctrl.createProvider({ name, ...data })
   }
   showProviderModal.value = false
 }

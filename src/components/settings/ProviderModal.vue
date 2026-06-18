@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Eye, EyeOff } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '@/components/AppButton.vue'
 import AppModalShell from '@/components/AppModalShell.vue'
-import type { LLMProvider } from '@/types/api'
+import type { LLMProvider, LLMProviderCreateRequest, LLMProviderUpdateRequest } from '@/types/api'
 
 const props = defineProps<{
   open: boolean
@@ -14,41 +14,79 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [payload: LLMProvider]
+  save: [payload: (LLMProviderCreateRequest | LLMProviderUpdateRequest) & { name?: string }]
 }>()
 
 const { t } = useI18n()
 
-const providerForm = ref<Partial<LLMProvider>>({})
+interface ProviderFormData {
+  name: string
+  model: string
+  base_url: string
+  api_key: string
+}
+
+const providerForm = ref<ProviderFormData>({
+  name: '',
+  model: '',
+  base_url: '',
+  api_key: '',
+})
 const showKey = ref(false)
+const isEditing = computed(() => props.editingProvider !== null)
+const hasExistingKey = computed(() => props.editingProvider?.has_api_key ?? false)
+
+// When editing, leave api_key empty — backend persists the existing key when none is sent.
+// When creating, api_key starts empty and the user fills it in.
+function initForm() {
+  if (props.editingProvider) {
+    providerForm.value = {
+      name: props.editingProvider.name,
+      model: props.editingProvider.model,
+      base_url: props.editingProvider.base_url ?? '',
+      api_key: '',
+    }
+  } else {
+    providerForm.value = {
+      name: 'deepseek-pro',
+      model: 'deepseek-v4-pro',
+      base_url: 'https://api.deepseek.com/v1',
+      api_key: '',
+    }
+  }
+}
 
 watch(
   () => props.open,
   (isOpen) => {
     if (!isOpen) return
-    if (props.editingProvider) {
-      providerForm.value = { ...props.editingProvider }
-    } else {
-      providerForm.value = {
-        name: 'deepseek-pro',
-        model: 'deepseek-v4-pro',
-        base_url: 'https://api.deepseek.com/v1',
-        api_key: '',
-      }
-    }
+    initForm()
   },
   { immediate: true },
 )
 
 function onSave() {
-  emit('save', providerForm.value as LLMProvider)
+  if (isEditing.value) {
+    const { name, ...rest } = providerForm.value
+    // If api_key is empty, omit it so the backend keeps the existing one.
+    const payload: LLMProviderUpdateRequest & { name?: string } = {
+      ...rest,
+      name,
+    }
+    if (!payload.api_key) {
+      delete payload.api_key
+    }
+    emit('save', payload)
+  } else {
+    emit('save', { ...providerForm.value })
+  }
 }
 </script>
 
 <template>
   <AppModalShell
     :open="open"
-    :title="editingProvider ? t('settings.providers.edit') : t('settings.providers.add')"
+    :title="isEditing ? t('settings.providers.edit') : t('settings.providers.add')"
     width-class="max-w-lg"
     @close="emit('close')"
   >
@@ -69,10 +107,14 @@ function onSave() {
       </div>
       <div>
         <label class="workspace-label">{{ t('settings.providers.apiKey') }}</label>
+        <p v-if="hasExistingKey" class="text-ppx-text-soft mb-1 text-xs">
+          {{ t('settings.providers.apiKeySaved') }}
+        </p>
         <div class="relative">
           <input
             v-model="providerForm.api_key"
             :type="showKey ? 'text' : 'password'"
+            :placeholder="hasExistingKey ? t('settings.providers.apiKeyPlaceholder') : ''"
             class="workspace-input pr-10"
           />
           <AppButton
