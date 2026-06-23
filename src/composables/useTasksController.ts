@@ -1,13 +1,4 @@
-import {
-  computed,
-  markRaw,
-  onBeforeUnmount,
-  reactive,
-  ref,
-  shallowRef,
-  watch,
-  type Ref,
-} from 'vue'
+import { computed, markRaw, onBeforeUnmount, reactive, ref, shallowRef, watch, type Ref } from 'vue'
 
 import { api } from '@/api'
 import { translate } from '@/i18n'

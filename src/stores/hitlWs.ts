@@ -56,7 +56,8 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
   function currentRouteConversationId(): string | null {
     const route = router.currentRoute.value
     if (route.name !== 'ProjectPage') return null
-    const routeProjectId = typeof route.params.projectId === 'string' ? route.params.projectId : null
+    const routeProjectId =
+      typeof route.params.projectId === 'string' ? route.params.projectId : null
     const currentConversation = conversationStore.currentConversation
     if (!routeProjectId || !currentConversation) return null
     return currentConversation.project_id === routeProjectId
@@ -65,20 +66,27 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
   }
 
   function questionBelongsToCurrentView(question: HITLPendingQuestion): boolean {
-    return question.conversation_id !== null && question.conversation_id === currentRouteConversationId()
+    return (
+      question.conversation_id !== null && question.conversation_id === currentRouteConversationId()
+    )
   }
 
   function notifyPendingQuestion(question: HITLPendingQuestion): void {
     if (notifiedQuestionIds.has(question.question_id)) return
-    if (questionBelongsToCurrentView(question) && typeof document !== 'undefined' && !document.hidden) {
+    if (
+      questionBelongsToCurrentView(question) &&
+      typeof document !== 'undefined' &&
+      !document.hidden
+    ) {
       return
     }
 
     const conversationTitle = question.conversation_id
-      ? conversationStore.conversationsById[question.conversation_id]?.title ?? question.conversation_id
+      ? (conversationStore.conversationsById[question.conversation_id]?.title ??
+        question.conversation_id)
       : translate('projects.hitl.unknownConversation')
     const projectTitle = question.project_id
-      ? projectStore.projectsById[question.project_id]?.name ?? question.project_id
+      ? (projectStore.projectsById[question.project_id]?.name ?? question.project_id)
       : translate('projects.hitl.unknownProject')
 
     notify.push(
@@ -116,17 +124,17 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
 
     nextClient.onError((nextError) => {
       error.value = nextError
-      notify.push(
-        translate('projects.hitl.socketError', { message: nextError }),
-        'error',
-        3600,
-      )
+      notify.push(translate('projects.hitl.socketError', { message: nextError }), 'error', 3600)
     })
   }
 
   function getClient(): ReturnType<typeof hitlApi.createWebSocketClient> {
     const existing = client.value
-    if (existing && existing.currentStatus !== 'disconnected' && existing.currentStatus !== 'error') {
+    if (
+      existing &&
+      existing.currentStatus !== 'disconnected' &&
+      existing.currentStatus !== 'error'
+    ) {
       return existing
     }
 
@@ -159,7 +167,9 @@ export const useHitlWsStore = defineStore('hitlWs', () => {
     getClient().sendAnswer(questionId, answers)
   }
 
-  function questionForConversation(conversationId: string | null | undefined): HITLPendingQuestion | null {
+  function questionForConversation(
+    conversationId: string | null | undefined,
+  ): HITLPendingQuestion | null {
     if (!conversationId) return null
     return (
       pendingQuestions.value.find((question) => question.conversation_id === conversationId) ?? null

@@ -11,7 +11,7 @@ import AgentConfigsSection from '@/components/settings/AgentConfigsSection.vue'
 import AgentModal from '@/components/settings/AgentModal.vue'
 import DataProcessCard from '@/components/settings/DataProcessCard.vue'
 import LibrarianCard from '@/components/settings/LibrarianCard.vue'
-import MinerUCard from '@/components/settings/MinerUCard.vue'
+import PdfParserCard from '@/components/settings/PdfParserCard.vue'
 
 import { useDialog } from '@/composables/useDialog'
 import { useSettingsController } from '@/composables/useSettingsController'
@@ -171,7 +171,7 @@ onMounted(() => {
           </article>
         </section>
         <section v-if="ctrl.appSettings" class="grid gap-5 md:grid-cols-2">
-          <MinerUCard :ctrl="ctrl" />
+          <PdfParserCard :ctrl="ctrl" />
           <DataProcessCard :ctrl="ctrl" />
           <LibrarianCard :ctrl="ctrl" />
         </section>

@@ -29,6 +29,8 @@ pnpm dev
 pnpm build:console
 ```
 
+如果让后端托管，可以不修改 .env, 后端会通过模板注入后端地址
+
 ## 命令
 
 | 命令                      | 作用                                            |

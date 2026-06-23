@@ -32,7 +32,26 @@ const logEntries = computed(() =>
     const summary = readScalar(log, ['message', 'summary', 'detail', 'description'])
     const metadata = Object.entries(log)
       .filter(([key, value]) => {
-        if (['operation', 'action', 'event', 'type', 'name', 'created_at', 'updated_at', 'timestamp', 'time', 'status', 'level', 'result', 'message', 'summary', 'detail', 'description'].includes(key)) {
+        if (
+          [
+            'operation',
+            'action',
+            'event',
+            'type',
+            'name',
+            'created_at',
+            'updated_at',
+            'timestamp',
+            'time',
+            'status',
+            'level',
+            'result',
+            'message',
+            'summary',
+            'detail',
+            'description',
+          ].includes(key)
+        ) {
           return false
         }
         return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'

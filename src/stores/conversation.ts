@@ -325,7 +325,9 @@ export const useConversationStore = defineStore('conversation', () => {
     setMessages(
       currentMessages(conversationId).filter((message) => {
         if (message.message_id === messageId) return false
-        const matchedTurn = currentTurns(conversationId).find((turn) => turn.user_message?.message_id === messageId)
+        const matchedTurn = currentTurns(conversationId).find(
+          (turn) => turn.user_message?.message_id === messageId,
+        )
         if (!matchedTurn) return true
         return message.turn_id !== matchedTurn.turn_id || message.role !== 'user'
       }),
@@ -344,7 +346,9 @@ export const useConversationStore = defineStore('conversation', () => {
           if (turn.assistant_events.some((event) => event.message_id === messageId)) {
             return {
               ...turn,
-              assistant_events: turn.assistant_events.filter((event) => event.message_id !== messageId),
+              assistant_events: turn.assistant_events.filter(
+                (event) => event.message_id !== messageId,
+              ),
             }
           }
 

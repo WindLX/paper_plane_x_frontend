@@ -56,7 +56,9 @@ const displayResults = computed(() => {
             <div class="text-ppx-text-soft truncate font-medium">
               {{ t('projects.chatSidebar.newConversationBtn') }}
             </div>
-            <div class="text-ppx-text-soft truncate text-xs">{{ t('projects.chatSidebar.emptyState') }}</div>
+            <div class="text-ppx-text-soft truncate text-xs">
+              {{ t('projects.chatSidebar.emptyState') }}
+            </div>
           </div>
         </button>
 
@@ -85,7 +87,11 @@ const displayResults = computed(() => {
         </VirtualScrollList>
 
         <div v-if="displayResults.length === 0" class="workspace-body px-3 py-6 text-center">
-          {{ keyword.trim() ? t('projects.chatSidebar.noSearchResults') : t('projects.chatSidebar.emptyState') }}
+          {{
+            keyword.trim()
+              ? t('projects.chatSidebar.noSearchResults')
+              : t('projects.chatSidebar.emptyState')
+          }}
         </div>
       </div>
     </div>

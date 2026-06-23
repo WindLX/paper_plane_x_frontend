@@ -46,10 +46,7 @@ const { t } = useI18n()
       </div>
       <div class="workspace-subpanel p-2.5">
         <div class="workspace-label mb-1">{{ t('paper.synthesis.researchGaps') }}</div>
-        <SectionCardList
-          :cards="props.synthesisGaps"
-          :empty-text="t('paper.generic.noData')"
-        />
+        <SectionCardList :cards="props.synthesisGaps" :empty-text="t('paper.generic.noData')" />
       </div>
     </template>
     <div v-else class="workspace-body">-</div>

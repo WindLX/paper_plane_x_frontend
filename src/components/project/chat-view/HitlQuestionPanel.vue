@@ -87,7 +87,9 @@ function handleSubmit(): void {
 </script>
 
 <template>
-  <article class="workspace-panel animate-fade-in-up mx-auto flex max-h-[42vh] max-w-2xl flex-col space-y-3 p-3">
+  <article
+    class="workspace-panel animate-fade-in-up mx-auto flex max-h-[42vh] max-w-2xl flex-col space-y-3 p-3"
+  >
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <div class="workspace-section-icon">
@@ -125,11 +127,17 @@ function handleSubmit(): void {
           <div class="flex shrink-0 items-center gap-2">
             <span
               class="rounded border px-1.5 py-0.5 text-[11px]"
-              :class="isAnswered(qIdx) ? 'border-emerald-400/60 text-emerald-600' : 'border-ppx-border-strong text-ppx-text-muted'"
+              :class="
+                isAnswered(qIdx)
+                  ? 'border-emerald-400/60 text-emerald-600'
+                  : 'border-ppx-border-strong text-ppx-text-muted'
+              "
             >
               {{ isAnswered(qIdx) ? '已答' : '待答' }}
             </span>
-            <span class="text-ppx-text-muted text-xs">{{ isQuestionExpanded(qIdx) ? '▾' : '▸' }}</span>
+            <span class="text-ppx-text-muted text-xs">{{
+              isQuestionExpanded(qIdx) ? '▾' : '▸'
+            }}</span>
           </div>
         </button>
 
@@ -155,10 +163,7 @@ function handleSubmit(): void {
                     : 'border-ppx-border-strong'
                 "
               >
-                <span
-                  v-if="isSelected(qIdx, opt.id)"
-                  class="block h-2 w-2 rounded-sm bg-white"
-                />
+                <span v-if="isSelected(qIdx, opt.id)" class="block h-2 w-2 rounded-sm bg-white" />
               </span>
               <span class="min-w-0 truncate">{{ opt.text }}</span>
             </button>

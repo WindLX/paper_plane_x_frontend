@@ -33,9 +33,7 @@ const emit = defineEmits<{
     </Transition>
 
     <Transition name="composer-float" appear>
-      <div
-        :class="['fixed inset-x-0 bottom-0 z-50 flex justify-center px-4', bottomClass]"
-      >
+      <div :class="['fixed inset-x-0 bottom-0 z-50 flex justify-center px-4', bottomClass]">
         <div :class="['w-full', widthClass]">
           <slot />
         </div>

@@ -4,6 +4,7 @@ import type {
   AgentLLMConfig,
   AgentLLMConfigUpdateRequest,
   AppSettingsResponse,
+  CloudPdfParserConfigUpdateRequest,
   DataProcessConfigResponse,
   DataProcessConfigUpdateRequest,
   LibrarianConfigResponse,
@@ -12,8 +13,8 @@ import type {
   LLMProviderCreateRequest,
   LLMProviderRenameRequest,
   LLMProviderUpdateRequest,
-  MinerUConfigResponse,
-  MinerUConfigUpdateRequest,
+  LocalPdfParserConfigUpdateRequest,
+  PdfParserConfigResponse,
   ProviderListResponse,
 } from '../types/api'
 
@@ -76,12 +77,23 @@ export const settingsApi = {
     return request('/settings')
   },
 
-  getMinerUConfig(): Promise<MinerUConfigResponse> {
-    return request('/settings/mineru')
+  getPdfParserConfig(): Promise<PdfParserConfigResponse> {
+    return request('/settings/pdf-parser')
   },
 
-  updateMinerUConfig(payload: MinerUConfigUpdateRequest): Promise<MinerUConfigResponse> {
-    return request('/settings/mineru', {
+  updateLocalPdfParserConfig(
+    payload: LocalPdfParserConfigUpdateRequest,
+  ): Promise<PdfParserConfigResponse> {
+    return request('/settings/pdf-parser/local', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  updateCloudPdfParserConfig(
+    payload: CloudPdfParserConfigUpdateRequest,
+  ): Promise<PdfParserConfigResponse> {
+    return request('/settings/pdf-parser/cloud', {
       method: 'PUT',
       body: JSON.stringify(payload),
     })

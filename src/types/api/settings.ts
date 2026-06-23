@@ -57,14 +57,42 @@ export interface AgentConfigListResponse {
   items: AgentLLMConfig[]
 }
 
-export interface MinerUConfigResponse {
+export type PdfParserType = 'local_mineru' | 'cloud_mineru'
+
+export interface LocalPdfParserConfigResponse {
   base_url: string
   output_dir: string
 }
 
-export interface MinerUConfigUpdateRequest {
+export interface LocalPdfParserConfigUpdateRequest {
   base_url?: string | null
   output_dir?: string | null
+}
+
+export interface CloudPdfParserConfigResponse {
+  base_url: string
+  has_api_key: boolean
+  model_version: string
+  enable_formula: boolean
+  enable_table: boolean
+  is_ocr: boolean
+  language: string
+}
+
+export interface CloudPdfParserConfigUpdateRequest {
+  api_key?: string | null
+  base_url?: string | null
+  model_version?: string | null
+  enable_formula?: boolean | null
+  enable_table?: boolean | null
+  is_ocr?: boolean | null
+  language?: string | null
+}
+
+export interface PdfParserConfigResponse {
+  type: PdfParserType
+  local: LocalPdfParserConfigResponse
+  cloud: CloudPdfParserConfigResponse
 }
 
 export interface DataProcessConfigResponse {
@@ -91,7 +119,7 @@ export interface LibrarianConfigUpdateRequest {
 
 export interface AppSettingsResponse {
   agent_llm: AgentLLMConfig[]
-  mineru: MinerUConfigResponse
+  pdf_parser: PdfParserConfigResponse
   data_process: DataProcessConfigResponse
   librarian: LibrarianConfigResponse
   providers: LLMProvider[]

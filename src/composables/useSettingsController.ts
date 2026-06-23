@@ -156,15 +156,34 @@ export function useSettingsController() {
     }
   }
 
-  async function updateMinerUConfig(payload: Partial<AppSettingsResponse['mineru']>) {
+  async function updatePdfParserLocalConfig(
+    payload: Partial<AppSettingsResponse['pdf_parser']['local']>,
+  ) {
     saving.value = true
     error.value = null
     try {
-      await api.updateMinerUConfig(payload)
+      await api.updateLocalPdfParserConfig(payload)
       await fetchAppSettings()
     } catch (err) {
       error.value =
-        err instanceof Error ? err.message : translate('settings.errors.updateMinerUConfig')
+        err instanceof Error ? err.message : translate('settings.errors.updatePdfParserConfig')
+      notify.push(error.value, 'error', 3600)
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function updatePdfParserCloudConfig(
+    payload: Partial<AppSettingsResponse['pdf_parser']['cloud']> & { api_key?: string | null },
+  ) {
+    saving.value = true
+    error.value = null
+    try {
+      await api.updateCloudPdfParserConfig(payload)
+      await fetchAppSettings()
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : translate('settings.errors.updatePdfParserConfig')
       notify.push(error.value, 'error', 3600)
     } finally {
       saving.value = false
@@ -218,7 +237,8 @@ export function useSettingsController() {
     fetchAgentConfigs,
     updateAgentConfig,
     fetchAppSettings,
-    updateMinerUConfig,
+    updatePdfParserLocalConfig,
+    updatePdfParserCloudConfig,
     updateDataProcessConfig,
     updateLibrarianConfig,
   })

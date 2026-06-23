@@ -217,121 +217,121 @@ function toggleExpanded(): void {
       @remove-image="onRemoveImage"
       @preview-image="previewSrc = $event"
     >
-        <template #header-actions>
-          <button
-            type="button"
-            class="workspace-icon-button h-7 w-7"
-            :title="t('projects.chatView.collapseInput')"
-            @click="expanded = false"
+      <template #header-actions>
+        <button
+          type="button"
+          class="workspace-icon-button h-7 w-7"
+          :title="t('projects.chatView.collapseInput')"
+          @click="expanded = false"
+        >
+          <X class="h-3.5 w-3.5" />
+        </button>
+      </template>
+
+      <textarea
+        ref="textareaRef"
+        v-model="modelValue"
+        rows="1"
+        class="text-ppx-text min-h-6 flex-1 resize-none bg-transparent py-1 text-base leading-relaxed outline-none"
+        :class="expanded ? 'max-h-144 min-h-64' : 'max-h-40'"
+        :placeholder="placeholder ?? t('projects.chatView.inputPlaceholder')"
+        @keydown="onKeydown"
+        @drop="onDrop"
+        @dragover="onDragOver"
+      />
+
+      <template #expanded-hint>
+        <span class="flex items-center gap-1">
+          <kbd
+            class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+            >Enter</kbd
           >
-            <X class="h-3.5 w-3.5" />
-          </button>
-        </template>
+          <span>{{ t('projects.chatView.keyboardNewLine') }}</span>
+        </span>
+        <span class="flex items-center gap-1">
+          <kbd
+            class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+            >Ctrl</kbd
+          >
+          <span>+</span>
+          <kbd
+            class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+            >Enter</kbd
+          >
+          <span>{{ t('projects.chatView.keyboardSend') }}</span>
+        </span>
+        <span class="flex items-center gap-1">
+          <kbd
+            class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
+            >Esc</kbd
+          >
+          <span>{{ t('projects.chatView.keyboardCollapse') }}</span>
+        </span>
+      </template>
 
-        <textarea
-          ref="textareaRef"
-          v-model="modelValue"
-          rows="1"
-          class="text-ppx-text min-h-6 flex-1 resize-none bg-transparent py-1 text-base leading-relaxed outline-none"
-          :class="expanded ? 'max-h-144 min-h-64' : 'max-h-40'"
-          :placeholder="placeholder ?? t('projects.chatView.inputPlaceholder')"
-          @keydown="onKeydown"
-          @drop="onDrop"
-          @dragover="onDragOver"
+      <template #footer-left>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept="image/*"
+          multiple
+          class="hidden"
+          @change="onFileSelected"
         />
+        <button
+          v-if="selectedPapers.size + images.length > 0"
+          type="button"
+          class="workspace-icon-button h-8 w-8 shrink-0"
+          :title="`${selectedPapers.size + images.length} ${t('projects.chatView.attachments')}`"
+          @click="attachmentsCollapsed = !attachmentsCollapsed"
+        >
+          <ChevronUp v-if="!attachmentsCollapsed" class="h-4 w-4" />
+          <ChevronDown v-else class="h-4 w-4" />
+        </button>
+        <button
+          v-if="props.projectId"
+          type="button"
+          class="workspace-icon-button h-8 w-8 shrink-0"
+          :title="t('projects.chatView.attachPaper')"
+          @click="openPaperPicker"
+        >
+          <FileText class="h-4 w-4" />
+        </button>
+        <button
+          v-if="images.length < MAX_IMAGES"
+          type="button"
+          class="workspace-icon-button h-8 w-8 shrink-0"
+          :title="t('projects.chatView.attachImage')"
+          @click="openFilePicker"
+        >
+          <ImagePlus class="h-4 w-4" />
+        </button>
+        <button
+          v-if="!expanded"
+          type="button"
+          class="workspace-icon-button h-8 w-8 shrink-0"
+          :title="t('projects.chatView.expandInput')"
+          @click="toggleExpanded"
+        >
+          <Expand class="h-4 w-4" />
+        </button>
+      </template>
 
-        <template #expanded-hint>
-          <span class="flex items-center gap-1">
-            <kbd
-              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-              >Enter</kbd
-            >
-            <span>{{ t('projects.chatView.keyboardNewLine') }}</span>
-          </span>
-          <span class="flex items-center gap-1">
-            <kbd
-              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-              >Ctrl</kbd
-            >
-            <span>+</span>
-            <kbd
-              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-              >Enter</kbd
-            >
-            <span>{{ t('projects.chatView.keyboardSend') }}</span>
-          </span>
-          <span class="flex items-center gap-1">
-            <kbd
-              class="workspace-code border-ppx-border bg-ppx-bg-subtle rounded border px-1 py-0.5 text-[10px]"
-              >Esc</kbd
-            >
-            <span>{{ t('projects.chatView.keyboardCollapse') }}</span>
-          </span>
-        </template>
-
-        <template #footer-left>
-            <input
-              ref="fileInputRef"
-              type="file"
-              accept="image/*"
-              multiple
-              class="hidden"
-              @change="onFileSelected"
-            />
-            <button
-              v-if="selectedPapers.size + images.length > 0"
-              type="button"
-              class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="`${selectedPapers.size + images.length} ${t('projects.chatView.attachments')}`"
-              @click="attachmentsCollapsed = !attachmentsCollapsed"
-            >
-              <ChevronUp v-if="!attachmentsCollapsed" class="h-4 w-4" />
-              <ChevronDown v-else class="h-4 w-4" />
-            </button>
-            <button
-              v-if="props.projectId"
-              type="button"
-              class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="t('projects.chatView.attachPaper')"
-              @click="openPaperPicker"
-            >
-              <FileText class="h-4 w-4" />
-            </button>
-            <button
-              v-if="images.length < MAX_IMAGES"
-              type="button"
-              class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="t('projects.chatView.attachImage')"
-              @click="openFilePicker"
-            >
-              <ImagePlus class="h-4 w-4" />
-            </button>
-            <button
-              v-if="!expanded"
-              type="button"
-              class="workspace-icon-button h-8 w-8 shrink-0"
-              :title="t('projects.chatView.expandInput')"
-              @click="toggleExpanded"
-            >
-              <Expand class="h-4 w-4" />
-            </button>
-        </template>
-
-        <template #footer-right>
-            <button
-              type="button"
-              class="duration-ppx-fast flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all"
-              :class="
-                modelValue.trim() && !disabled
-                  ? 'bg-ppx-text text-white hover:opacity-90'
-                  : 'text-ppx-text-soft'
-              "
-              :disabled="!modelValue.trim() || disabled"
-              @click="onSend"
-            >
-              <ArrowUp class="h-4 w-4" />
-            </button>
-        </template>
+      <template #footer-right>
+        <button
+          type="button"
+          class="duration-ppx-fast flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all"
+          :class="
+            modelValue.trim() && !disabled
+              ? 'bg-ppx-text text-white hover:opacity-90'
+              : 'text-ppx-text-soft'
+          "
+          :disabled="!modelValue.trim() || disabled"
+          @click="onSend"
+        >
+          <ArrowUp class="h-4 w-4" />
+        </button>
+      </template>
     </ChatComposerPanel>
   </div>
 

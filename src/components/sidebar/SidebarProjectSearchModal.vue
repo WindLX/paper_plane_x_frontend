@@ -57,8 +57,12 @@ const searchProjects = computed(() => {
         >
           <FolderPlus class="text-ppx-text-soft h-4 w-4 shrink-0" />
           <div class="min-w-0">
-            <div class="text-ppx-text-soft truncate font-medium">{{ t('sidebar.project.createInline') }}</div>
-            <div class="text-ppx-text-soft truncate text-xs">{{ t('sidebar.project.searchEmpty') }}</div>
+            <div class="text-ppx-text-soft truncate font-medium">
+              {{ t('sidebar.project.createInline') }}
+            </div>
+            <div class="text-ppx-text-soft truncate text-xs">
+              {{ t('sidebar.project.searchEmpty') }}
+            </div>
           </div>
         </button>
 
@@ -78,7 +82,9 @@ const searchProjects = computed(() => {
               <Folder class="text-ppx-text-soft h-4 w-4 shrink-0" />
               <div class="min-w-0">
                 <div class="text-ppx-text-soft truncate font-medium">{{ project.name }}</div>
-                <div class="text-ppx-text-soft truncate text-xs">{{ project.description || project.project_id }}</div>
+                <div class="text-ppx-text-soft truncate text-xs">
+                  {{ project.description || project.project_id }}
+                </div>
               </div>
             </button>
           </template>
