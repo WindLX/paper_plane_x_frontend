@@ -4,7 +4,6 @@ export const projects = {
     projectId: '项目 ID',
     created: '创建时间',
     updated: '更新时间',
-    conversationCount: '对话数量',
 
     // ── Project overview panel ──────────────────────────────────
     overview: '项目概览',
@@ -54,6 +53,10 @@ export const projects = {
     // ── Project edit panel ──────────────────────────────────────
     edit: '编辑',
     editPanelTitle: '编辑项目',
+    fields: {
+      name: '项目名称',
+      description: '项目描述',
+    },
 
     // ── Project logs panel ──────────────────────────────────────
     logsPanelTitle: '操作日志',
@@ -68,7 +71,6 @@ export const projects = {
     deleteConfirmTitle: '删除项目',
     deleteConfirmHint: '请输入项目名称 "{name}" 以确认删除。此操作不可撤销。',
     deleteConfirmPapers: '该项目包含 {count} 篇论文，删除后这些论文的关联将被移除。',
-    deleteConfirmConversations: '该项目包含 {count} 个对话，删除后这些对话将无法恢复。',
     deleteConfirmInputLabel: '项目名称',
     deleteConfirmMismatch: '输入的项目名称不匹配。',
     deleteConfirmSimple: '删除项目 {projectId}？此操作不可撤销。',
@@ -101,99 +103,11 @@ export const projects = {
     // -- Project papers ──────────────────────────────────────────
     papers: '文献',
 
-    // ── Chat drawer ────────────────────────────────────────────
-    chatDrawer: {
-      conversationTitle: '对话详情',
-      tabConversation: '对话数量',
-      tabOverview: '概览',
+    // ── Project drawer ─────────────────────────────────────────
+    projectDrawer: {
       tabPapers: '文献',
-      tabFiles: '文件',
-      tabTraces: 'Traces',
       empty: '暂无可展示的详情内容。',
-      turnOutline: '对话节点',
-      paperLinked: '论文 {paperId} 已关联到当前项目',
-      paperLinkedToProject: '论文 {paperId} 已关联到项目 {projectName}',
-      paperUnlinked: '论文 {paperId} 已从当前项目解除关联',
       paperLinkNotSupported: '此操作暂不支持',
-    },
-
-    // ── Chat sidebar ────────────────────────────────────────────
-    chatSidebar: {
-      sidebarTitle: '对话',
-      sidebarSubtitle: '项目对话',
-      toggleSidebar: '切换侧边栏',
-      newConversationBtn: '新建对话',
-      searchPlaceholder: '搜索对话...',
-      emptyState: '点击上方按钮开始新对话',
-      noSearchResults: '未找到匹配的对话',
-      groupRecent7: '最近 7 天',
-      groupRecent30: '最近 30 天',
-      groupOlder: '更久',
-    },
-
-    // ── Chat view ──────────────────────────────────────────────
-    chatView: {
-      newConversation: '新对话',
-      toggleSidebar: '切换侧边栏',
-      emptyChatTitle: '准备好，随时开始',
-      emptyChatHint: '',
-      inputPlaceholder: '输入你的问题...',
-      inputHint: 'Enter 换行 · Ctrl + Enter 发送',
-      expandInputHint: '展开编辑模式 · Esc 收起',
-      keyboardNewLine: '换行',
-      keyboardSend: '发送',
-      keyboardCollapse: '收起',
-      thinking: '思考中...',
-      generating: '生成中...',
-      stop: '停止',
-      stopping: '停止中...',
-      reasoning: '思考过程',
-      toolCalls: '工具调用',
-      toolCalling: '调用工具中...',
-      toolResults: '工具结果',
-      references: '参考文献',
-      editTurn: '编辑本轮',
-      rerunTurn: '重新运行本轮',
-      deleteTurn: '删除本轮',
-      deleteAssistantTurn: '删除 AI 回复',
-      forkTurn: '从本轮分支',
-      expandInput: '展开输入框',
-      collapseInput: '收起输入框',
-      attachImage: '添加图片',
-      attachPaper: '添加文献',
-      selectPapers: '选择文献',
-      attachments: '附件',
-      attachmentCount: '个附件',
-      streamInterrupted: '（回复被中断）',
-      editMessage: '编辑',
-      deleteMessage: '删除',
-      forkHere: '从此处分支',
-      rename: '重命名',
-      openDetails: '打开对话详情',
-      confirmDelete: '确定要删除此消息吗？',
-      confirmDeleteMessage: '确定只删除这条消息吗？',
-      confirmDeleteTurn: '确定要删除这一整轮对话吗？',
-      confirmDeleteAssistantTurn: '确定只删除 AI 回复，保留用户消息吗？',
-      confirmDeleteConversation: '确定要删除此对话吗？',
-      confirmFork: '将从此消息创建一个新的对话分支，确定继续吗？',
-      confirmForkTurn: '将从这一整轮对话创建新的分支，确定继续吗？',
-      messageEdited: '消息已更新',
-      messageDeleted: '消息已删除',
-      turnDeleted: '轮次已删除',
-      conversationForked: '分支已创建',
-      conversationRenamed: '对话已重命名',
-    },
-
-    // ── HITL ────────────────────────────────────────────────────
-    hitl: {
-      title: '需要您的确认',
-      submit: '提交',
-      customAnswer: '自定义回答',
-      waiting: '等待回答...',
-      pendingNotification: '对话“{conversation}”在项目“{project}”中需要你处理 HITL 问题',
-      socketError: 'HITL 连接出错：{message}',
-      unknownConversation: '未知对话',
-      unknownProject: '未知项目',
     },
 
     // ── Actions (shared) ────────────────────────────────────────
@@ -278,7 +192,6 @@ export const projects = {
     projectId: 'Project ID',
     created: 'Created',
     updated: 'Updated',
-    conversationCount: 'Conversations',
 
     // ── Project overview panel ──────────────────────────────────
     overview: 'Project Overview',
@@ -329,6 +242,10 @@ export const projects = {
     // ── Project edit panel ──────────────────────────────────────
     edit: 'Edit',
     editPanelTitle: 'Edit Project',
+    fields: {
+      name: 'Project Name',
+      description: 'Project Description',
+    },
 
     // ── Project logs panel ──────────────────────────────────────
     logsPanelTitle: 'Operation Logs',
@@ -345,8 +262,6 @@ export const projects = {
       'Type the project name "{name}" to confirm deletion. This action cannot be undone.',
     deleteConfirmPapers:
       'This project contains {count} paper(s). Deleting will remove these associations.',
-    deleteConfirmConversations:
-      'This project contains {count} conversation(s) which will be permanently lost.',
     deleteConfirmInputLabel: 'Project Name',
     deleteConfirmMismatch: 'The project name does not match.',
     deleteConfirmSimple: 'Delete project {projectId}? This action cannot be undone.',
@@ -379,100 +294,11 @@ export const projects = {
     // -- Project papers ──────────────────────────────────────────
     papers: 'Papers',
 
-    // ── Chat drawer ────────────────────────────────────────────
-    chatDrawer: {
-      conversationTitle: 'Conversation Detail',
-      tabConversation: 'Conversation Counts',
-      tabOverview: 'Overview',
+    // ── Project drawer ─────────────────────────────────────────
+    projectDrawer: {
       tabPapers: 'Papers',
-      tabFiles: 'Files',
-      tabTraces: 'Traces',
       empty: 'No detail content is currently available.',
-      turnOutline: 'Turn Outline',
-      paperLinked: 'Paper {paperId} linked to the current project',
-      paperLinkedToProject: 'Paper {paperId} linked to project {projectName}',
-      paperUnlinked: 'Paper {paperId} unlinked from the current project',
       paperLinkNotSupported: 'This operation is not supported',
-    },
-
-    // ── Chat sidebar ────────────────────────────────────────────
-    chatSidebar: {
-      sidebarTitle: 'Chats',
-      sidebarSubtitle: 'Project Conversations',
-      toggleSidebar: 'Toggle sidebar',
-      newConversationBtn: 'New Conversation',
-      searchPlaceholder: 'Search conversations...',
-      emptyState: 'Click the button above to start a new conversation',
-      noSearchResults: 'No matching conversations found',
-      groupRecent7: 'Last 7 Days',
-      groupRecent30: 'Last 30 Days',
-      groupOlder: 'Older',
-    },
-
-    // ── Chat view ──────────────────────────────────────────────
-    chatView: {
-      newConversation: 'New Chat',
-      toggleSidebar: 'Toggle sidebar',
-      emptyChatTitle: 'Ready when you are',
-      emptyChatHint: '',
-      inputPlaceholder: 'Type your question...',
-      inputHint: 'Enter for new line · Ctrl + Enter to send',
-      expandInputHint: 'Expanded edit mode · Esc to collapse',
-      keyboardNewLine: 'New line',
-      keyboardSend: 'Send',
-      keyboardCollapse: 'Collapse',
-      thinking: 'Thinking...',
-      generating: 'Generating...',
-      stop: 'Stop',
-      stopping: 'Stopping...',
-      reasoning: 'Reasoning',
-      toolCalls: 'Tool Calls',
-      toolCalling: 'Calling tools...',
-      toolResults: 'Tool Results',
-      references: 'References',
-      editTurn: 'Edit Turn',
-      rerunTurn: 'Rerun Turn',
-      deleteTurn: 'Delete Turn',
-      deleteAssistantTurn: 'Delete AI Response',
-      forkTurn: 'Fork From Turn',
-      expandInput: 'Expand Input',
-      collapseInput: 'Collapse Input',
-      attachImage: 'Attach Image',
-      attachPaper: 'Attach Paper',
-      selectPapers: 'Select Papers',
-      attachments: 'Attachments',
-      attachmentCount: 'attachments',
-      streamInterrupted: '(Response interrupted)',
-      editMessage: 'Edit',
-      deleteMessage: 'Delete',
-      forkHere: 'Fork from here',
-      rename: 'Rename',
-      openDetails: 'Open Conversation Details',
-      confirmDelete: 'Are you sure you want to delete this message?',
-      confirmDeleteMessage: 'Delete only this message?',
-      confirmDeleteTurn: 'Are you sure you want to delete this entire turn?',
-      confirmDeleteAssistantTurn: 'Delete only the AI response, keep the user message?',
-      confirmDeleteConversation: 'Are you sure you want to delete this conversation?',
-      confirmFork: 'A new conversation branch will be created from this message. Continue?',
-      confirmForkTurn: 'A new conversation branch will be created from this entire turn. Continue?',
-      messageEdited: 'Message updated',
-      messageDeleted: 'Message deleted',
-      turnDeleted: 'Turn deleted',
-      conversationForked: 'Branch created',
-      conversationRenamed: 'Conversation renamed',
-    },
-
-    // ── HITL ────────────────────────────────────────────────────
-    hitl: {
-      title: 'Your input is needed',
-      submit: 'Submit',
-      customAnswer: 'Custom answer',
-      waiting: 'Waiting for answer...',
-      pendingNotification:
-        'Conversation "{conversation}" in project "{project}" needs your HITL response',
-      socketError: 'HITL connection error: {message}',
-      unknownConversation: 'Unknown conversation',
-      unknownProject: 'Unknown project',
     },
 
     // ── Actions (shared) ────────────────────────────────────────

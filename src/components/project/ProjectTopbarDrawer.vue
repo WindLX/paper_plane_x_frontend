@@ -20,7 +20,6 @@ const props = defineProps<{
   project: ProjectResponse | null
   globalFinder: LibrarianGlobalFinderResponse | null
   loading: boolean
-  hasConversation?: boolean
   activeTab: ProjectPageTab
 }>()
 
@@ -161,7 +160,7 @@ function handleSaveProject(payload: { name: string | null; description: string |
     <ProjectLogsPanel v-else-if="activePanel === 'logs' && project" :project="project" />
 
     <div v-else class="text-ppx-text-soft py-8 text-center text-sm">
-      {{ t('projects.chatDrawer.empty') }}
+      {{ t('projects.projectDrawer.empty') }}
     </div>
   </ProjectPanelShell>
 </template>

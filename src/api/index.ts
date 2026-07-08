@@ -1,5 +1,3 @@
-import { conversationApi } from './conversation'
-import { hitlApi } from './hitl'
 import { papersApi } from './papers'
 import { projectsApi } from './projects'
 import { settingsApi } from './settings'
@@ -14,6 +12,4 @@ export const api = {
   ...tasksApi,
   ...tracesApi,
   ...librarianApi,
-  ...conversationApi,
-  ...hitlApi,
 }

@@ -4,11 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import PageLayout from '@/components/layout/PageLayout.vue'
 import SlidePanel from '@/components/layout/SlidePanel.vue'
-import ChatDrawerContent from '@/components/project/chat-drawer/ChatDrawerContent.vue'
 import FileDrawerContent from '@/components/project/file-drawer/FileDrawerContent.vue'
 import PaperDrawerContent from '@/components/project/paper-drawer/PapersDrawerContent.vue'
-import ProjectChatSidebar from '@/components/project/ProjectChatSidebar.vue'
-import ProjectChatView from '@/components/project/ProjectChatView.vue'
 import ProjectFileView from '@/components/project/ProjectFileView.vue'
 import ProjectPaperView from '@/components/project/ProjectPaperView.vue'
 import ProjectDeleteConfirmModal from '@/components/project/ProjectDeleteConfirmModal.vue'
@@ -37,7 +34,6 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
           :project="ctrl.project"
           :global-finder="ctrl.globalFinder"
           :loading="ctrl.loading"
-          :has-conversation="ctrl.hasCurrentConversation"
           :active-tab="ctrl.activeTab"
           @update:agent-summary="ctrl.updateAgentSummary"
           @delete:agent-summary="ctrl.deleteAgentSummary"
@@ -50,28 +46,7 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
       </template>
 
       <section class="flex h-full min-h-0 min-w-0 flex-1 overflow-hidden">
-        <template v-if="ctrl.activeTab === 'conversations'">
-          <ProjectChatSidebar
-            :conversations="ctrl.conversations.conversations"
-            :active-conversation-id="ctrl.conversations.activeConversationId"
-            :loading="ctrl.conversations.loading"
-            :collapsed="!ctrl.conversations.sidebarOpen"
-            :mobile="ctrl.conversations.isMobile"
-            :open="ctrl.conversations.sidebarOpen"
-            @select="ctrl.conversations.selectConversation"
-            @create="ctrl.handleCreateConversation"
-            @toggle="ctrl.conversations.toggleSidebar"
-          />
-
-          <ProjectChatView
-            :project-id="props.projectId"
-            :scroll-to-turn-id="ctrl.conversationDrawer.scrollToTurnId"
-            @toggle-sidebar="ctrl.conversations.toggleSidebar"
-            @open-details="ctrl.conversationDrawer.toggleDrawer"
-            @open-paper="ctrl.conversationDrawer.openDrawerPaper"
-          />
-        </template>
-        <template v-else-if="ctrl.activeTab === 'files'">
+        <template v-if="ctrl.activeTab === 'files'">
           <ProjectFileView
             :project-id="props.projectId"
             @toggle-drawer="ctrl.toggleFileDrawer"
@@ -84,27 +59,9 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
       </section>
 
       <template #drawer>
-        <SlidePanel
-          :title="
-            ctrl.activeTab === 'conversations'
-              ? t('projects.chatDrawer.conversationTitle')
-              : t('projects.chatDrawer.tabPapers')
-          "
-          @close="ctrl.closeDrawer"
-        >
-          <ChatDrawerContent
-            v-if="
-              ctrl.conversationDrawer.drawerData.conversation && ctrl.activeTab === 'conversations'
-            "
-            :conversation="ctrl.conversationDrawer.drawerData.conversation"
-            :turns="ctrl.conversationDrawer.drawerData.turns"
-            :traces="ctrl.conversationDrawer.drawerData.traces"
-            :selected-paper-id="ctrl.conversationDrawer.selectedPaperId"
-            :selected-paper-nonce="ctrl.conversationDrawer.selectedPaperNonce"
-            @scroll-to-turn="ctrl.conversationDrawer.handleScrollToTurn"
-          />
+        <SlidePanel :title="t('projects.projectDrawer.tabPapers')" @close="ctrl.closeDrawer">
           <FileDrawerContent
-            v-else-if="ctrl.activeTab === 'files'"
+            v-if="ctrl.activeTab === 'files'"
             :project-id="props.projectId"
             :initial-paper-id="ctrl.fileDrawerPaperId"
           />
@@ -122,7 +79,6 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
       :project-name="ctrl.project?.name ?? props.projectId"
       :project-id="props.projectId"
       :paper-count="ctrl.globalFinder?.stats?.paper_count ?? 0"
-      :conversation-count="ctrl.project?.conversation_count ?? 0"
       @close="ctrl.closeDeleteConfirm"
       @confirm="ctrl.confirmDeleteProject"
     />

@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  LibraryBig,
-  Download,
-  Pencil,
-  FileText,
-  Trash2,
-  Folder,
-  MessageSquare,
-} from 'lucide-vue-next'
+import { LibraryBig, Download, Pencil, FileText, Trash2, Folder } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import type { Component } from 'vue'
 
@@ -35,7 +27,6 @@ const panelButtons = [
 ] as const
 
 const tabButtons: { key: ProjectPageTab; icon: Component; label: string }[] = [
-  { key: 'conversations', icon: MessageSquare, label: t('projects.chatSidebar.sidebarTitle') },
   { key: 'files', icon: Folder, label: t('projects.projectFiles') },
   { key: 'papers', icon: LibraryBig, label: t('projects.papers') },
 ]

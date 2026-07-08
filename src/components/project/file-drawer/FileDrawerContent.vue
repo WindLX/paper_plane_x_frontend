@@ -48,15 +48,15 @@ watch(
 )
 
 function handleLink(): void {
-  notify.push(t('projects.chatDrawer.paperLinkNotSupported'), 'info', 2000)
+  notify.push(t('projects.projectDrawer.paperLinkNotSupported'), 'info', 2000)
 }
 
 function handleLinkToProject(): void {
-  notify.push(t('projects.chatDrawer.paperLinkNotSupported'), 'info', 2000)
+  notify.push(t('projects.projectDrawer.paperLinkNotSupported'), 'info', 2000)
 }
 
 function handleUnlink(_projectId: string): void {
-  notify.push(t('projects.chatDrawer.paperLinkNotSupported'), 'info', 2000)
+  notify.push(t('projects.projectDrawer.paperLinkNotSupported'), 'info', 2000)
 }
 </script>
 
@@ -68,7 +68,7 @@ function handleUnlink(_projectId: string): void {
         class="bg-ppx-bg-elevated text-ppx-text flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium shadow-sm transition-colors"
       >
         <FileText class="h-4 w-4" />
-        <span>{{ t('projects.chatDrawer.tabPapers') }}</span>
+        <span>{{ t('projects.projectDrawer.tabPapers') }}</span>
       </button>
     </nav>
 

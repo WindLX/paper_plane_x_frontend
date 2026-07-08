@@ -3,13 +3,11 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import { api } from '@/api'
-import { useConversationDrawer } from '@/composables/useConversationDrawer'
 import { useNotify } from '@/composables/useNotify'
-import { useProjectConversationsController } from '@/composables/useProjectConversationsController'
 import { useProjectStore } from '@/stores/projects'
 import type { LibrarianGlobalFinderResponse, ProjectExportRequest } from '@/types/api'
 
-export type ProjectPageTab = 'conversations' | 'files' | 'papers'
+export type ProjectPageTab = 'files' | 'papers'
 
 export function useProjectPageController(projectId: Ref<string>) {
   const router = useRouter()
@@ -17,13 +15,10 @@ export function useProjectPageController(projectId: Ref<string>) {
   const notify = useNotify()
   const projectStore = useProjectStore()
 
-  const conversationDrawer = useConversationDrawer()
-  const conversations = useProjectConversationsController(projectId)
-
   const loading = ref(false)
   const globalFinder = ref<LibrarianGlobalFinderResponse | null>(null)
   const deleteConfirmOpen = ref(false)
-  const activeTab = ref<ProjectPageTab>('conversations')
+  const activeTab = ref<ProjectPageTab>('files')
   const fileDrawerOpen = ref(false)
   const fileDrawerPaperId = ref<string | null>(null)
   const paperDrawerOpen = ref(false)
@@ -32,7 +27,6 @@ export function useProjectPageController(projectId: Ref<string>) {
   const project = computed(() => projectStore.currentProject)
   const pageTitle = computed(() => project.value?.name ?? projectId.value)
   const pageSubtitle = computed(() => project.value?.description ?? '')
-  const hasCurrentConversation = computed(() => conversations.activeConversationId !== null)
 
   async function loadGlobalFinder(): Promise<void> {
     globalFinder.value = await api.librarianGlobalFinder(projectId.value)
@@ -49,10 +43,6 @@ export function useProjectPageController(projectId: Ref<string>) {
     } finally {
       loading.value = false
     }
-  }
-
-  async function handleCreateConversation(): Promise<void> {
-    await conversations.createConversation()
   }
 
   async function updateAgentSummary(content: string): Promise<void> {
@@ -170,16 +160,13 @@ export function useProjectPageController(projectId: Ref<string>) {
   }
 
   const drawerOpen = computed(() => {
-    if (activeTab.value === 'conversations') return conversationDrawer.drawerOpen
     if (activeTab.value === 'files') return fileDrawerOpen.value
     if (activeTab.value === 'papers') return paperDrawerOpen.value
     return false
   })
 
   function closeDrawer(): void {
-    if (activeTab.value === 'conversations') {
-      conversationDrawer.closeDrawer()
-    } else if (activeTab.value === 'files') {
+    if (activeTab.value === 'files') {
       closeFileDrawer()
     } else if (activeTab.value === 'papers') {
       closePaperDrawer()
@@ -233,7 +220,6 @@ export function useProjectPageController(projectId: Ref<string>) {
   watch(
     projectId,
     () => {
-      conversationDrawer.closeDrawer()
       closeFileDrawer()
       closePaperDrawer()
       void loadData()
@@ -242,7 +228,6 @@ export function useProjectPageController(projectId: Ref<string>) {
   )
 
   watch(activeTab, () => {
-    conversationDrawer.closeDrawer()
     closeFileDrawer()
     closePaperDrawer()
   })
@@ -260,11 +245,7 @@ export function useProjectPageController(projectId: Ref<string>) {
     fileDrawerPaperId,
     paperDrawerOpen,
     paperDrawerPaperId,
-    hasCurrentConversation,
-    conversationDrawer,
-    conversations,
     loadData,
-    handleCreateConversation,
     updateAgentSummary,
     deleteAgentSummary,
     forceAgentSummary,

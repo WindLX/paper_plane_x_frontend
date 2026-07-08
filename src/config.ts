@@ -12,6 +12,8 @@ export function normalizeApiBaseUrl(value: string | undefined): string {
 
 /** 读取后端 Jinja2 注入的运行时配置；开发环境未渲染时返回 undefined */
 function getRuntimeConfig(): Record<string, string> | undefined {
+  if (typeof document === 'undefined') return undefined
+
   const el = document.getElementById('app-config')
   if (!el) return undefined
   const content = el.textContent?.trim() || ''

@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { onMounted, watch, watchEffect } from 'vue'
+import { watch, watchEffect } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 
 import AppDialog from './components/AppDialog.vue'
 import AppNotify from './components/AppNotify.vue'
 import AppSidebar from './components/sidebar/AppSidebar.vue'
-import { useHitlWsStore } from './stores/hitlWs'
 import { useUiStore } from './stores/ui'
 
 const uiStore = useUiStore()
-const hitlWsStore = useHitlWsStore()
 const route = useRoute()
 
 watchEffect(() => {
@@ -19,10 +17,6 @@ watchEffect(() => {
   } else {
     classList.remove('dark')
   }
-})
-
-onMounted(() => {
-  hitlWsStore.connect()
 })
 
 watch(

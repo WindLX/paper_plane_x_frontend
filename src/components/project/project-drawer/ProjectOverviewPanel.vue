@@ -5,7 +5,6 @@ import {
   Calendar,
   LibraryBig,
   LoaderCircle,
-  MessageSquare,
   Pencil,
   RefreshCw,
   Tag,
@@ -79,15 +78,6 @@ const summaryCards = computed(() => {
         icon: Tag,
       },
     )
-  }
-  if (props.project) {
-    cards.push({
-      key: 'conversationCount',
-      label: t('projects.conversationCount'),
-      value: props.project.conversation_count ?? 0,
-      color: 'text-ppx-accent',
-      icon: MessageSquare,
-    })
   }
   return cards
 })

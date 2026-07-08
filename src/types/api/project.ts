@@ -6,7 +6,6 @@ export interface ProjectResponse {
   created_at: string
   updated_at: string
   operation_logs: Record<string, unknown>[]
-  conversation_count: number
 }
 
 export interface ProjectListResponse {

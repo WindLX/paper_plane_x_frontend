@@ -9,7 +9,6 @@ const props = defineProps<{
   projectName: string
   projectId: string
   paperCount: number
-  conversationCount: number
 }>()
 
 const emit = defineEmits<{
@@ -54,11 +53,6 @@ function handleConfirm() {
         <template v-if="paperCount > 0">
           <br />
           <strong>{{ t('projects.deleteConfirmPapers', { count: paperCount }) }}</strong>
-        </template>
-        <template v-if="conversationCount > 0">
-          <br /><strong>{{
-            t('projects.deleteConfirmConversations', { count: conversationCount })
-          }}</strong>
         </template>
       </p>
 
