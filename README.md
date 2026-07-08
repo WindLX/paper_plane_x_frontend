@@ -146,3 +146,7 @@ just pre-commit
 3. 默认值 `http://127.0.0.1:8000/api/v1`。
 
 开发环境通常使用第 2 种；后端托管模式使用第 1 种。
+
+## License
+
+Paper Plane X Frontend 使用 [GNU Affero General Public License v3.0 or later](LICENSE)。
