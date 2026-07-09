@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown, ChevronRight, Copy } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Copy, Check } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
 
 import { safePrettyJson } from '@/utils/format'
-import { useNotify } from '@/composables/useNotify'
+import { useCopyable } from '@/composables/useCopyable'
 
 const props = defineProps<{
   title: string
@@ -16,7 +16,6 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { push: notifyPush } = useNotify()
 const open = ref(Boolean(props.defaultOpen))
 
 type JsonValue = Record<string, unknown> | unknown[] | string | number | boolean | null
@@ -24,24 +23,7 @@ type JsonValue = Record<string, unknown> | unknown[] | string | number | boolean
 const jsonData = computed(() => props.value as JsonValue)
 
 const text = computed(() => safePrettyJson(props.value))
-const copied = ref(false)
-let timer: number | null = null
-
-async function copyToClipboard(): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text.value)
-    copied.value = true
-    if (timer !== null) {
-      window.clearTimeout(timer)
-    }
-    timer = window.setTimeout(() => {
-      copied.value = false
-      timer = null
-    }, 1200)
-  } catch {
-    notifyPush(t('copyable.copyFailed'), 'warning')
-  }
-}
+const copy = useCopyable()
 </script>
 
 <template>
@@ -61,9 +43,10 @@ async function copyToClipboard(): Promise<void> {
           type="button"
           aria-label="Copy JSON"
           class="rounded-ppx-interactive text-ppx-text-soft duration-ppx-fast hover:bg-ppx-bg-subtle border-ppx-border inline-flex cursor-pointer items-center gap-1 border px-2 py-1 text-xs transition-colors"
-          @click="copyToClipboard"
+          @click="copy.copyToClipboard(text)"
         >
-          <Copy class="h-3.5 w-3.5" />
+          <Check v-if="copy.copied" class="h-3.5 w-3.5" />
+          <Copy v-else class="h-3.5 w-3.5" />
           <span>{{ t('actions.copy') }}</span>
         </button>
       </div>

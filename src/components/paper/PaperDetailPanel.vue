@@ -20,6 +20,7 @@ const emit = defineEmits<{
   unlink: [projectId: string]
   linkToProject: [[projectId: string, paperId: string]]
   delete: [paperId: string]
+  agentNoteUpdated: [agentNote: string | null]
 }>()
 
 const { t } = useI18n()
@@ -31,6 +32,10 @@ async function handleLinkToProject(projectId: string): Promise<void> {
   if (!props.paper || linkModal.isPaperLinkedToProject(projectId)) return
   emit('linkToProject', [projectId, props.paper.paper_id])
   linkModal.projectLinkModalOpen.value = false
+}
+
+function handleAgentNoteUpdated(agentNote: string | null): void {
+  emit('agentNoteUpdated', agentNote)
 }
 </script>
 
@@ -78,7 +83,11 @@ async function handleLinkToProject(projectId: string): Promise<void> {
         :analysis-fact-check-errors="helpers.analysisFactCheckErrors.value"
       />
 
-      <PaperAgentNote :agent-note="paper.agent_note" />
+      <PaperAgentNote
+        :paper-id="paper.paper_id"
+        :agent-note="paper.agent_note"
+        @updated="handleAgentNoteUpdated"
+      />
 
       <section class="workspace-panel p-3.5">
         <JsonPanel

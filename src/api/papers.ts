@@ -2,6 +2,8 @@ import { request } from './core'
 import type {
   DataProcessManualUpdateRequest,
   DataProcessSubmitResponse,
+  PaperAgentNoteRequest,
+  PaperAgentNoteResponse,
   PaperDetailResponse,
   PaperListResponse,
   PaperStatusCountResponse,
@@ -89,5 +91,21 @@ export const papersApi = {
 
   deletePaper(paperId: string): Promise<{ message: string }> {
     return request(`/papers/${paperId}`, { method: 'DELETE' })
+  },
+
+  updatePaperAgentNote(
+    paperId: string,
+    payload: PaperAgentNoteRequest,
+  ): Promise<PaperAgentNoteResponse> {
+    return request(`/papers/${paperId}/agent-note`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  deletePaperAgentNote(paperId: string): Promise<PaperAgentNoteResponse> {
+    return request(`/papers/${paperId}/agent-note`, {
+      method: 'DELETE',
+    })
   },
 }

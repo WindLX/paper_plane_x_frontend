@@ -37,7 +37,6 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
   const newFileContent = ref('')
   const newDirName = ref('')
   const exportLoading = ref(false)
-  const exportMenuOpen = ref(false)
 
   const breadcrumbs = computed(() => {
     const parts = currentDir.value.split('/').filter(Boolean)
@@ -67,13 +66,11 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     editMode.value = false
     createMode.value = false
     createDirMode.value = false
-    exportMenuOpen.value = false
   }
 
   function closeSelectedFile(): void {
     selectedFile.value = null
     editMode.value = false
-    exportMenuOpen.value = false
   }
 
   function navigateToDir(path: string): void {
@@ -104,7 +101,6 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
       editMode.value = false
       createMode.value = false
       createDirMode.value = false
-      exportMenuOpen.value = false
     } catch (err) {
       notify.push(
         err instanceof Error ? err.message : t('projects.errors.requestFailed'),
@@ -298,7 +294,6 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     newFileContent,
     newDirName,
     exportLoading,
-    exportMenuOpen,
     breadcrumbs,
     loadFiles,
     navigateToDir,

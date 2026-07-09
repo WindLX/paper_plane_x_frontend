@@ -109,3 +109,12 @@ export interface PaperStatusCountResponse {
   analysis_fact_check_human_passed: number
   analysis_fact_check_failed: number
 }
+
+export interface PaperAgentNoteRequest {
+  content: string
+}
+
+export interface PaperAgentNoteResponse {
+  paper_id: string
+  agent_note: string | null
+}

@@ -26,6 +26,11 @@ export const paper = {
       factCheck: '事实核查',
       agentNote: 'Agent 备注',
     },
+    agentNote: {
+      placeholder: '输入 Agent 备注，支持 Markdown...',
+      updated: 'Agent 备注已更新',
+      updateFailed: '更新 Agent 备注失败',
+    },
     generic: {
       noData: '暂无数据',
       summary: '摘要',
@@ -104,6 +109,11 @@ export const paper = {
       analysisReport: 'Analysis',
       factCheck: 'Fact Check',
       agentNote: 'Agent Note',
+    },
+    agentNote: {
+      placeholder: 'Enter agent note. Markdown is supported...',
+      updated: 'Agent note updated',
+      updateFailed: 'Failed to update agent note',
     },
     generic: {
       noData: 'No data',

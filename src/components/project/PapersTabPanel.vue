@@ -14,6 +14,7 @@ const emit = defineEmits<{
   link: [paperId: string]
   linkToProject: [[projectId: string, paperId: string]]
   unlink: [projectId: string]
+  agentNoteUpdated: [agentNote: string | null]
 }>()
 
 const { t } = useI18n()
@@ -37,6 +38,7 @@ function onLinkToProject([projectId, paperId]: [string, string]) {
       @link="emit('link', $event)"
       @link-to-project="onLinkToProject"
       @unlink="emit('unlink', $event)"
+      @agent-note-updated="emit('agentNoteUpdated', $event)"
     />
   </div>
 </template>

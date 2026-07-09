@@ -1,19 +1,10 @@
 <script setup lang="ts">
-import {
-  Download,
-  FileText,
-  FolderOpen,
-  FolderPlus,
-  Pencil,
-  Plus,
-  Save,
-  Trash2,
-  X,
-} from 'lucide-vue-next'
-import { toRef } from 'vue'
+import { FileText, FolderOpen, FolderPlus, Pencil, Plus, Save, Trash2, X } from 'lucide-vue-next'
+import { computed, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '@/components/AppButton.vue'
+import AppSelect from '@/components/AppSelect.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
 import {
   useProjectFileBrowserController,
@@ -37,6 +28,14 @@ const exportFormats: { key: ProjectFileExportFormat; label: string }[] = [
   { key: 'pdf', label: 'PDF' },
   { key: 'html', label: 'HTML' },
 ]
+
+const selectedExportFormat = computed<ProjectFileExportFormat | undefined>({
+  get: () => undefined,
+  set: (format) => {
+    if (!format) return
+    void ctrl.exportFile(format)
+  },
+})
 
 function handlePaperClick(paperId: string): void {
   emit('paperClick', paperId)
@@ -211,33 +210,16 @@ function handlePaperClick(paperId: string): void {
               <span>{{ t('projects.edit') }}</span>
             </AppButton>
             <template v-if="ctrl.selectedFile.isMarkdown">
-              <div class="relative">
-                <AppButton
-                  size="xs"
-                  variant="outline"
-                  :loading="ctrl.exportLoading"
-                  @click="ctrl.exportMenuOpen = !ctrl.exportMenuOpen"
-                >
-                  <Download class="h-4 w-4" />
-                  <span>{{ t('projects.exportFile') }}</span>
-                </AppButton>
-                <Transition name="select-dropdown">
-                  <div
-                    v-if="ctrl.exportMenuOpen"
-                    class="border-ppx-border bg-ppx-bg-elevated absolute right-0 z-10 mt-1 min-w-32 overflow-hidden rounded-lg border py-1 shadow-lg"
-                  >
-                    <button
-                      v-for="fmt in exportFormats"
-                      :key="fmt.key"
-                      type="button"
-                      class="text-ppx-text hover:bg-ppx-bg-subtle block w-full px-3 py-1.5 text-left text-xs transition-colors"
-                      @click="(ctrl.exportFile(fmt.key), (ctrl.exportMenuOpen = false))"
-                    >
-                      {{ fmt.label }}
-                    </button>
-                  </div>
-                </Transition>
-              </div>
+              <AppSelect
+                v-model="selectedExportFormat"
+                class="min-w-32"
+                size="sm"
+                :disabled="ctrl.exportLoading"
+                :placeholder="
+                  ctrl.exportLoading ? t('projects.exporting') : t('projects.exportFile')
+                "
+                :options="exportFormats.map((fmt) => ({ label: fmt.label, value: fmt.key }))"
+              />
             </template>
           </template>
           <template v-else>

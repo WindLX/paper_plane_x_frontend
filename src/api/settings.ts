@@ -14,6 +14,8 @@ import type {
   LLMProviderRenameRequest,
   LLMProviderUpdateRequest,
   LocalPdfParserConfigUpdateRequest,
+  PandocConfigResponse,
+  PandocConfigUpdateRequest,
   PdfParserConfigResponse,
   ProviderListResponse,
 } from '../types/api'
@@ -118,6 +120,17 @@ export const settingsApi = {
 
   updateLibrarianConfig(payload: LibrarianConfigUpdateRequest): Promise<LibrarianConfigResponse> {
     return request('/settings/librarian', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  getPandocConfig(): Promise<PandocConfigResponse> {
+    return request('/settings/pandoc')
+  },
+
+  updatePandocConfig(payload: PandocConfigUpdateRequest): Promise<PandocConfigResponse> {
+    return request('/settings/pandoc', {
       method: 'PUT',
       body: JSON.stringify(payload),
     })

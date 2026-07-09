@@ -27,6 +27,10 @@ export function useSettingsController() {
   const error = ref<string | null>(null)
   const notify = useNotify()
 
+  function notifySuccess(key: string) {
+    notify.push(translate(key), 'success', 2000)
+  }
+
   async function fetchProviders() {
     loadingProviders.value = true
     error.value = null
@@ -47,6 +51,7 @@ export function useSettingsController() {
     try {
       await api.createProvider(payload)
       await fetchProviders()
+      notifySuccess('settings.success.createProvider')
     } catch (err) {
       error.value = err instanceof Error ? err.message : translate('settings.errors.createProvider')
       notify.push(error.value, 'error', 3600)
@@ -61,6 +66,7 @@ export function useSettingsController() {
     try {
       await api.updateProvider(name, payload)
       await fetchProviders()
+      notifySuccess('settings.success.updateProvider')
     } catch (err) {
       error.value = err instanceof Error ? err.message : translate('settings.errors.updateProvider')
       notify.push(error.value, 'error', 3600)
@@ -76,6 +82,7 @@ export function useSettingsController() {
       await api.renameProvider(oldName, { name: newName })
       await fetchProviders()
       await fetchAgentConfigs()
+      notifySuccess('settings.success.renameProvider')
     } catch (err) {
       error.value = err instanceof Error ? err.message : translate('settings.errors.renameProvider')
       notify.push(error.value, 'error', 3600)
@@ -90,6 +97,7 @@ export function useSettingsController() {
     try {
       await api.deleteProvider(name)
       await fetchProviders()
+      notifySuccess('settings.success.removeProvider')
     } catch (err) {
       error.value = err instanceof Error ? err.message : translate('settings.errors.removeProvider')
       notify.push(error.value, 'error', 3600)
@@ -132,6 +140,7 @@ export function useSettingsController() {
     try {
       await api.updateAgentConfig(agentName, payload)
       await fetchAgentConfigs()
+      notifySuccess('settings.success.updateAgentConfig')
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : translate('settings.errors.updateAgentConfig')
@@ -164,6 +173,7 @@ export function useSettingsController() {
     try {
       await api.updateLocalPdfParserConfig(payload)
       await fetchAppSettings()
+      notifySuccess('settings.success.updatePdfParserConfig')
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : translate('settings.errors.updatePdfParserConfig')
@@ -181,6 +191,7 @@ export function useSettingsController() {
     try {
       await api.updateCloudPdfParserConfig(payload)
       await fetchAppSettings()
+      notifySuccess('settings.success.updatePdfParserConfig')
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : translate('settings.errors.updatePdfParserConfig')
@@ -196,6 +207,7 @@ export function useSettingsController() {
     try {
       await api.updateDataProcessConfig(payload)
       await fetchAppSettings()
+      notifySuccess('settings.success.updateDataProcessConfig')
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : translate('settings.errors.updateDataProcessConfig')
@@ -211,9 +223,26 @@ export function useSettingsController() {
     try {
       await api.updateLibrarianConfig(payload)
       await fetchAppSettings()
+      notifySuccess('settings.success.updateLibrarianConfig')
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : translate('settings.errors.updateLibrarianConfig')
+      notify.push(error.value, 'error', 3600)
+    } finally {
+      saving.value = false
+    }
+  }
+
+  async function updatePandocConfig(payload: Partial<AppSettingsResponse['pandoc']>) {
+    saving.value = true
+    error.value = null
+    try {
+      await api.updatePandocConfig(payload)
+      await fetchAppSettings()
+      notifySuccess('settings.success.updatePandocConfig')
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : translate('settings.errors.updatePandocConfig')
       notify.push(error.value, 'error', 3600)
     } finally {
       saving.value = false
@@ -241,5 +270,6 @@ export function useSettingsController() {
     updatePdfParserCloudConfig,
     updateDataProcessConfig,
     updateLibrarianConfig,
+    updatePandocConfig,
   })
 }

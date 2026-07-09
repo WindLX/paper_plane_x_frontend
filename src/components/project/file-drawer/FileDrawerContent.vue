@@ -58,6 +58,11 @@ function handleLinkToProject(): void {
 function handleUnlink(_projectId: string): void {
   notify.push(t('projects.projectDrawer.paperLinkNotSupported'), 'info', 2000)
 }
+
+function handleAgentNoteUpdated(agentNote: string | null): void {
+  if (!selectedPaper.value) return
+  selectedPaper.value.agent_note = agentNote
+}
 </script>
 
 <template>
@@ -79,6 +84,7 @@ function handleUnlink(_projectId: string): void {
         @link="handleLink"
         @link-to-project="handleLinkToProject"
         @unlink="handleUnlink"
+        @agent-note-updated="handleAgentNoteUpdated"
       />
     </div>
   </section>

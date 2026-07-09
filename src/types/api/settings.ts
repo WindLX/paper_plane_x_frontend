@@ -117,10 +117,23 @@ export interface LibrarianConfigUpdateRequest {
   top_tags_limit?: number | null
 }
 
+export interface PandocConfigResponse {
+  pandoc_path?: string | null
+  html_template?: string | null
+  pdf_engine?: string | null
+}
+
+export interface PandocConfigUpdateRequest {
+  pandoc_path?: string | null
+  html_template?: string | null
+  pdf_engine?: string | null
+}
+
 export interface AppSettingsResponse {
   agent_llm: AgentLLMConfig[]
   pdf_parser: PdfParserConfigResponse
   data_process: DataProcessConfigResponse
   librarian: LibrarianConfigResponse
+  pandoc: PandocConfigResponse
   providers: LLMProvider[]
 }

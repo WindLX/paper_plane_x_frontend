@@ -43,6 +43,11 @@ async function handleDelete(): Promise<void> {
   emit('close')
 }
 
+function handleAgentNoteUpdated(agentNote: string | null): void {
+  if (!detail.paper) return
+  detail.paper.agent_note = agentNote
+}
+
 watch(
   () => [props.paperId, props.reloadKey],
   () => {
@@ -84,6 +89,7 @@ watch(
         @link-to-project="emit('linkToProject', $event)"
         @unlink="emit('unlink', $event)"
         @delete="handleDelete"
+        @agent-note-updated="handleAgentNoteUpdated"
       />
     </div>
   </div>
