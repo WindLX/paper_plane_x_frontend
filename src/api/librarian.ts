@@ -2,6 +2,7 @@ import { request } from './core'
 import type {
   LibrarianAgentSummaryResponse,
   LibrarianGlobalFinderResponse,
+  LibrarianGuideResponse,
   LibrarianQueryBuilderRequest,
   LibrarianQueryBuilderResponse,
   LibrarianUnifiedSearchRequest,
@@ -9,6 +10,10 @@ import type {
 } from '../types/api'
 
 export const librarianApi = {
+  getLibrarianGuide(): Promise<LibrarianGuideResponse> {
+    return request('/librarian/guide')
+  },
+
   librarianSearch(payload: LibrarianUnifiedSearchRequest): Promise<LibrarianUnifiedSearchResponse> {
     return request('/librarian/search', {
       method: 'POST',

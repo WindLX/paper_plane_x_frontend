@@ -12,6 +12,9 @@ const props = withDefaults(
 )
 
 const keyword = defineModel<string>({ required: true })
+const emit = defineEmits<{
+  submit: []
+}>()
 </script>
 
 <template>
@@ -26,6 +29,7 @@ const keyword = defineModel<string>({ required: true })
         'workspace-input w-full py-3 pr-4 pl-11',
         props.variant === 'subtle' ? 'bg-ppx-bg-subtle' : '',
       ]"
+      @keydown.enter.prevent="emit('submit')"
     />
   </label>
 </template>

@@ -11,6 +11,23 @@ export interface DataProcessSocketMessage {
   detail?: string
 }
 
+export function buildTaskListSearchParams(
+  offset: number,
+  limit: number,
+  sortOrder?: SortOrder,
+  sortBy?: TaskSortKey,
+  keyword?: string,
+): URLSearchParams {
+  const params = new URLSearchParams({
+    offset: String(offset),
+    limit: String(limit),
+  })
+  if (sortOrder) params.set('sort_order', sortOrder)
+  if (sortBy) params.set('sort_by', sortBy)
+  if (keyword?.trim()) params.set('keyword', keyword.trim())
+  return params
+}
+
 export class DataProcessWebSocketClient extends BaseWebSocketClient<DataProcessSocketMessage> {
   private onTaskUpdateCallback: ((task: DataProcessTaskResponse) => void) | null = null
 
@@ -54,17 +71,9 @@ export const tasksApi = {
     limit = 20,
     sortOrder?: SortOrder,
     sortBy?: TaskSortKey,
+    keyword?: string,
   ): Promise<DataProcessTaskListResponse> {
-    const params = new URLSearchParams({
-      offset: String(offset),
-      limit: String(limit),
-    })
-    if (sortOrder) {
-      params.set('sort_order', sortOrder)
-    }
-    if (sortBy) {
-      params.set('sort_by', sortBy)
-    }
+    const params = buildTaskListSearchParams(offset, limit, sortOrder, sortBy, keyword)
     return request(`/data-process/tasks?${params.toString()}`)
   },
 

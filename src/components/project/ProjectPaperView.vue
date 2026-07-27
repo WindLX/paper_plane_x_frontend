@@ -11,6 +11,10 @@ import { useNotify } from '@/composables/useNotify'
 import { useLibraryList } from '@/composables/useLibraryController'
 import { useTasksWsStore } from '@/stores/tasksWs'
 import type { LibrarySearchInputState } from '@/types/api'
+import {
+  LibrarySearchModeConflictError,
+  resolveLibrarySearchSelection,
+} from '@/utils/librarySearch'
 
 const props = defineProps<{
   projectId: string
@@ -72,24 +76,21 @@ const summaryCards = computed(() => {
   ]
 })
 
-function syncCtrlFromState(): void {
-  ctrl.searchProjectId = props.projectId
-  ctrl.searchPaperId = searchState.value.paperId
-  ctrl.searchQueryExpr = searchState.value.queryExpr
-}
-
 async function runSearch(): Promise<void> {
-  syncCtrlFromState()
-  if (searchState.value.mode === 'simple') {
-    const normalized = searchState.value.rawInput.trim()
-    searchState.value.queryExpr = normalized
-    searchState.value.executionQuery = normalized || null
-    searchState.value.parsedQuery = normalized || null
-    ctrl.searchQueryExpr = normalized
-    ctrl.searchPaperId = ''
-  } else {
-    searchState.value.executionQuery = searchState.value.queryExpr.trim() || null
-    searchState.value.parsedQuery = searchState.value.queryExpr.trim() || null
+  try {
+    const selection = resolveLibrarySearchSelection(searchState.value)
+    ctrl.searchProjectId = props.projectId
+    ctrl.searchSimpleQuery = selection.simpleQuery
+    ctrl.searchPaperId = selection.paperId
+    ctrl.searchQueryExpr = selection.queryExpr
+    searchState.value.executionQuery = selection.executionQuery
+    searchState.value.parsedQuery = selection.executionQuery
+  } catch (error) {
+    if (error instanceof LibrarySearchModeConflictError) {
+      notify.push(t('library.search.modeConflict'), 'warning', 3600)
+      return
+    }
+    throw error
   }
 
   await ctrl.fetchPapers({ offset: 0, limit: ctrl.paginated.limit || 20 })
@@ -104,6 +105,7 @@ async function clearSearch(): Promise<void> {
   searchState.value.executionQuery = null
   ctrl.searchProjectId = props.projectId
   ctrl.searchPaperId = ''
+  ctrl.searchSimpleQuery = ''
   ctrl.searchQueryExpr = ''
   await ctrl.fetchPapers({ offset: 0, limit: ctrl.paginated.limit || 20 })
 }
@@ -160,8 +162,10 @@ watch(
 onMounted(async () => {
   ctrl.searchProjectId = props.projectId
   ctrl.searchPaperId = ''
+  ctrl.searchSimpleQuery = ''
   ctrl.searchQueryExpr = ''
   const promises: Promise<unknown>[] = [refreshLibrary()]
+  promises.push(ctrl.fetchGuide())
   if (!ctrl.statusCounts) {
     promises.push(ctrl.fetchStatusCounts(false, props.projectId))
   }
@@ -179,6 +183,8 @@ onMounted(async () => {
           v-model:search-state="searchState"
           v-model:advanced-open="advancedOpen"
           :ai-polishing="aiPolishing"
+          :guide="ctrl.guide"
+          :guide-loading="ctrl.guideLoading"
           hide-project-scope
           @run-search="runSearch"
           @clear-search="clearSearch"

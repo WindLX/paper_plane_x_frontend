@@ -7,6 +7,7 @@ import { usePagination } from '@/composables/usePagination'
 import { useNotify } from '@/composables/useNotify'
 import type {
   PaperDetailResponse,
+  LibrarianGuideResponse,
   PaperListResponse,
   PaperResponse,
   PaperStatusCountResponse,
@@ -21,23 +22,28 @@ export function useLibraryList() {
   const statusCountsLoading = ref(false)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const guide = ref<LibrarianGuideResponse | null>(null)
+  const guideLoading = ref(false)
   const notify = useNotify()
 
   // Search state (merged from old librarian/search store)
   const searchProjectId = ref('')
   const searchPaperId = ref('')
+  const searchSimpleQuery = ref('')
   const searchQueryExpr = ref('')
 
   const paginated = usePagination<PaperResponse, PaperSortKey, PaperListResponse>({
     fetcher: async ({ offset, limit, sortOrder, sortBy }) => {
       const projectId = searchProjectId.value.trim() || undefined
       const paperId = searchPaperId.value.trim() || undefined
+      const simpleQuery = searchSimpleQuery.value.trim() || undefined
       const queryExpr = searchQueryExpr.value.trim() || undefined
 
       const result = await api.librarianSearch({
         project_id: projectId ?? null,
         paper_id: paperId ?? null,
-        query_expr: paperId ? null : (queryExpr ?? null),
+        simple_query: simpleQuery ?? null,
+        query_expr: queryExpr ?? null,
         limit,
         offset,
         sort_by: sortBy,
@@ -49,8 +55,8 @@ export function useLibraryList() {
         return {
           items: [],
           total: 0,
-          offset: 0,
-          limit: 0,
+          offset: result.offset,
+          limit: result.limit,
         }
       }
 
@@ -153,14 +159,30 @@ export function useLibraryList() {
     })
   }
 
+  async function fetchGuide(): Promise<void> {
+    if (guide.value || guideLoading.value) return
+    guideLoading.value = true
+    try {
+      guide.value = await api.getLibrarianGuide()
+    } catch (err) {
+      const message = err instanceof Error ? err.message : translate('library.errors.fetchGuide')
+      notify.push(message, 'error', 3600)
+    } finally {
+      guideLoading.value = false
+    }
+  }
+
   return reactive({
     statusCounts,
     statusCountsLoading,
     loading,
     error,
+    guide,
+    guideLoading,
     summaryCounts,
     searchProjectId,
     searchPaperId,
+    searchSimpleQuery,
     searchQueryExpr,
     paginated,
     fetchPapers,
@@ -168,6 +190,7 @@ export function useLibraryList() {
     unlinkPaperFromProject,
     fetchStatusCounts,
     aiPolishQuery,
+    fetchGuide,
   })
 }
 

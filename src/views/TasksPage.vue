@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PagerBar from '@/components/PagerBar.vue'
@@ -21,6 +21,10 @@ const wsStore = useTasksWsStore()
 const selectedTaskId = ref<string | null>(null)
 const drawerOpen = ref(false)
 const keyword = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+const queueTotal = computed(
+  () => list.queued + list.running + list.completed + list.failed + list.canceled,
+)
 
 /* ── Drawer Control ───────────────────────────────────────────── */
 
@@ -39,21 +43,26 @@ watch(drawerOpen, (isOpen) => {
   if (!isOpen) selectedTaskId.value = null
 })
 
-/* ── Search Filter ── */
-const filteredTasks = computed(() => {
-  const search = keyword.value.trim().toLowerCase()
-  if (!search) {
-    return list.paginated.items
+async function submitSearch(): Promise<void> {
+  if (searchTimer) {
+    clearTimeout(searchTimer)
+    searchTimer = null
   }
-  return list.paginated.items.filter((task) => {
-    const haystacks = [task.task_id, task.paper_id, task.status, task.retry_of_task_id ?? '']
-    return haystacks.some((item) => item.toLowerCase().includes(search))
-  })
+  list.searchKeyword = keyword.value.trim()
+  await list.fetchTasks({ offset: 0, limit: list.paginated.limit })
+}
+
+watch(keyword, () => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    searchTimer = null
+    void submitSearch()
+  }, 300)
 })
 
 /* ── 选中项在过滤后失效时自动修正 ── */
 watch(
-  () => filteredTasks.value,
+  () => list.paginated.items,
   (items, oldItems) => {
     if (items.length === 0) {
       selectedTaskId.value = null
@@ -78,6 +87,10 @@ onMounted(async () => {
   wsStore.connect()
   await list.fetchTasks({ offset: 0, limit: list.paginated.limit })
 })
+
+onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer)
+})
 </script>
 
 <template>
@@ -90,7 +103,7 @@ onMounted(async () => {
     >
       <section class="space-y-4">
         <TaskQueueCards
-          :total="list.paginated.total"
+          :total="queueTotal"
           :queued="list.queued"
           :running="list.running"
           :completed="list.completed"
@@ -98,12 +111,16 @@ onMounted(async () => {
           :canceled="list.canceled"
         />
 
-        <SimpleSearchBar v-model="keyword" :placeholder="t('tasks.searchPlaceholder')" />
+        <SimpleSearchBar
+          v-model="keyword"
+          :placeholder="t('tasks.searchPlaceholder')"
+          @submit="submitSearch"
+        />
 
         <div :key="`${keyword}-${list.paginated.currentPage}`" class="animate-fade-in-up space-y-4">
           <TaskListTable
             v-model:selected-task-id="selectedTaskId"
-            :tasks="filteredTasks"
+            :tasks="list.paginated.items"
             :offset="list.paginated.offset"
             :sort-order="list.paginated.sortOrder"
             :sort-by="list.paginated.sortBy"

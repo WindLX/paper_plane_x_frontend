@@ -22,6 +22,7 @@ export function useTaskList() {
   const completed = ref(0)
   const failed = ref(0)
   const canceled = ref(0)
+  const searchKeyword = ref('')
 
   const paginated = usePagination<
     DataProcessTaskResponse,
@@ -29,7 +30,7 @@ export function useTaskList() {
     DataProcessTaskListResponse
   >({
     fetcher: ({ offset, limit, sortOrder, sortBy }) =>
-      api.listTasks(offset, limit, sortOrder, sortBy),
+      api.listTasks(offset, limit, sortOrder, sortBy, searchKeyword.value),
     defaultLimit: 20,
   })
 
@@ -59,6 +60,7 @@ export function useTaskList() {
     completed,
     failed,
     canceled,
+    searchKeyword,
     paginated,
     fetchTasks,
   })

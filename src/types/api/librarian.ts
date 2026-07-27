@@ -3,12 +3,32 @@ import type { SortOrder, PaperSortKey } from '../sort'
 export interface LibrarianUnifiedSearchRequest {
   project_id?: string | null
   paper_id?: string | null
+  simple_query?: string | null
   query_expr?: string | null
   limit?: number
   offset?: number
   sort_by?: PaperSortKey
   sort_order?: SortOrder
   only_completed?: boolean
+}
+
+export interface LibrarianGuideResponse {
+  query_schema: {
+    mode: string
+    project_id: string
+    paper_id: string
+    simple_query: {
+      description: string
+      fields: string[]
+    }
+    query_expr: Record<string, unknown>
+    paging: {
+      limit: string
+      offset: string
+    }
+  }
+  query_examples: string[]
+  project_query_tips: string[]
 }
 
 export interface LibrarianUnifiedSearchResponse {
