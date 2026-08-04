@@ -8,6 +8,7 @@ import type { PaperDetailResponse } from '@/types/api'
 defineProps<{
   loading: boolean
   paper: PaperDetailResponse | null
+  pdfOpen?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -15,6 +16,7 @@ const emit = defineEmits<{
   linkToProject: [[projectId: string, paperId: string]]
   unlink: [projectId: string]
   agentNoteUpdated: [agentNote: string | null]
+  togglePdf: [paper: PaperDetailResponse]
 }>()
 
 const { t } = useI18n()
@@ -35,10 +37,12 @@ function onLinkToProject([projectId, paperId]: [string, string]) {
     <PaperDetailPanel
       v-else
       :paper="paper"
+      :pdf-open="pdfOpen"
       @link="emit('link', $event)"
       @link-to-project="onLinkToProject"
       @unlink="emit('unlink', $event)"
       @agent-note-updated="emit('agentNoteUpdated', $event)"
+      @toggle-pdf="emit('togglePdf', $event)"
     />
   </div>
 </template>

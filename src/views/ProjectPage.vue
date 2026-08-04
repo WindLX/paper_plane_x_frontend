@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { toRef } from 'vue'
+import { toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PageLayout from '@/components/layout/PageLayout.vue'
 import SlidePanel from '@/components/layout/SlidePanel.vue'
+import PaperDrawerWorkspace from '@/components/paper/PaperDrawerWorkspace.vue'
 import FileDrawerContent from '@/components/project/file-drawer/FileDrawerContent.vue'
 import PaperDrawerContent from '@/components/project/paper-drawer/PapersDrawerContent.vue'
 import ProjectFileView from '@/components/project/ProjectFileView.vue'
@@ -11,6 +12,7 @@ import ProjectPaperView from '@/components/project/ProjectPaperView.vue'
 import ProjectDeleteConfirmModal from '@/components/project/ProjectDeleteConfirmModal.vue'
 import ProjectTopbarDrawer from '@/components/project/ProjectTopbarDrawer.vue'
 import { useProjectPageController } from '@/composables/useProjectPageController'
+import { usePaperPdfPane } from '@/composables/usePaperPdfPane'
 
 const props = defineProps<{
   projectId: string
@@ -18,6 +20,12 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const ctrl = useProjectPageController(toRef(props, 'projectId'))
+const pdf = usePaperPdfPane()
+
+watch(
+  () => [ctrl.paperDrawerPaperId, ctrl.activeTab, ctrl.drawerOpen],
+  () => pdf.reset(),
+)
 </script>
 
 <template>
@@ -26,6 +34,8 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
       :title="ctrl.pageTitle"
       :subtitle="ctrl.pageSubtitle"
       :drawer-open="ctrl.drawerOpen"
+      :drawer-expanded="pdf.layoutOpen"
+      :drawer-expanded-width="pdf.width"
       no-padding
       @close-drawer="ctrl.closeDrawer"
     >
@@ -59,18 +69,34 @@ const ctrl = useProjectPageController(toRef(props, 'projectId'))
       </section>
 
       <template #drawer>
-        <SlidePanel :title="t('projects.projectDrawer.tabPapers')" @close="ctrl.closeDrawer">
+        <SlidePanel
+          v-if="ctrl.activeTab === 'files'"
+          :title="t('projects.projectDrawer.tabPapers')"
+          @close="ctrl.closeDrawer"
+        >
           <FileDrawerContent
-            v-if="ctrl.activeTab === 'files'"
             :project-id="props.projectId"
             :initial-paper-id="ctrl.fileDrawerPaperId"
           />
-          <PaperDrawerContent
-            v-else-if="ctrl.activeTab === 'papers'"
-            :project-id="props.projectId"
-            :initial-paper-id="ctrl.paperDrawerPaperId"
-          />
         </SlidePanel>
+        <PaperDrawerWorkspace
+          v-else-if="ctrl.activeTab === 'papers'"
+          v-model:pdf-width="pdf.width"
+          :pdf-open="pdf.open"
+          :paper-id="ctrl.paperDrawerPaperId"
+          :paper-title="pdf.paperTitle"
+          @close-pdf="pdf.close"
+          @pdf-closed="pdf.finishClose"
+        >
+          <SlidePanel :title="t('projects.projectDrawer.tabPapers')" @close="ctrl.closeDrawer">
+            <PaperDrawerContent
+              :project-id="props.projectId"
+              :initial-paper-id="ctrl.paperDrawerPaperId"
+              :pdf-open="pdf.open"
+              @toggle-pdf="pdf.toggle"
+            />
+          </SlidePanel>
+        </PaperDrawerWorkspace>
       </template>
     </PageLayout>
 

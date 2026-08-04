@@ -14,6 +14,7 @@ import PaperSynthesis from './PaperSynthesis.vue'
 
 const props = defineProps<{
   paper: PaperDetailResponse | null
+  pdfOpen?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   linkToProject: [[projectId: string, paperId: string]]
   delete: [paperId: string]
   agentNoteUpdated: [agentNote: string | null]
+  togglePdf: [paper: PaperDetailResponse]
 }>()
 
 const { t } = useI18n()
@@ -44,9 +46,11 @@ function handleAgentNoteUpdated(agentNote: string | null): void {
     <template v-if="paper">
       <PaperDetailHeader
         :paper="paper"
+        :pdf-open="pdfOpen"
         @unlink="emit('unlink', $event)"
         @open-project-link-modal="linkModal.openProjectLinkModal()"
         @delete="emit('delete', $event)"
+        @toggle-pdf="emit('togglePdf', $event)"
       />
 
       <PaperQuickScan

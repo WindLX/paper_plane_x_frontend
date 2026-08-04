@@ -10,12 +10,16 @@ const props = withDefaults(
     title: string
     subtitle?: string
     drawerOpen?: boolean
+    drawerExpanded?: boolean
+    drawerExpandedWidth?: number
     noPadding?: boolean
     fullWidth?: boolean
   }>(),
   {
     subtitle: '',
     drawerOpen: false,
+    drawerExpanded: false,
+    drawerExpandedWidth: 768,
     noPadding: false,
     fullWidth: false,
   },
@@ -27,8 +31,14 @@ const emit = defineEmits<{
 
 const useFloatingDrawer = useMediaQuery('(max-width: 1750px)')
 
+const drawerWidth = computed(() => {
+  if (!props.drawerOpen) return '0px'
+  if (!props.drawerExpanded) return 'min(100vw, var(--width-drawer))'
+  return `min(100vw, calc(var(--width-drawer) + ${props.drawerExpandedWidth}px))`
+})
+
 const desktopDrawerClass = computed(() =>
-  props.drawerOpen ? 'border-ppx-border/80 w-lg border-l' : 'w-0 border-l-0',
+  props.drawerOpen ? 'border-ppx-border/80 border-l' : 'border-l-0',
 )
 </script>
 
@@ -52,8 +62,9 @@ const desktopDrawerClass = computed(() =>
     <!-- Right drawer area  -->
     <div
       v-if="!useFloatingDrawer"
-      class="duration-ppx-standard ease-ppx shrink-0 transition-all"
+      class="shrink-0"
       :class="desktopDrawerClass"
+      :style="{ width: drawerWidth }"
     >
       <slot name="drawer" />
     </div>
@@ -83,7 +94,8 @@ const desktopDrawerClass = computed(() =>
       >
         <div
           v-if="props.drawerOpen && useFloatingDrawer"
-          class="fixed inset-y-0 right-0 z-60 w-lg max-w-full"
+          class="fixed inset-y-0 right-0 z-60 overflow-x-hidden"
+          :style="{ width: drawerWidth }"
         >
           <slot name="drawer" />
         </div>

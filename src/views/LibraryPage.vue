@@ -8,11 +8,13 @@ import PageLayout from '@/components/layout/PageLayout.vue'
 import SlidePanel from '@/components/layout/SlidePanel.vue'
 import PaperListTable from '@/components/paper/PaperListTable.vue'
 import PaperDrawerContent from '@/components/paper/PaperDrawerContent.vue'
+import PaperDrawerWorkspace from '@/components/paper/PaperDrawerWorkspace.vue'
 import LibrarySearchPanel from '@/components/library/LibrarySearchPanel.vue'
 import LibrarySummaryCards from '@/components/library/LibrarySummaryCards.vue'
 
 import { useNotify } from '@/composables/useNotify'
 import { useLibraryList } from '@/composables/useLibraryController'
+import { usePaperPdfPane } from '@/composables/usePaperPdfPane'
 
 import { useTasksWsStore } from '@/stores/tasksWs'
 import type { LibrarySearchInputState } from '@/types/api'
@@ -40,6 +42,7 @@ const aiPolishing = ref(false)
 const selectedPaperId = ref<string | null>(null)
 const drawerOpen = ref(false)
 const drawerReloadKey = ref(0)
+const pdf = usePaperPdfPane()
 
 const summaryCards = computed(() => {
   const sc = ctrl.summaryCounts
@@ -114,6 +117,9 @@ async function clearSearch(): Promise<void> {
 }
 
 async function openPaperDrawer(paperId: string): Promise<void> {
+  if (selectedPaperId.value !== paperId) {
+    pdf.reset()
+  }
   drawerOpen.value = true
   await nextTick()
   selectedPaperId.value = paperId
@@ -121,6 +127,7 @@ async function openPaperDrawer(paperId: string): Promise<void> {
 
 function closePaperDrawer(): void {
   drawerOpen.value = false
+  pdf.reset()
 }
 
 async function refreshLibrary(): Promise<void> {
@@ -206,6 +213,8 @@ onBeforeUnmount(() => {
       :title="t('library.title')"
       :subtitle="t('library.subtitles')"
       :drawer-open="drawerOpen"
+      :drawer-expanded="pdf.layoutOpen"
+      :drawer-expanded-width="pdf.width"
       @close-drawer="closePaperDrawer"
     >
       <section class="space-y-4">
@@ -252,17 +261,28 @@ onBeforeUnmount(() => {
       </section>
 
       <template #drawer>
-        <SlidePanel :title="t('library.detail.paperTitle')" @close="closePaperDrawer">
-          <PaperDrawerContent
-            v-if="selectedPaperId"
-            :paper-id="selectedPaperId"
-            :reload-key="drawerReloadKey"
-            @unlink="handleUnlinkPaper"
-            @link-to-project="handleLinkPaperToProject"
-            @refresh-list="refreshLibrary"
-            @close="closePaperDrawer"
-          />
-        </SlidePanel>
+        <PaperDrawerWorkspace
+          v-model:pdf-width="pdf.width"
+          :pdf-open="pdf.open"
+          :paper-id="selectedPaperId"
+          :paper-title="pdf.paperTitle"
+          @close-pdf="pdf.close"
+          @pdf-closed="pdf.finishClose"
+        >
+          <SlidePanel :title="t('library.detail.paperTitle')" @close="closePaperDrawer">
+            <PaperDrawerContent
+              v-if="selectedPaperId"
+              :paper-id="selectedPaperId"
+              :reload-key="drawerReloadKey"
+              :pdf-open="pdf.open"
+              @unlink="handleUnlinkPaper"
+              @link-to-project="handleLinkPaperToProject"
+              @refresh-list="refreshLibrary"
+              @close="closePaperDrawer"
+              @toggle-pdf="pdf.toggle"
+            />
+          </SlidePanel>
+        </PaperDrawerWorkspace>
       </template>
     </PageLayout>
   </div>

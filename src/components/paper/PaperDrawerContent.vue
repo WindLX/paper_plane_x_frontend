@@ -7,10 +7,12 @@ import AppButton from '../AppButton.vue'
 import PaperDetailPanel from './PaperDetailPanel.vue'
 import { useLibraryDetail } from '@/composables/useLibraryController'
 import { useNotify } from '@/composables/useNotify'
+import type { PaperDetailResponse } from '@/types/api'
 
 const props = defineProps<{
   paperId: string | null
   reloadKey?: number
+  pdfOpen?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -18,6 +20,7 @@ const emit = defineEmits<{
   unlink: [projectId: string]
   refreshList: []
   close: []
+  togglePdf: [paper: PaperDetailResponse]
 }>()
 
 const { t } = useI18n()
@@ -86,10 +89,12 @@ watch(
     <div v-else-if="detail.paper">
       <PaperDetailPanel
         :paper="detail.paper"
+        :pdf-open="pdfOpen"
         @link-to-project="emit('linkToProject', $event)"
         @unlink="emit('unlink', $event)"
         @delete="handleDelete"
         @agent-note-updated="handleAgentNoteUpdated"
+        @toggle-pdf="emit('togglePdf', $event)"
       />
     </div>
   </div>

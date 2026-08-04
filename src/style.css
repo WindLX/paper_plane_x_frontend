@@ -43,6 +43,7 @@
 
   /* Layout */
   --width-drawer: 32rem;
+  --width-pdf-reader: 48rem;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));

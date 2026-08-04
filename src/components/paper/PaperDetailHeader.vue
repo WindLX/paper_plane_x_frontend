@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ExternalLink, Folder, Link2, Trash2, Unlink2 } from 'lucide-vue-next'
+import { BookOpen, ExternalLink, Folder, Link2, Trash2, Unlink2 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import type { PaperDetailResponse } from '@/types/api'
@@ -13,12 +13,14 @@ import JsonPanel from '../JsonPanel.vue'
 
 const props = defineProps<{
   paper: PaperDetailResponse
+  pdfOpen?: boolean
 }>()
 
 const emit = defineEmits<{
   unlink: [projectId: string]
   openProjectLinkModal: []
   delete: [paperId: string]
+  togglePdf: [paper: PaperDetailResponse]
 }>()
 
 const { t } = useI18n()
@@ -85,6 +87,18 @@ const zoteroUrl = computed<string | null>(() => {
         </div>
       </div>
       <div class="flex items-center gap-2 overflow-x-auto">
+        <AppButton
+          variant="outline"
+          tone="sky"
+          size="xs"
+          :disabled="!paper.raw_pdf_path"
+          :title="paper.raw_pdf_path ? t('paper.pdf.toggle') : t('paper.pdf.unavailable')"
+          :aria-pressed="pdfOpen"
+          @click="emit('togglePdf', paper)"
+        >
+          <BookOpen class="h-3.5 w-3.5" />
+          <span>{{ pdfOpen ? t('paper.pdf.hide') : t('paper.pdf.read') }}</span>
+        </AppButton>
         <a
           v-if="zoteroUrl"
           :href="zoteroUrl"

@@ -11,6 +11,7 @@ import type { PaperDetailResponse } from '@/types/api'
 const props = defineProps<{
   projectId: string
   initialPaperId?: string | null
+  pdfOpen?: boolean
 }>()
 
 const { t } = useI18n()
@@ -19,6 +20,10 @@ const notify = useNotify()
 const activePaperId = ref<string | null>(null)
 const selectedPaper = ref<PaperDetailResponse | null>(null)
 const paperLoading = ref(false)
+
+const emit = defineEmits<{
+  togglePdf: [paper: PaperDetailResponse]
+}>()
 
 async function loadPaper(paperId: string): Promise<void> {
   paperLoading.value = true
@@ -76,9 +81,11 @@ function handleUnlink(_projectId: string): void {
       <PapersTabPanel
         :loading="paperLoading"
         :paper="selectedPaper"
+        :pdf-open="pdfOpen"
         @link="handleLink"
         @link-to-project="handleLinkToProject"
         @unlink="handleUnlink"
+        @toggle-pdf="emit('togglePdf', $event)"
       />
     </div>
   </section>

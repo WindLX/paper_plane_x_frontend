@@ -1,4 +1,4 @@
-import { request } from './core'
+import { API_BASE_URL, request } from './core'
 import type {
   DataProcessManualUpdateRequest,
   DataProcessSubmitResponse,
@@ -107,5 +107,21 @@ export const papersApi = {
     return request(`/papers/${paperId}/agent-note`, {
       method: 'DELETE',
     })
+  },
+
+  getPaperPdfUrl(paperId: string, download = false): string {
+    const path = `/papers/${encodeURIComponent(paperId)}/pdf`
+    return `${API_BASE_URL}${path}${download ? '?download=true' : ''}`
+  },
+
+  async checkPaperPdf(paperId: string, signal?: AbortSignal): Promise<void> {
+    const response = await fetch(papersApi.getPaperPdfUrl(paperId), {
+      headers: { Range: 'bytes=0-0' },
+      signal,
+    })
+    if (!response.ok) {
+      const message = await response.text()
+      throw new Error(message || `PDF request failed (${response.status})`)
+    }
   },
 }
