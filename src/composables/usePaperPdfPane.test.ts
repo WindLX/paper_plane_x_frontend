@@ -9,20 +9,21 @@ const paper = {
 } as PaperDetailResponse
 
 describe('paper PDF pane state', () => {
-  it('keeps the expanded layout until the leave transition finishes', () => {
+  it('closes the reader and clears its title when toggled or closed', () => {
     const pane = usePaperPdfPane()
 
     pane.toggle(paper)
     expect(pane.open).toBe(true)
-    expect(pane.layoutOpen).toBe(true)
     expect(pane.paperTitle).toBe(paper.title)
 
     pane.close()
     expect(pane.open).toBe(false)
-    expect(pane.layoutOpen).toBe(true)
 
-    pane.finishClose()
-    expect(pane.layoutOpen).toBe(false)
+    expect(pane.paperTitle).toBeNull()
+
+    pane.toggle(paper)
+    pane.toggle(paper)
+    expect(pane.open).toBe(false)
     expect(pane.paperTitle).toBeNull()
   })
 

@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { PaperResponse } from '@/types/api'
 import type { SortOrder, PaperSortKey } from '@/types/sort'
 import { formatDateTime } from '@/utils/format'
+import AppCheckbox from '../AppCheckbox.vue'
+import AppTable from '../AppTable.vue'
 import CopyableText from '../CopyableText.vue'
 import SortButton from '../SortButton.vue'
 import PaperStatusBadge from './PaperStatusBadge.vue'
@@ -16,15 +19,29 @@ const props = defineProps<{
   sortBy: PaperSortKey
   sortOrder: SortOrder
   title?: string
+  selectedIds: string[]
+  selectionDisabled?: boolean
 }>()
 
 const emit = defineEmits<{
   sort: [field: PaperSortKey]
   open: [paperId: string]
   close: []
+  'toggle-select': [paperId: string]
+  'toggle-select-all': []
 }>()
 
 const { t } = useI18n()
+
+const selectedIdSet = computed(() => new Set(props.selectedIds))
+const pageIds = computed(() => props.papers.map((paper) => paper.paper_id))
+const allSelected = computed(
+  () => pageIds.value.length > 0 && pageIds.value.every((id) => selectedIdSet.value.has(id)),
+)
+const partiallySelected = computed(
+  () => pageIds.value.some((id) => selectedIdSet.value.has(id)) && !allSelected.value,
+)
+const pageSelectionDisabled = computed(() => props.selectionDisabled || props.papers.length === 0)
 
 function handleToggle(paperId: string): void {
   if (selectedPaperId.value === paperId) {
@@ -38,16 +55,27 @@ function handleToggle(paperId: string): void {
 </script>
 
 <template>
-  <section class="workspace-table-shell">
-    <div v-if="props.title" class="border-ppx-border border-b px-4 py-3">
-      <h3 class="text-ppx-text text-xl font-semibold tracking-tight">
-        {{ props.title }}
-      </h3>
-    </div>
+  <AppTable :title="props.title">
+    <template v-if="$slots.actions" #actions>
+      <slot name="actions" />
+    </template>
+
     <table class="workspace-table">
       <thead>
         <tr class="text-ppx-text-muted text-left text-sm font-semibold tracking-tight uppercase">
           <th class="px-3 py-2">#</th>
+          <th class="w-10 px-3 py-2">
+            <AppCheckbox
+              :checked="allSelected"
+              :indeterminate="partiallySelected"
+              :disabled="pageSelectionDisabled"
+              :label="t('bulk.selectPage')"
+              :checked-label="t('bulk.selectPageAll')"
+              :indeterminate-label="t('bulk.selectPagePartial')"
+              :disabled-label="t('bulk.selectPageDisabled')"
+              @click.stop="emit('toggle-select-all')"
+            />
+          </th>
           <th class="px-3 py-2">
             <SortButton
               :label="t('paper.table.title')"
@@ -87,6 +115,16 @@ function handleToggle(paperId: string): void {
         >
           <td class="workspace-muted px-3 py-2 text-sm tabular-nums">
             {{ (props.offset ?? 0) + index + 1 }}
+          </td>
+          <td class="px-3 py-2" @click.stop>
+            <AppCheckbox
+              :checked="selectedIdSet.has(paper.paper_id)"
+              :disabled="props.selectionDisabled"
+              :label="t('bulk.selectRow', { id: paper.paper_id })"
+              :checked-label="t('bulk.selectRowSelected', { id: paper.paper_id })"
+              :disabled-label="t('bulk.selectRowDisabled', { id: paper.paper_id })"
+              @click.stop="emit('toggle-select', paper.paper_id)"
+            />
           </td>
           <td class="px-3 py-2">
             <div class="mt-1 max-w-80 text-sm font-medium wrap-break-word">
@@ -128,11 +166,11 @@ function handleToggle(paperId: string): void {
           <td class="px-3 py-2 text-sm">{{ formatDateTime(paper.updated_at) }}</td>
         </tr>
         <tr v-if="props.papers.length === 0">
-          <td colspan="7" class="workspace-table-empty text-center">
+          <td colspan="8" class="workspace-table-empty text-center">
             {{ t('paper.noPapers') }}
           </td>
         </tr>
       </tbody>
     </table>
-  </section>
+  </AppTable>
 </template>

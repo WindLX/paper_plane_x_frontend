@@ -59,7 +59,7 @@ const zoteroUrl = computed<string | null>(() => {
 </script>
 
 <template>
-  <header class="workspace-panel space-y-3 p-3.5">
+  <header class="workspace-panel min-w-0 space-y-3 p-3.5 wrap-anywhere">
     <h3 class="workspace-section-title">
       {{ paper.title ?? '-' }}
     </h3>
@@ -71,10 +71,10 @@ const zoteroUrl = computed<string | null>(() => {
           <span
             v-for="project in paperProjects"
             :key="`paper-project-${project.project_id}`"
-            class="workspace-badge inline-flex items-center gap-1.5"
+            class="workspace-badge inline-flex max-w-full items-center gap-1.5 whitespace-normal"
           >
             <Folder class="h-3 w-3" />
-            <span>{{ project.name }}</span>
+            <span class="min-w-0">{{ project.name }}</span>
             <button
               type="button"
               class="hover:text-ppx-danger text-ppx-text-muted ml-0.5 cursor-pointer transition-colors"
@@ -117,20 +117,20 @@ const zoteroUrl = computed<string | null>(() => {
         </AppButton>
       </div>
     </div>
-    <div class="grid gap-2 md:grid-cols-2">
-      <div class="workspace-subpanel p-2.5">
+    <div class="paper-metadata grid min-w-0 gap-2">
+      <div class="workspace-subpanel min-w-0 p-2.5">
         <div class="workspace-label mb-0">{{ t('paper.labels.authors') }}</div>
         <div class="workspace-body">{{ paper.authors.join(', ') || '-' }}</div>
       </div>
-      <div class="workspace-subpanel p-2.5">
+      <div class="workspace-subpanel min-w-0 p-2.5">
         <div class="workspace-label mb-0">{{ t('paper.labels.publication') }}</div>
         <div class="workspace-body">{{ paper.publication ?? '-' }}</div>
       </div>
-      <div class="workspace-subpanel p-2.5">
+      <div class="workspace-subpanel min-w-0 p-2.5">
         <div class="workspace-label mb-0">{{ t('paper.labels.year') }}</div>
         <div class="workspace-body">{{ paper.year ?? '-' }}</div>
       </div>
-      <div class="workspace-subpanel p-2.5">
+      <div class="workspace-subpanel min-w-0 p-2.5">
         <div class="workspace-label mb-0">{{ t('paper.labels.doi') }}</div>
         <div class="workspace-body">{{ paper.doi ?? '-' }}</div>
       </div>
@@ -164,3 +164,9 @@ const zoteroUrl = computed<string | null>(() => {
     <div class="flex flex-wrap gap-2"></div>
   </header>
 </template>
+
+<style scoped>
+.paper-metadata {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+}
+</style>

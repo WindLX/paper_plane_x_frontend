@@ -11,6 +11,7 @@
   - 主操作按钮使用 `--ppx-accent`。
   - 状态色仅使用 `--ppx-success`、`--ppx-warning`、`--ppx-danger`、`--ppx-info`。
 - 圆角：
+  - 勾选框：`--ppx-radius-selection`（4px）
   - 交互元素：`--ppx-radius-interactive`
   - 面板：`--ppx-radius-panel`
   - 页面：`--ppx-radius-page`

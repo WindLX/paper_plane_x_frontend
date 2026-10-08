@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FileText } from 'lucide-vue-next'
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { api } from '@/api'
@@ -11,7 +11,10 @@ import type { PaperDetailResponse } from '@/types/api'
 const props = defineProps<{
   projectId: string
   initialPaperId?: string | null
+  pdfOpen?: boolean
 }>()
+
+const emit = defineEmits<{ togglePdf: [paper: PaperDetailResponse] }>()
 
 const { t } = useI18n()
 const notify = useNotify()
@@ -22,9 +25,13 @@ const paperLoading = ref(false)
 
 async function loadPaper(paperId: string): Promise<void> {
   paperLoading.value = true
+  selectedPaper.value = null
   try {
-    selectedPaper.value = await api.getPaper(paperId)
+    const paper = await api.getPaper(paperId)
+    if (activePaperId.value !== paperId) return
+    selectedPaper.value = paper
   } catch (err) {
+    if (activePaperId.value !== paperId) return
     notify.push(
       err instanceof Error ? err.message : t('projects.errors.requestFailed'),
       'error',
@@ -32,20 +39,25 @@ async function loadPaper(paperId: string): Promise<void> {
     )
     selectedPaper.value = null
   } finally {
-    paperLoading.value = false
+    if (activePaperId.value === paperId) paperLoading.value = false
   }
 }
 
 watch(
   () => props.initialPaperId,
   (paperId) => {
+    activePaperId.value = paperId ?? null
+    selectedPaper.value = null
     if (paperId) {
-      activePaperId.value = paperId
       void loadPaper(paperId)
     }
   },
   { immediate: true },
 )
+
+onBeforeUnmount(() => {
+  activePaperId.value = null
+})
 
 function handleLink(): void {
   notify.push(t('projects.projectDrawer.paperLinkNotSupported'), 'info', 2000)
@@ -81,6 +93,8 @@ function handleAgentNoteUpdated(agentNote: string | null): void {
       <PapersTabPanel
         :loading="paperLoading"
         :paper="selectedPaper"
+        :pdf-open="pdfOpen"
+        @toggle-pdf="emit('togglePdf', $event)"
         @link="handleLink"
         @link-to-project="handleLinkToProject"
         @unlink="handleUnlink"

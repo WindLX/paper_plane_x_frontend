@@ -1,5 +1,11 @@
 export const common = {
   'zh-CN': {
+    sidebar: { resize: '调整左侧栏宽度' },
+    drawer: {
+      resize: '调整右侧栏宽度',
+      resizeHint: '拖动调整宽度；方向键调整，Home/End 调到边界，双击恢复默认',
+      close: '关闭右侧栏',
+    },
     appName: 'Paper Plane X Console',
     unknown: '未知',
     none: '无',
@@ -15,6 +21,12 @@ export const common = {
     updatedAt: '更新时间',
   },
   'en-US': {
+    sidebar: { resize: 'Resize left sidebar' },
+    drawer: {
+      resize: 'Resize right sidebar',
+      resizeHint: 'Drag or use arrow keys; Home/End to move to a boundary; double-click to reset',
+      close: 'Close right sidebar',
+    },
     appName: 'Paper Plane X Console',
     unknown: 'Unknown',
     none: 'None',

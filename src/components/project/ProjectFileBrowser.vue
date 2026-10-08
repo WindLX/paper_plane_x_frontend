@@ -1,6 +1,22 @@
 <script setup lang="ts">
-import { FileText, FolderOpen, FolderPlus, Pencil, Plus, Save, Trash2, X } from 'lucide-vue-next'
-import { computed, toRef } from 'vue'
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  FileText,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Save,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, ref, toRef, watch } from 'vue'
+import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '@/components/AppButton.vue'
@@ -9,276 +25,392 @@ import MarkdownContent from '@/components/MarkdownContent.vue'
 import {
   useProjectFileBrowserController,
   type ProjectFileExportFormat,
+  type ProjectFileTreeNode,
 } from '@/composables/useProjectFileBrowserController'
 
-const props = defineProps<{
-  projectId: string
-}>()
-
-const emit = defineEmits<{
-  paperClick: [paperId: string]
-}>()
-
+const props = defineProps<{ projectId: string }>()
+const emit = defineEmits<{ paperClick: [paperId: string] }>()
 const { t } = useI18n()
 const ctrl = useProjectFileBrowserController(toRef(props, 'projectId'))
-
+const uploadInput = ref<HTMLInputElement | null>(null)
+const showTree = ref(true)
 const exportFormats: { key: ProjectFileExportFormat; label: string }[] = [
   { key: 'markdown', label: 'Markdown' },
   { key: 'docx', label: 'Word' },
   { key: 'pdf', label: 'PDF' },
   { key: 'html', label: 'HTML' },
 ]
-
 const selectedExportFormat = computed<ProjectFileExportFormat | undefined>({
   get: () => undefined,
   set: (format) => {
-    if (!format) return
-    void ctrl.exportFile(format)
+    if (format) void ctrl.exportFile(format)
   },
 })
-
-function handlePaperClick(paperId: string): void {
-  emit('paperClick', paperId)
+const selectedNode = computed<ProjectFileTreeNode | null>(() => {
+  const file = ctrl.selectedFile
+  if (!file) return null
+  return {
+    path: file.filePath,
+    name: file.filePath.split('/').pop() ?? file.filePath,
+    is_dir: false,
+    size: null,
+    children: null,
+    expanded: false,
+    loading: false,
+    error: null,
+  }
+})
+watch(
+  () => [ctrl.selectedFile, ctrl.createMode, ctrl.createDirMode],
+  () => {
+    if (ctrl.selectedFile || ctrl.createMode || ctrl.createDirMode) showTree.value = false
+  },
+)
+onBeforeRouteLeave(() => ctrl.ensureCanLeave())
+onBeforeRouteUpdate(() => ctrl.ensureCanLeave())
+function beforeUnload(event: BeforeUnloadEvent): void {
+  if (!ctrl.dirty && !ctrl.busy) return
+  event.preventDefault()
+  event.returnValue = ''
 }
+onMounted(() => window.addEventListener('beforeunload', beforeUnload))
+onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
+function handleUpload(event: Event): void {
+  const input = event.target
+  if (!(input instanceof HTMLInputElement)) return
+  const files = Array.from(input.files ?? [])
+  input.value = ''
+  void ctrl.uploadFiles(files)
+}
+defineExpose({ ensureCanLeave: ctrl.ensureCanLeave })
 </script>
 
 <template>
-  <section class="animate-fade-in-up flex h-full min-h-0 flex-col space-y-3 overflow-hidden">
-    <!-- Breadcrumb -->
-    <div class="workspace-panel flex flex-wrap items-center gap-1 p-2">
-      <template v-for="(crumb, idx) in ctrl.breadcrumbs" :key="crumb.path">
+  <section class="flex h-full min-h-0 min-w-0 flex-col gap-3 overflow-hidden">
+    <div class="flex min-w-0 flex-wrap items-center justify-between gap-2">
+      <h3 class="workspace-section-title">{{ t('projects.projectFiles') }}</h3>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <AppButton size="xs" variant="outline" :disabled="ctrl.busy" @click="uploadInput?.click()">
+          <Upload class="h-4 w-4" />{{ t('projects.fileBrowser.upload') }}
+        </AppButton>
+        <AppButton size="xs" variant="outline" :disabled="ctrl.busy" @click="ctrl.startCreateDir">
+          <FolderPlus class="h-4 w-4" />{{ t('projects.createDir') }}
+        </AppButton>
+        <AppButton size="xs" variant="outline" :disabled="ctrl.busy" @click="ctrl.startCreate">
+          <Plus class="h-4 w-4" />{{ t('projects.createFile') }}
+        </AppButton>
+        <AppButton
+          size="xs"
+          variant="outline"
+          :disabled="ctrl.busy || ctrl.root.loading"
+          :aria-label="t('projects.fileBrowser.refresh')"
+          @click="ctrl.loadFiles"
+        >
+          <RefreshCw class="h-4 w-4" />
+        </AppButton>
+      </div>
+      <input
+        ref="uploadInput"
+        type="file"
+        accept=".md,.txt,.json,.csv,.yaml,.yml,.toml"
+        multiple
+        hidden
+        :aria-label="t('projects.fileBrowser.upload')"
+        @change="handleUpload"
+      />
+    </div>
+    <nav
+      class="flex min-w-0 flex-wrap items-center gap-1"
+      :aria-label="t('projects.fileBrowser.targetDirectory')"
+    >
+      <span class="workspace-body text-xs">{{ t('projects.fileBrowser.targetDirectory') }}:</span>
+      <template v-for="(crumb, index) in ctrl.breadcrumbs" :key="crumb.path">
+        <span v-if="index" class="text-ppx-text-muted">/</span>
         <button
           type="button"
-          class="text-ppx-text-soft hover:text-ppx-text cursor-pointer rounded-md px-1.5 py-0.5 text-xs font-medium transition-colors"
-          :class="idx === ctrl.breadcrumbs.length - 1 ? 'text-ppx-text font-semibold' : ''"
+          class="text-ppx-text-soft hover:text-ppx-text max-w-full cursor-pointer truncate rounded px-1 text-sm"
+          :disabled="ctrl.busy"
+          :title="crumb.path"
           @click="ctrl.navigateToDir(crumb.path)"
         >
           {{ crumb.label }}
         </button>
-        <span v-if="idx < ctrl.breadcrumbs.length - 1" class="text-ppx-text-muted text-xs">/</span>
       </template>
-    </div>
-
-    <!-- Toolbar -->
-    <div class="flex items-center justify-between gap-2">
-      <h3 class="workspace-section-title text-sm">{{ t('projects.projectFiles') }}</h3>
-      <div class="flex items-center gap-1.5">
-        <AppButton size="xs" variant="outline" @click="ctrl.startCreateDir">
-          <FolderPlus class="h-4 w-4" />
-          <span>{{ t('projects.createDir') }}</span>
-        </AppButton>
-        <AppButton size="xs" variant="outline" @click="ctrl.startCreate">
-          <Plus class="h-4 w-4" />
-          <span>{{ t('projects.createFile') }}</span>
-        </AppButton>
-      </div>
-    </div>
-
-    <!-- Error -->
+    </nav>
     <div
       v-if="ctrl.error"
-      class="workspace-badge--danger rounded-ppx-interactive px-3 py-2 text-xs"
+      role="alert"
+      class="workspace-badge--danger rounded-ppx-interactive max-h-28 shrink-0 overflow-auto px-3 py-2 text-sm wrap-anywhere"
     >
       {{ ctrl.error }}
     </div>
-
-    <!-- Create file form -->
-    <div v-if="ctrl.createMode" class="workspace-panel space-y-3 p-3.5">
-      <div class="flex items-center justify-between">
-        <h4 class="workspace-section-title text-sm">{{ t('projects.createFile') }}</h4>
-        <button type="button" class="workspace-icon-button h-7 w-7" @click="ctrl.cancelCreate">
-          <X class="h-4 w-4" />
-        </button>
-      </div>
-      <div>
-        <label class="workspace-label mb-1">{{ t('projects.fileName') }}</label>
-        <input
-          v-model="ctrl.newFileName"
-          type="text"
-          class="workspace-input w-full"
-          :placeholder="t('projects.fileNamePlaceholder')"
-        />
-      </div>
-      <div>
-        <label class="workspace-label mb-1">{{ t('projects.fileContent') }}</label>
-        <textarea
-          v-model="ctrl.newFileContent"
-          rows="8"
-          class="workspace-textarea w-full"
-          :placeholder="t('projects.fileContentPlaceholder')"
-        />
-      </div>
-      <div class="flex justify-end gap-2">
-        <AppButton size="sm" variant="outline" @click="ctrl.cancelCreate">{{
-          t('projects.actions.cancel')
-        }}</AppButton>
-        <AppButton size="sm" variant="solid" @click="ctrl.confirmCreate">{{
-          t('projects.actions.save')
-        }}</AppButton>
-      </div>
-    </div>
-
-    <!-- Create dir form -->
-    <div v-if="ctrl.createDirMode" class="workspace-panel space-y-3 p-3.5">
-      <div class="flex items-center justify-between">
-        <h4 class="workspace-section-title text-sm">{{ t('projects.createDir') }}</h4>
-        <button type="button" class="workspace-icon-button h-7 w-7" @click="ctrl.cancelCreateDir">
-          <X class="h-4 w-4" />
-        </button>
-      </div>
-      <div>
-        <label class="workspace-label mb-1">{{ t('projects.dirName') }}</label>
-        <input
-          v-model="ctrl.newDirName"
-          type="text"
-          class="workspace-input w-full"
-          :placeholder="t('projects.dirNamePlaceholder')"
-        />
-      </div>
-      <div class="flex justify-end gap-2">
-        <AppButton size="sm" variant="outline" @click="ctrl.cancelCreateDir">{{
-          t('projects.actions.cancel')
-        }}</AppButton>
-        <AppButton size="sm" variant="solid" @click="ctrl.confirmCreateDir">{{
-          t('projects.actions.save')
-        }}</AppButton>
-      </div>
-    </div>
-
-    <!-- File list -->
-    <div
-      v-if="!ctrl.selectedFile && !ctrl.createMode && !ctrl.createDirMode"
-      class="workspace-panel max-h-full min-h-0 overflow-auto p-0"
+    <details
+      v-if="ctrl.uploadResults.length"
+      class="workspace-panel max-h-36 shrink-0 overflow-auto p-2"
+      open
     >
-      <div
-        v-if="ctrl.loading && ctrl.items.length === 0"
-        class="flex items-center justify-center p-6"
+      <summary class="workspace-body cursor-pointer" aria-live="polite">
+        {{ t('projects.fileBrowser.uploadResults') }} ({{ ctrl.uploadResults.length }})
+      </summary>
+      <ul class="space-y-1 pt-2 text-sm">
+        <li v-for="(result, index) in ctrl.uploadResults" :key="index" class="wrap-anywhere">
+          {{ result.name }} — {{ t(`projects.fileBrowser.${result.status}`)
+          }}<span v-if="result.reason">: {{ result.reason }}</span>
+        </li>
+      </ul>
+    </details>
+    <div class="flex gap-2 md:hidden">
+      <AppButton size="xs" :variant="showTree ? 'solid' : 'outline'" @click="showTree = true">{{
+        t('projects.fileBrowser.tree')
+      }}</AppButton>
+      <AppButton size="xs" :variant="!showTree ? 'solid' : 'outline'" @click="showTree = false">{{
+        t('projects.fileBrowser.content')
+      }}</AppButton>
+    </div>
+    <div class="file-workspace min-h-0 min-w-0 flex-1 gap-3">
+      <aside
+        class="workspace-panel min-h-0 min-w-0 overflow-auto p-2"
+        :class="showTree ? 'block' : 'hidden md:block'"
+        :aria-label="t('projects.fileBrowser.tree')"
+        :aria-busy="ctrl.root.loading"
       >
-        <div class="text-ppx-text-muted text-sm">{{ t('projects.common.loading') }}</div>
-      </div>
-      <div v-else-if="ctrl.items.length === 0" class="workspace-body p-4 text-sm">
-        {{ t('projects.noFiles') }}
-      </div>
-      <div v-else class="divide-ppx-border divide-y">
-        <div
-          v-for="item in ctrl.items"
-          :key="item.name"
-          class="group flex shrink-0 cursor-pointer items-center justify-between gap-3 px-3.5 py-2.5 transition-colors"
-          :class="item.is_dir ? 'hover:bg-ppx-bg-subtle/60 cursor-pointer' : ''"
-          @click="item.is_dir ? ctrl.enterDir(item) : ctrl.openFile(item)"
-        >
-          <div class="flex min-w-0 items-center gap-2.5">
-            <FolderOpen v-if="item.is_dir" class="text-ppx-accent h-4 w-4 shrink-0" />
-            <FileText v-else class="text-ppx-text-muted h-4 w-4 shrink-0" />
-            <span class="text-ppx-text min-w-0 truncate text-sm font-medium">{{ item.name }}</span>
-            <span v-if="!item.is_dir && item.size !== null" class="text-ppx-text-muted text-xs">
-              {{ (item.size / 1024).toFixed(1) }} KB
-            </span>
-          </div>
-          <div class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-            <button
-              type="button"
-              class="workspace-icon-button text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft h-8 w-8 cursor-pointer focus-visible:ring-3"
-              :title="t('projects.actions.delete')"
-              @click.stop="ctrl.deleteFile(item)"
+        <p v-if="ctrl.root.loading && !ctrl.root.children" class="workspace-body p-2">
+          {{ t('projects.common.loading') }}
+        </p>
+        <div v-if="ctrl.root.error" role="alert" class="workspace-body p-2 wrap-anywhere">
+          {{ ctrl.root.error }}
+          <AppButton size="xs" @click="ctrl.loadDirectory(ctrl.root)">{{
+            t('projects.fileBrowser.refresh')
+          }}</AppButton>
+        </div>
+        <p v-else-if="ctrl.root.children?.length === 0" class="workspace-body p-2">
+          {{ t('projects.noFiles') }}
+        </p>
+        <ul class="space-y-1">
+          <li v-for="{ node, depth } in ctrl.rows" :key="node.path" class="min-w-0">
+            <div
+              class="flex min-w-0 items-center gap-1"
+              :style="{ paddingLeft: `${depth * 12}px` }"
             >
-              <Trash2
-                class="text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft focus-visible:ring-3"
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- File viewer / editor -->
-    <div
-      v-if="ctrl.selectedFile"
-      class="workspace-panel flex max-h-full min-h-0 flex-1 flex-col space-y-3 overflow-hidden p-3.5"
-    >
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex min-w-0 items-center gap-2">
-          <FileText class="text-ppx-text-muted h-4 w-4 shrink-0" />
-          <span class="text-ppx-text min-w-0 truncate text-sm font-semibold">{{
-            ctrl.selectedFile.filePath
-          }}</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <template v-if="!ctrl.editMode">
-            <AppButton size="xs" variant="outline" @click="ctrl.startEdit">
-              <Pencil class="h-4 w-4" />
-              <span>{{ t('projects.edit') }}</span>
-            </AppButton>
-            <template v-if="ctrl.selectedFile.isMarkdown">
-              <AppSelect
-                v-model="selectedExportFormat"
-                class="min-w-32"
-                size="sm"
-                :disabled="ctrl.exportLoading"
-                :placeholder="
-                  ctrl.exportLoading ? t('projects.exporting') : t('projects.exportFile')
+              <button
+                type="button"
+                class="hover:bg-ppx-bg-subtle text-ppx-text rounded-ppx-interactive flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-1 py-2 text-left text-sm"
+                :class="
+                  ctrl.selectedFile?.filePath === node.path ||
+                  (node.is_dir && ctrl.currentDir === node.path)
+                    ? 'bg-ppx-bg-elevated font-semibold'
+                    : ''
                 "
-                :options="exportFormats.map((fmt) => ({ label: fmt.label, value: fmt.key }))"
+                :title="node.path"
+                :aria-expanded="node.is_dir ? node.expanded : undefined"
+                :aria-current="ctrl.selectedFile?.filePath === node.path ? 'true' : undefined"
+                :disabled="ctrl.busy"
+                @click="node.is_dir ? ctrl.toggleDirectory(node) : ctrl.openFile(node)"
+              >
+                <ChevronDown v-if="node.is_dir && node.expanded" class="h-3 w-3 shrink-0" />
+                <ChevronRight v-else-if="node.is_dir" class="h-3 w-3 shrink-0" />
+                <FolderOpen
+                  v-if="node.is_dir && node.expanded"
+                  class="text-ppx-accent h-4 w-4 shrink-0"
+                />
+                <Folder v-else-if="node.is_dir" class="text-ppx-accent h-4 w-4 shrink-0" />
+                <FileText v-else class="text-ppx-text-muted h-4 w-4 shrink-0" />
+                <span class="min-w-0 truncate">{{ node.name }}</span>
+              </button>
+              <button
+                v-if="!node.is_dir"
+                type="button"
+                class="workspace-icon-button h-7 w-7 shrink-0"
+                :disabled="ctrl.downloadLoading"
+                :aria-label="t('projects.fileBrowser.downloadNamed', { name: node.name })"
+                @click="ctrl.downloadFile(node)"
+              >
+                <Download class="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                class="workspace-icon-button text-ppx-danger h-7 w-7 shrink-0"
+                :disabled="ctrl.busy"
+                :aria-label="t('projects.fileBrowser.deleteNamed', { name: node.name })"
+                @click="ctrl.deleteFile(node)"
+              >
+                <Trash2 class="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <p v-if="node.loading" class="workspace-body px-2 text-xs">
+              {{ t('projects.common.loading') }}
+            </p>
+            <div v-if="node.error" role="alert" class="workspace-body p-2 text-xs wrap-anywhere">
+              {{ node.error }}
+              <AppButton size="xs" @click="ctrl.loadDirectory(node)">{{
+                t('projects.fileBrowser.refresh')
+              }}</AppButton>
+            </div>
+          </li>
+        </ul>
+      </aside>
+      <div
+        class="workspace-panel flex min-h-0 min-w-0 flex-col gap-3 overflow-hidden p-3.5"
+        :class="!showTree ? 'flex' : 'hidden md:flex'"
+        :aria-busy="ctrl.loading || ctrl.busy"
+      >
+        <p v-if="ctrl.loading" role="status" class="workspace-body">
+          {{ t('projects.common.loading') }}
+        </p>
+        <template v-if="ctrl.createMode || ctrl.createDirMode">
+          <h4 class="workspace-section-title">
+            {{ ctrl.createMode ? t('projects.createFile') : t('projects.createDir') }}
+          </h4>
+          <form
+            class="flex min-h-0 flex-1 flex-col gap-3"
+            @submit.prevent="ctrl.createMode ? ctrl.confirmCreate() : ctrl.confirmCreateDir()"
+          >
+            <label class="workspace-label" for="project-new-file">{{
+              ctrl.createMode ? t('projects.fileName') : t('projects.dirName')
+            }}</label>
+            <input
+              v-if="ctrl.createMode"
+              id="project-new-file"
+              v-model="ctrl.newFileName"
+              class="workspace-input w-full"
+              :disabled="ctrl.busy"
+              :placeholder="t('projects.fileNamePlaceholder')"
+              required
+            />
+            <input
+              v-else
+              id="project-new-file"
+              v-model="ctrl.newDirName"
+              class="workspace-input w-full"
+              :disabled="ctrl.busy"
+              :placeholder="t('projects.dirNamePlaceholder')"
+              required
+            />
+            <template v-if="ctrl.createMode">
+              <label class="workspace-label" for="project-new-content">{{
+                t('projects.fileContent')
+              }}</label>
+              <textarea
+                id="project-new-content"
+                v-model="ctrl.newFileContent"
+                class="workspace-textarea min-h-24 w-full flex-1 font-mono text-sm"
+                :disabled="ctrl.busy"
+                :placeholder="t('projects.fileContentPlaceholder')"
+                wrap="soft"
               />
             </template>
-          </template>
-          <template v-else>
-            <AppButton size="xs" variant="outline" @click="ctrl.cancelEdit">
-              <X class="h-4 w-4" />
-              <span>{{ t('projects.actions.cancel') }}</span>
-            </AppButton>
-            <AppButton size="xs" variant="solid" @click="ctrl.confirmEdit">
-              <Save class="h-4 w-4" />
-              <span>{{ t('projects.actions.save') }}</span>
-            </AppButton>
-          </template>
-          <button
-            type="button"
-            class="workspace-icon-button border-ppx-border-strong text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft h-8 w-8 focus-visible:ring-3"
-            :title="t('projects.actions.delete')"
-            @click="
-              ctrl.deleteFile({
-                name: ctrl.selectedFile.filePath.split('/').pop()!,
-                is_dir: false,
-                size: null,
-              })
-            "
-          >
-            <Trash2
-              class="text-ppx-danger hover:bg-ppx-danger-soft focus-visible:ring-ppx-danger-soft h-4 w-4 focus-visible:ring-3"
+            <div class="flex justify-end gap-2">
+              <AppButton size="sm" :disabled="ctrl.busy" @click="ctrl.closeSelectedFile">{{
+                t('projects.actions.cancel')
+              }}</AppButton>
+              <AppButton type="submit" size="sm" variant="solid" :loading="ctrl.busy">{{
+                t('projects.actions.save')
+              }}</AppButton>
+            </div>
+          </form>
+        </template>
+        <template v-else-if="ctrl.selectedFile && selectedNode">
+          <div class="flex min-w-0 flex-wrap items-center justify-between gap-2">
+            <span
+              class="text-ppx-text min-w-0 truncate text-sm font-semibold"
+              :title="ctrl.selectedFile.filePath"
+              >{{ ctrl.selectedFile.filePath }}</span
+            >
+            <div class="flex flex-wrap items-center gap-1.5">
+              <template v-if="!ctrl.editMode">
+                <AppButton
+                  size="xs"
+                  variant="outline"
+                  :disabled="ctrl.busy || ctrl.loading"
+                  @click="ctrl.startEdit"
+                  ><Pencil class="h-4 w-4" />{{ t('projects.edit') }}</AppButton
+                >
+                <AppButton
+                  size="xs"
+                  variant="outline"
+                  :loading="ctrl.downloadLoading"
+                  @click="ctrl.downloadFile(selectedNode)"
+                  ><Download class="h-4 w-4" />{{ t('projects.fileBrowser.download') }}</AppButton
+                >
+                <AppSelect
+                  v-if="ctrl.selectedFile.isMarkdown"
+                  v-model="selectedExportFormat"
+                  class="min-w-32"
+                  size="sm"
+                  :disabled="ctrl.exportLoading || ctrl.busy"
+                  :placeholder="
+                    ctrl.exportLoading
+                      ? t('projects.exporting')
+                      : t('projects.fileBrowser.convertExport')
+                  "
+                  :options="
+                    exportFormats.map((format) => ({ label: format.label, value: format.key }))
+                  "
+                />
+              </template>
+              <template v-else>
+                <AppButton size="xs" :disabled="ctrl.busy" @click="ctrl.cancelEdit"
+                  ><X class="h-4 w-4" />{{ t('projects.actions.cancel') }}</AppButton
+                >
+                <AppButton size="xs" variant="solid" :loading="ctrl.busy" @click="ctrl.confirmEdit"
+                  ><Save class="h-4 w-4" />{{ t('projects.actions.save') }}</AppButton
+                >
+              </template>
+              <AppButton
+                size="xs"
+                variant="outline"
+                tone="rose"
+                :disabled="ctrl.busy"
+                @click="ctrl.deleteFile(selectedNode)"
+                ><Trash2 class="h-4 w-4" />{{ t('projects.actions.delete') }}</AppButton
+              >
+              <button
+                type="button"
+                class="workspace-icon-button h-8 w-8"
+                :disabled="ctrl.busy"
+                :aria-label="t('projects.actions.close')"
+                @click="ctrl.closeSelectedFile"
+              >
+                <X class="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <textarea
+            v-if="ctrl.editMode"
+            v-model="ctrl.editContent"
+            class="workspace-textarea min-h-0 w-full min-w-0 flex-1 overflow-y-auto font-mono text-sm"
+            :disabled="ctrl.busy"
+            :aria-label="t('projects.fileContent')"
+            wrap="soft"
+          />
+          <div v-else class="min-h-0 min-w-0 flex-1 overflow-auto">
+            <MarkdownContent
+              v-if="ctrl.selectedFile.isMarkdown"
+              :markdown="ctrl.selectedFile.content"
+              @paper-click="emit('paperClick', $event)"
             />
-          </button>
-          <button
-            type="button"
-            class="workspace-icon-button h-8 w-8"
-            :title="t('projects.actions.close')"
-            @click="ctrl.closeSelectedFile"
-          >
-            <X class="h-4 w-4" />
-          </button>
-        </div>
+            <pre
+              v-else
+              class="workspace-code bg-ppx-bg-subtle/50 rounded-ppx-interactive m-0 max-w-full p-3 text-sm wrap-anywhere whitespace-pre-wrap"
+            ><code>{{ ctrl.selectedFile.content }}</code></pre>
+          </div>
+        </template>
+        <p v-else-if="!ctrl.loading" class="workspace-body p-4">
+          {{ t('projects.fileBrowser.selectFile') }}
+        </p>
       </div>
-
-      <!-- View mode -->
-      <div v-if="!ctrl.editMode" class="min-h-0 flex-1 overflow-y-auto">
-        <MarkdownContent
-          v-if="ctrl.selectedFile.isMarkdown"
-          :markdown="ctrl.selectedFile.content"
-          @paper-click="handlePaperClick($event)"
-        />
-        <pre
-          v-else
-          class="workspace-code bg-ppx-bg-subtle/50 overflow-x-auto rounded-lg p-3 text-sm"
-        ><code>{{ ctrl.selectedFile.content }}</code></pre>
-      </div>
-
-      <!-- Edit mode -->
-      <textarea
-        v-if="ctrl.editMode"
-        v-model="ctrl.editContent"
-        rows="12"
-        class="workspace-textarea min-h-0 w-full flex-1 overflow-y-auto font-mono text-sm"
-      />
     </div>
   </section>
 </template>
+
+<style scoped>
+.file-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 768px) {
+  .file-workspace {
+    grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+  }
+}
+</style>

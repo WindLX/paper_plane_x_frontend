@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { PanelRightClose } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 defineProps<{
   title?: string
@@ -11,7 +14,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="bg-ppx-bg-elevated w-drawer flex h-full min-w-0 shrink-0 flex-col overflow-x-hidden">
+  <div
+    class="bg-ppx-bg-elevated relative flex h-full w-full min-w-0 shrink-0 flex-col overflow-x-hidden"
+  >
     <header class="workspace-divider flex items-start justify-between gap-3 border-b px-4 py-4">
       <div class="min-w-0">
         <div class="text-ppx-text mt-1 text-lg font-semibold tracking-tight">
@@ -25,7 +30,7 @@ const emit = defineEmits<{
         <slot name="header-actions" />
         <button
           type="button"
-          aria-label="Close drawer"
+          :aria-label="t('common.drawer.close')"
           class="workspace-icon-button"
           @click="emit('close')"
         >

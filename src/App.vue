@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { watch, watchEffect } from 'vue'
+import { SplitterGroup, SplitterPanel } from 'reka-ui'
+import { useMediaQuery } from './composables/useMediaQuery'
+import ResizableNavigation from './components/sidebar/ResizableNavigation.vue'
 import { RouterView, useRoute } from 'vue-router'
 
 import AppDialog from './components/AppDialog.vue'
@@ -9,6 +12,7 @@ import { useUiStore } from './stores/ui'
 
 const uiStore = useUiStore()
 const route = useRoute()
+const desktop = useMediaQuery('(min-width: 1024px)')
 
 watchEffect(() => {
   const classList = document.documentElement.classList
@@ -36,22 +40,17 @@ watch(
       Skip to main content
     </a>
 
-    <div class="flex h-full">
-      <!-- Desktop sidebar -->
-      <div
-        class="duration-ppx-standard ease-ppx hidden h-full shrink-0 overflow-hidden transition-[width] lg:block"
-        :class="uiStore.sidebarCollapsed ? 'w-15' : 'w-60'"
-      >
-        <AppSidebar :collapsed="uiStore.sidebarCollapsed" />
-      </div>
-
-      <!-- RouterView owns the full remaining area -->
-      <RouterView v-slot="{ Component }">
-        <Transition name="page" mode="out-in">
-          <component :is="Component" />
-        </Transition>
-      </RouterView>
-    </div>
+    <SplitterGroup direction="horizontal" :keyboard-resize-by="2">
+      <ResizableNavigation v-if="desktop" />
+      <SplitterPanel :order="1" :min-size="desktop ? 25 : 0" class="min-w-0">
+        <!-- RouterView owns the full remaining area -->
+        <RouterView v-slot="{ Component }">
+          <Transition name="page" mode="out-in">
+            <component :is="Component" class="min-w-0 flex-1" />
+          </Transition>
+        </RouterView>
+      </SplitterPanel>
+    </SplitterGroup>
 
     <Teleport to="body">
       <Transition

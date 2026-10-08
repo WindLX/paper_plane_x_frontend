@@ -27,3 +27,6 @@ dist-ssr
 *.codex
 CLAUDE.md
 .agents
+# Browser regression output
+playwright-report/
+test-results/

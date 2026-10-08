@@ -119,17 +119,31 @@ export const projectsApi = {
     })
   },
 
-  deleteProjectFile(
+  uploadProjectFile(
     projectId: string,
     filePath: string,
-    recursive?: boolean,
-  ): Promise<ProjectFileDeleteResponse> {
+    file: File,
+  ): Promise<ProjectFileWriteResponse> {
+    const body = new FormData()
+    body.append('file_path', filePath)
+    body.append('file', file)
+    return request(`/projects/${projectId}/files/upload`, {
+      method: 'POST',
+      headers: {},
+      body,
+    })
+  },
+
+  downloadProjectFile(projectId: string, filePath: string): Promise<Blob> {
+    return requestBlob(
+      `/projects/${projectId}/files/download?file_path=${encodeURIComponent(filePath)}`,
+    )
+  },
+
+  deleteProjectFile(projectId: string, filePath: string): Promise<ProjectFileDeleteResponse> {
     const params = new URLSearchParams({
       file_path: filePath,
     })
-    if (recursive) {
-      params.set('recursive', 'true')
-    }
     return request(`/projects/${projectId}/files/content?${params.toString()}`, {
       method: 'DELETE',
     })

@@ -24,6 +24,7 @@
   --color-ppx-info-soft: var(--ppx-info-soft);
 
   /* Border Radius */
+  --radius-ppx-selection: var(--ppx-radius-selection);
   --radius-ppx-interactive: var(--ppx-radius-interactive);
   --radius-ppx-panel: var(--ppx-radius-panel);
   --radius-ppx-page: var(--ppx-radius-page);
@@ -69,6 +70,7 @@
   --ppx-danger-soft: #fee4e2;
   --ppx-info: #1d4ed8;
   --ppx-info-soft: #dbeafe;
+  --ppx-radius-selection: 0.25rem;
   --ppx-radius-interactive: 0.875rem;
   --ppx-radius-panel: 0.875rem;
   --ppx-radius-page: 0.875rem;
@@ -886,4 +888,14 @@ textarea {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Pane bounds remain inside the viewport; the research canvas scrolls instead
+   of squeezing tables and page actions below their usable width. */
+.workspace-content-scroll {
+  overflow-x: auto !important;
+}
+.workspace-content-canvas {
+  width: 100%;
+  min-width: 960px;
 }

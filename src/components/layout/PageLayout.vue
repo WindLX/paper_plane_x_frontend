@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
+import { SplitterGroup, SplitterPanel } from 'reka-ui'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useUiStore } from '@/stores/ui'
+import { MIN_PDF_PANE_WIDTH } from '@/composables/usePaperPdfPane'
 import { useMediaQuery } from '@/composables/useMediaQuery'
-
+import DrawerSplitPanels from './DrawerSplitPanels.vue'
 import PageTopbar from './PageTopbar.vue'
 
 const props = withDefaults(
@@ -24,82 +26,85 @@ const props = withDefaults(
     fullWidth: false,
   },
 )
-
-const emit = defineEmits<{
-  closeDrawer: []
-}>()
-
-const useFloatingDrawer = useMediaQuery('(max-width: 1750px)')
-
-const drawerWidth = computed(() => {
-  if (!props.drawerOpen) return '0px'
-  if (!props.drawerExpanded) return 'min(100vw, var(--width-drawer))'
-  return `min(100vw, calc(var(--width-drawer) + ${props.drawerExpandedWidth}px))`
+const emit = defineEmits<{ closeDrawer: []; 'update:drawerExpandedWidth': [width: number] }>()
+const ui = useUiStore()
+const workspace = ref<HTMLElement | null>(null)
+const availableWidth = ref(0)
+let observer: ResizeObserver | null = null
+onMounted(() => {
+  const element = workspace.value
+  if (!element) return
+  availableWidth.value = element.clientWidth
+  observer = new ResizeObserver(([entry]) => {
+    if (entry) availableWidth.value = entry.contentRect.width
+  })
+  observer.observe(element)
 })
-
-const desktopDrawerClass = computed(() =>
-  props.drawerOpen ? 'border-ppx-border/80 border-l' : 'border-l-0',
+onBeforeUnmount(() => observer?.disconnect())
+// Dock whenever actual space fits the user's detail width, the minimum PDF
+// width and 10% for the scrolling middle pane. Navigation resizing is included.
+const floating = computed(
+  () =>
+    compact.value ||
+    availableWidth.value * 0.9 < ui.drawerWidth + (props.drawerExpanded ? MIN_PDF_PANE_WIDTH : 0),
 )
+const compact = useMediaQuery('(max-width: 1023px)')
 </script>
 
 <template>
-  <div class="flex h-full flex-1">
-    <div class="flex min-w-0 flex-1 flex-col">
-      <PageTopbar :title="props.title" :subtitle="props.subtitle">
-        <template #actions><slot name="topbar-actions" /></template>
-      </PageTopbar>
-      <main
-        id="app-main"
-        class="min-w-0 flex-1 overflow-y-auto"
-        :class="props.noPadding ? '' : 'px-4 py-6 lg:px-8'"
+  <div ref="workspace" class="h-full max-w-full min-w-0 flex-1">
+    <!-- All docked panes share the remaining workspace, not the browser width. -->
+    <SplitterGroup direction="horizontal" :keyboard-resize-by="2" class="min-w-0">
+      <SplitterPanel
+        :order="0"
+        :min-size="floating ? 0 : 10"
+        class="workspace-content-scroll min-w-0"
       >
-        <div class="h-full w-full">
-          <slot />
+        <div class="workspace-content-canvas flex h-full flex-col">
+          <PageTopbar :title="props.title" :subtitle="props.subtitle">
+            <template #actions><slot name="topbar-actions" /></template>
+          </PageTopbar>
+          <main
+            id="app-main"
+            class="min-w-0 flex-1 overflow-y-auto"
+            :class="props.noPadding ? '' : 'px-4 py-6 lg:px-8'"
+          >
+            <div class="h-full w-full min-w-0"><slot /></div>
+          </main>
         </div>
-      </main>
-    </div>
-
-    <!-- Right drawer area  -->
-    <div
-      v-if="!useFloatingDrawer"
-      class="shrink-0"
-      :class="desktopDrawerClass"
-      :style="{ width: drawerWidth }"
-    >
-      <slot name="drawer" />
-    </div>
+      </SplitterPanel>
+      <DrawerSplitPanels
+        v-if="drawerOpen && !floating"
+        :expanded="drawerExpanded"
+        :pdf-width="drawerExpandedWidth"
+        :compact="false"
+        @update:pdf-width="emit('update:drawerExpandedWidth', $event)"
+      >
+        <template #pdf><slot name="pdf" /></template>
+        <slot name="drawer" />
+      </DrawerSplitPanels>
+    </SplitterGroup>
 
     <Teleport to="body">
-      <Transition
-        enter-active-class="duration-ppx-standard ease-ppx transition-opacity"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-        leave-active-class="duration-ppx-fast ease-ppx transition-opacity"
-        leave-from-class="opacity-100"
-        leave-to-class="opacity-0"
-      >
-        <div
-          v-if="props.drawerOpen && useFloatingDrawer"
-          class="fixed inset-0 z-55 bg-black/30"
-          @click="emit('closeDrawer')"
-        />
-      </Transition>
-      <Transition
-        enter-active-class="duration-ppx-standard ease-ppx transition-all"
-        enter-from-class="translate-x-6 opacity-0"
-        enter-to-class="translate-x-0 opacity-100"
-        leave-active-class="duration-ppx-fast ease-ppx transition-all"
-        leave-from-class="translate-x-0 opacity-100"
-        leave-to-class="translate-x-6 opacity-0"
-      >
-        <div
-          v-if="props.drawerOpen && useFloatingDrawer"
-          class="fixed inset-y-0 right-0 z-60 overflow-x-hidden"
-          :style="{ width: drawerWidth }"
-        >
-          <slot name="drawer" />
-        </div>
-      </Transition>
+      <div
+        v-if="drawerOpen && floating"
+        class="fixed inset-0 z-55 bg-black/30"
+        @click="emit('closeDrawer')"
+      />
+      <div v-if="drawerOpen && floating" class="pointer-events-none fixed inset-0 z-60">
+        <SplitterGroup direction="horizontal" :keyboard-resize-by="2">
+          <SplitterPanel :order="0" :min-size="0" />
+          <DrawerSplitPanels
+            :expanded="drawerExpanded"
+            :pdf-width="drawerExpandedWidth"
+            :compact="compact"
+            @update:pdf-width="emit('update:drawerExpandedWidth', $event)"
+          >
+            <template #pdf><slot name="pdf" /></template>
+            <slot name="drawer" />
+          </DrawerSplitPanels>
+        </SplitterGroup>
+      </div>
     </Teleport>
   </div>
 </template>

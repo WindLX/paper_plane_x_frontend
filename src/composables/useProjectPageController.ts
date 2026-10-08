@@ -246,6 +246,7 @@ export function useProjectPageController(projectId: Ref<string>) {
     paperDrawerOpen,
     paperDrawerPaperId,
     loadData,
+    loadGlobalFinder,
     updateAgentSummary,
     deleteAgentSummary,
     forceAgentSummary,

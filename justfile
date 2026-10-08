@@ -15,6 +15,9 @@ run:
 test:
     pnpm test
 
+test-browser:
+    pnpm test:browser
+
 lint:
     pnpm lint
 

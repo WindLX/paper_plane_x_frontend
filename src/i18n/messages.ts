@@ -1,4 +1,5 @@
 import { common } from './modules/common'
+import { bulk } from './modules/bulk'
 import { sidebar } from './modules/sidebar'
 import { actions } from './modules/actions'
 import { dialog } from './modules/dialog'
@@ -16,6 +17,7 @@ import { notFound } from './modules/notFound'
 export const messages = {
   'zh-CN': {
     common: common['zh-CN'],
+    bulk: bulk['zh-CN'],
     sidebar: sidebar['zh-CN'],
     actions: actions['zh-CN'],
     dialog: dialog['zh-CN'],
@@ -33,6 +35,7 @@ export const messages = {
   },
   'en-US': {
     common: common['en-US'],
+    bulk: bulk['en-US'],
     sidebar: sidebar['en-US'],
     actions: actions['en-US'],
     dialog: dialog['en-US'],

@@ -8,6 +8,7 @@ import type {
   DataProcessTaskResponse,
 } from '@/types/api'
 import type { TaskSortKey } from '@/types/sort'
+import { canCancelTask, canDeleteTask, canRetryTask } from '@/utils/taskActions'
 
 import { usePagination } from './usePagination'
 import { useNotify } from './useNotify'
@@ -100,7 +101,7 @@ function cacheTask(taskId: string, data: CachedTask): void {
   taskCache.set(taskId, data)
 }
 
-function invalidateTaskCache(taskId: string): void {
+export function invalidateTaskCache(taskId: string): void {
   taskCache.delete(taskId)
   const idx = taskCacheOrder.indexOf(taskId)
   if (idx !== -1) taskCacheOrder.splice(idx, 1)
@@ -191,21 +192,9 @@ export function useTaskDetail(taskId: Ref<string | null>) {
   })
 
   // 状态判断
-  const canCancel = computed(
-    () =>
-      task.value?.status !== 'COMPLETED' &&
-      task.value?.status !== 'FAILED' &&
-      task.value?.status !== 'CANCELED',
-  )
-  const canRetry = computed(
-    () => task.value?.status === 'FAILED' || task.value?.status === 'CANCELED',
-  )
-  const canDelete = computed(
-    () =>
-      task.value?.status !== 'QUEUED' &&
-      task.value?.status !== 'RUNNING' &&
-      task.value?.status !== 'CANCELING',
-  )
+  const canCancel = computed(() => canCancelTask(task.value?.status))
+  const canRetry = computed(() => canRetryTask(task.value?.status))
+  const canDelete = computed(() => canDeleteTask(task.value?.status))
 
   function resetDetailState() {
     task.value = null

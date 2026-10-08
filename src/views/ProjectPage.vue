@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { toRef, watch } from 'vue'
+import { computed, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PageLayout from '@/components/layout/PageLayout.vue'
 import SlidePanel from '@/components/layout/SlidePanel.vue'
-import PaperDrawerWorkspace from '@/components/paper/PaperDrawerWorkspace.vue'
+import PaperPdfReader from '@/components/paper/PaperPdfReader.vue'
 import FileDrawerContent from '@/components/project/file-drawer/FileDrawerContent.vue'
 import PaperDrawerContent from '@/components/project/paper-drawer/PapersDrawerContent.vue'
 import ProjectFileView from '@/components/project/ProjectFileView.vue'
 import ProjectPaperView from '@/components/project/ProjectPaperView.vue'
 import ProjectDeleteConfirmModal from '@/components/project/ProjectDeleteConfirmModal.vue'
 import ProjectTopbarDrawer from '@/components/project/ProjectTopbarDrawer.vue'
-import { useProjectPageController } from '@/composables/useProjectPageController'
+import {
+  useProjectPageController,
+  type ProjectPageTab,
+} from '@/composables/useProjectPageController'
 import { usePaperPdfPane } from '@/composables/usePaperPdfPane'
 
 const props = defineProps<{
@@ -21,21 +24,41 @@ const props = defineProps<{
 const { t } = useI18n()
 const ctrl = useProjectPageController(toRef(props, 'projectId'))
 const pdf = usePaperPdfPane()
+const pdfPaperId = computed(() =>
+  ctrl.activeTab === 'files' ? ctrl.fileDrawerPaperId : ctrl.paperDrawerPaperId,
+)
+const fileView = ref<InstanceType<typeof ProjectFileView> | null>(null)
+async function openTab(tab: ProjectPageTab): Promise<void> {
+  if (tab === ctrl.activeTab) return
+  if (ctrl.activeTab === 'files' && !(await fileView.value?.ensureCanLeave())) return
+  ctrl.openTab(tab)
+}
+function handlePapersRemoved(paperIds: string[]): void {
+  if (ctrl.paperDrawerPaperId && paperIds.includes(ctrl.paperDrawerPaperId)) {
+    ctrl.closePaperDrawer()
+    pdf.reset()
+  }
+  void ctrl.loadData()
+}
+async function confirmDeleteProject(): Promise<void> {
+  if (ctrl.activeTab === 'files' && !(await fileView.value?.ensureCanLeave())) return
+  await ctrl.confirmDeleteProject()
+}
 
 watch(
-  () => [ctrl.paperDrawerPaperId, ctrl.activeTab, ctrl.drawerOpen],
+  () => [ctrl.paperDrawerPaperId, ctrl.fileDrawerPaperId, ctrl.activeTab, ctrl.drawerOpen],
   () => pdf.reset(),
 )
 </script>
 
 <template>
-  <div class="h-full w-full">
+  <div class="h-full w-full min-w-0 flex-1">
     <PageLayout
+      v-model:drawer-expanded-width="pdf.width"
       :title="ctrl.pageTitle"
       :subtitle="ctrl.pageSubtitle"
       :drawer-open="ctrl.drawerOpen"
-      :drawer-expanded="pdf.layoutOpen"
-      :drawer-expanded-width="pdf.width"
+      :drawer-expanded="pdf.open"
       no-padding
       @close-drawer="ctrl.closeDrawer"
     >
@@ -51,23 +74,36 @@ watch(
           @update:project="ctrl.updateProject"
           @delete:project="ctrl.openDeleteConfirm"
           @export:project="ctrl.exportProject"
-          @open-tab="ctrl.openTab"
+          @open-tab="openTab"
         />
       </template>
 
       <section class="flex h-full min-h-0 min-w-0 flex-1 overflow-hidden">
         <template v-if="ctrl.activeTab === 'files'">
           <ProjectFileView
+            ref="fileView"
             :project-id="props.projectId"
             @toggle-drawer="ctrl.toggleFileDrawer"
             @open-drawer="ctrl.openFileDrawer"
           />
         </template>
         <template v-else-if="ctrl.activeTab === 'papers'">
-          <ProjectPaperView :project-id="props.projectId" @open-drawer="ctrl.openPaperDrawer" />
+          <ProjectPaperView
+            :project-id="props.projectId"
+            @open-drawer="ctrl.openPaperDrawer"
+            @papers-removed="handlePapersRemoved"
+          />
         </template>
       </section>
 
+      <template #pdf>
+        <PaperPdfReader
+          v-if="pdfPaperId"
+          :paper-id="pdfPaperId"
+          :paper-title="pdf.paperTitle"
+          @close="pdf.close"
+        />
+      </template>
       <template #drawer>
         <SlidePanel
           v-if="ctrl.activeTab === 'files'"
@@ -77,26 +113,22 @@ watch(
           <FileDrawerContent
             :project-id="props.projectId"
             :initial-paper-id="ctrl.fileDrawerPaperId"
+            :pdf-open="pdf.open"
+            @toggle-pdf="pdf.toggle"
           />
         </SlidePanel>
-        <PaperDrawerWorkspace
+        <SlidePanel
           v-else-if="ctrl.activeTab === 'papers'"
-          v-model:pdf-width="pdf.width"
-          :pdf-open="pdf.open"
-          :paper-id="ctrl.paperDrawerPaperId"
-          :paper-title="pdf.paperTitle"
-          @close-pdf="pdf.close"
-          @pdf-closed="pdf.finishClose"
+          :title="t('projects.projectDrawer.tabPapers')"
+          @close="ctrl.closeDrawer"
         >
-          <SlidePanel :title="t('projects.projectDrawer.tabPapers')" @close="ctrl.closeDrawer">
-            <PaperDrawerContent
-              :project-id="props.projectId"
-              :initial-paper-id="ctrl.paperDrawerPaperId"
-              :pdf-open="pdf.open"
-              @toggle-pdf="pdf.toggle"
-            />
-          </SlidePanel>
-        </PaperDrawerWorkspace>
+          <PaperDrawerContent
+            :project-id="props.projectId"
+            :initial-paper-id="ctrl.paperDrawerPaperId"
+            :pdf-open="pdf.open"
+            @toggle-pdf="pdf.toggle"
+          />
+        </SlidePanel>
       </template>
     </PageLayout>
 
@@ -106,7 +138,7 @@ watch(
       :project-id="props.projectId"
       :paper-count="ctrl.globalFinder?.stats?.paper_count ?? 0"
       @close="ctrl.closeDeleteConfirm"
-      @confirm="ctrl.confirmDeleteProject"
+      @confirm="confirmDeleteProject"
     />
   </div>
 </template>

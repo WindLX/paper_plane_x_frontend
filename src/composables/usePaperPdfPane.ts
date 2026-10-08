@@ -8,45 +8,33 @@ export const MAX_PDF_PANE_WIDTH = 1280
 
 export function usePaperPdfPane() {
   const open = ref(false)
-  const layoutOpen = ref(false)
   const width = ref(DEFAULT_PDF_PANE_WIDTH)
   const paperTitle = ref<string | null>(null)
 
   function toggle(paper: PaperDetailResponse): void {
     if (open.value) {
-      open.value = false
+      close()
       return
     }
     paperTitle.value = paper.title
-    layoutOpen.value = true
     open.value = true
   }
 
   function close(): void {
     open.value = false
-  }
-
-  function finishClose(): void {
-    if (!open.value) {
-      layoutOpen.value = false
-      paperTitle.value = null
-    }
+    paperTitle.value = null
   }
 
   function reset(): void {
-    open.value = false
-    layoutOpen.value = false
-    paperTitle.value = null
+    close()
   }
 
   return reactive({
     open,
-    layoutOpen,
     width,
     paperTitle,
     toggle,
     close,
-    finishClose,
     reset,
   })
 }

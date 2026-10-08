@@ -203,6 +203,8 @@ function handleClick(e: MouseEvent): void {
 <style scoped>
 /* ---------- Base ---------- */
 .markdown-content {
+  min-width: 0;
+  max-width: 100%;
   overflow-wrap: anywhere;
   word-break: break-word;
   font-size: 0.9375rem;
@@ -299,6 +301,8 @@ function handleClick(e: MouseEvent): void {
 
 /* ---------- Code blocks ---------- */
 .markdown-content :deep(.code-block-wrapper) {
+  min-width: 0;
+  max-width: 100%;
   border: 1px solid var(--ppx-border);
   border-radius: var(--ppx-radius-panel);
   overflow: hidden;
@@ -455,6 +459,9 @@ function handleClick(e: MouseEvent): void {
 
 /* ---------- Tables ---------- */
 .markdown-content :deep(table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;

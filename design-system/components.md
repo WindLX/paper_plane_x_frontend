@@ -11,9 +11,24 @@
 - 多行技术输入仍使用与用户-facing 字段相同的边框、圆角和焦点语言。
 
 ## 数据组件
-- `ProjectListTable`、`PaperListTable`、`TaskListTable`、`DeepDiverHistoryTable`、矩阵表格和旧版全局查找表格都遵循相同的壳。
+
+所有列表表格共用同一层壳、表头操作区和选择控件，不要在页面里重复实现：
+
+- 壳：`AppTable` 提供 `workspace-table-shell`、左侧标题、右侧操作区和表格横向滚动容器；`workspace-table` 表格本身由领域表格通过默认插槽传入。`PaperListTable` 与 `TaskListTable` 使用该组件；其余表格沿用同样的 `workspace-table-shell` 样式。
+- 表头：标题左对齐，操作区右对齐；标题栏固定 52px 高，窄屏操作区横向滚动而不换行；没有操作时不渲染操作区，也不预留空位。
+- 表头操作：批量操作条放在表头右侧，不再单独占一行页面正文。`PaperListTable` 与 `TaskListTable` 暴露 `actions` 插槽并转发给 `AppTable`，页面在已选数量大于 0 时才把 `BulkActionBar` 传进去，因此零选择时表头既没有工具条也没有占位空白。
+- 批量操作按钮：统一使用 `AppButton`，并带语义图标——取消 `XCircle`、重试 `RotateCcw`、删除 `Trash2`、关联 `Link2`、解除关联 `Unlink2`、移出项目 `FolderMinus`，清除选择使用 `X`。
+- 选择控件：行选择与全选统一使用 `AppCheckbox`，见下节。
 - 选中的行必须在模块之间看起来相关。
 - 空状态应使用 `workspace-table-empty`，而不是临时 muted 文本块。
+
+### 选择勾选框（AppCheckbox）
+
+`AppCheckbox` 包装原生 `input[type="checkbox"]`，保留 Space 切换、焦点环、disabled 和表单语义，只把外观替换为 token 描边加 Lucide `Check` / `Minus`。
+
+- props：`checked`、`indeterminate`、`disabled`、`label`，以及状态化可访问名称 `checkedLabel`、`indeterminateLabel`、`disabledLabel`。
+- `indeterminate` 是 DOM 属性而非 HTML 属性，模板绑定无法表达；组件通过 `useIndeterminate` 在输入挂载和 prop 变化时重新写入，确保状态确定，包括改回 `false`。
+- 可访问名称优先级为 `disabledLabel` > `indeterminateLabel` > `checkedLabel` > `label`；行级名称必须包含对象 id，使图标、颜色以外仍有可读的状态信息。
 
 ## 旧版文献组件
 - 旧版标签页也不例外。
@@ -198,8 +213,9 @@
 
 ### 3. 圆角统一规范
 
-只允许以下两个圆角 token：
+按组件尺寸使用以下圆角 token：
 - `rounded-ppx-interactive`：用于按钮、badge、输入框、子面板等交互元素。
+- `rounded-ppx-selection`：4px 圆角，专用于 16px 勾选框，保留方形轮廓。
 - `rounded-ppx-panel`：用于卡片、抽屉内容面板等容器级表面。
 
 禁止直接使用 `rounded-md`、`rounded-xl`、`rounded-2xl`、`rounded-lg` 等 Tailwind 原始圆角类。
@@ -240,3 +256,12 @@ Trace 右侧边栏为标准参考：
 2. 元数据网格：`workspace-panel` 包裹的 `grid grid-cols-2 gap-x-3 gap-y-2 text-xs`。
 3. 消息区：`TraceMessageRenderer` 展开收起动画。
 4. 底部：`JsonPanel` + 删除按钮（`tone="rose"`）。
+
+
+## 可调整的阅读工作区
+
+`PageLayout` 使用 Reka UI `SplitterGroup` 将正文、可选 PDF 和详情抽屉约束在实际可用容器内，正文可收缩，详情不会被外部内容撑出屏幕。`ResizableNavigation` 管理左侧导航面板，默认 240px，可调范围 200–480px，折叠时保留 60px 并记住展开宽度。`DrawerSplitPanels` 管理两个阅读面板，`PaneResizeHandle` 只提供样式、指针捕获与用户提交事件；尺寸计算和键盘处理由库负责，不再手写拖动算法。分隔条挂载后才注册交互；窗口失焦、指针取消和分隔条销毁时通过库导出的 group 生命周期 API 结束拖动，释放面板事件并清理句柄。
+
+详情宽度范围为 320–960px，默认 512px；PDF 为 512–1280px，默认 768px。桌面正文面板至少保留工作区的 10%，库根据总宽度限制拖动；正文画布最小宽度为 960px，面板更窄时横向滚动，顶部栏和表格保持完整。当实际可用工作区放不下已选详情宽度、PDF 最小宽度和中间区域时阅读区浮动；<=1023px 时显示全宽单面板，打开 PDF 后暂时隐藏详情，关闭后恢复。拖动经过 iframe 时通过指针捕获与 PDF 遮罩保留事件。展开和关闭 PDF 后重新应用详情宽度，避免新面板加入时覆盖用户偏好。
+
+拖拽结束或键盘操作完成时保存详情宽度到 `ppx-console-drawer-width`，挂载与响应式适配不覆盖偏好。方向键调整，Home/End 移动至边界，双击对应分隔条恢复默认。PDF 宽度为当前页面临时状态。

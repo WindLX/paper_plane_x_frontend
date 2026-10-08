@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import AppCheckbox from '../AppCheckbox.vue'
+import AppTable from '../AppTable.vue'
 import CopyableText from '../CopyableText.vue'
 import SortButton from '../SortButton.vue'
 import TaskStatusBadge from './TaskStatusBadge.vue'
@@ -15,15 +18,29 @@ const props = defineProps<{
   offset: number
   sortOrder: SortOrder
   sortBy: TaskSortKey
+  selectedIds: string[]
+  selectionDisabled?: boolean
 }>()
 
 const emit = defineEmits<{
   sort: [field: TaskSortKey]
   open: [taskId: string]
   close: []
+  'toggle-select': [taskId: string]
+  'toggle-select-all': []
 }>()
 
 const { t } = useI18n()
+
+const selectedIdSet = computed(() => new Set(props.selectedIds))
+const pageIds = computed(() => props.tasks.map((task) => task.task_id))
+const allSelected = computed(
+  () => pageIds.value.length > 0 && pageIds.value.every((id) => selectedIdSet.value.has(id)),
+)
+const partiallySelected = computed(
+  () => pageIds.value.some((id) => selectedIdSet.value.has(id)) && !allSelected.value,
+)
+const pageSelectionDisabled = computed(() => props.selectionDisabled || props.tasks.length === 0)
 
 function handleToggle(taskId: string): void {
   if (selectedTaskId.value === taskId) {
@@ -37,16 +54,27 @@ function handleToggle(taskId: string): void {
 </script>
 
 <template>
-  <section class="workspace-table-shell">
-    <div class="border-ppx-border border-b px-4 py-3">
-      <h3 class="text-ppx-text text-xl font-semibold tracking-tight">
-        {{ t('tasks.title') }}
-      </h3>
-    </div>
+  <AppTable :title="t('tasks.title')">
+    <template v-if="$slots.actions" #actions>
+      <slot name="actions" />
+    </template>
+
     <table class="workspace-table">
       <thead>
         <tr class="text-ppx-text-muted text-left text-sm font-semibold tracking-tight uppercase">
           <th class="px-3 py-2">#</th>
+          <th class="w-10 px-3 py-2">
+            <AppCheckbox
+              :checked="allSelected"
+              :indeterminate="partiallySelected"
+              :disabled="pageSelectionDisabled"
+              :label="t('bulk.selectPage')"
+              :checked-label="t('bulk.selectPageAll')"
+              :indeterminate-label="t('bulk.selectPagePartial')"
+              :disabled-label="t('bulk.selectPageDisabled')"
+              @click.stop="emit('toggle-select-all')"
+            />
+          </th>
           <th class="px-3 py-2">{{ t('tasks.table.taskId') }}</th>
           <th class="px-3 py-2">{{ t('tasks.table.paperId') }}</th>
           <th class="min-w-24 px-3 py-2">
@@ -94,6 +122,16 @@ function handleToggle(taskId: string): void {
           <td class="workspace-muted px-3 py-2 text-sm tabular-nums">
             {{ props.offset + index + 1 }}
           </td>
+          <td class="px-3 py-2" @click.stop>
+            <AppCheckbox
+              :checked="selectedIdSet.has(task.task_id)"
+              :disabled="props.selectionDisabled"
+              :label="t('bulk.selectRow', { id: task.task_id })"
+              :checked-label="t('bulk.selectRowSelected', { id: task.task_id })"
+              :disabled-label="t('bulk.selectRowDisabled', { id: task.task_id })"
+              @click.stop="emit('toggle-select', task.task_id)"
+            />
+          </td>
           <td class="px-3 py-2">
             <CopyableText :text="task.task_id" mono />
           </td>
@@ -114,11 +152,11 @@ function handleToggle(taskId: string): void {
           </td>
         </tr>
         <tr v-if="props.tasks.length === 0">
-          <td colspan="7" class="workspace-table-empty text-center">
+          <td colspan="8" class="workspace-table-empty text-center">
             {{ t('tasks.empty') }}
           </td>
         </tr>
       </tbody>
     </table>
-  </section>
+  </AppTable>
 </template>
