@@ -49,10 +49,23 @@ const { t } = useI18n()
             <td>{{ p.base_url || '-' }}</td>
             <td class="text-right">
               <div class="flex items-center justify-end gap-1">
-                <AppButton size="xs" variant="outline" @click="emit('edit', p)">
+                <AppButton
+                  size="xs"
+                  variant="outline"
+                  :aria-label="t('settings.providers.edit')"
+                  :title="t('settings.providers.edit')"
+                  @click="emit('edit', p)"
+                >
                   <Pencil class="h-3.5 w-3.5" />
                 </AppButton>
-                <AppButton size="xs" variant="outline" tone="rose" @click="emit('delete', p)">
+                <AppButton
+                  size="xs"
+                  variant="outline"
+                  tone="rose"
+                  :aria-label="t('settings.providers.delete')"
+                  :title="t('settings.providers.delete')"
+                  @click="emit('delete', p)"
+                >
                   <Trash2 class="h-3.5 w-3.5" />
                 </AppButton>
               </div>

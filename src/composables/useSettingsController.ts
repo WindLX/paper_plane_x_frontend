@@ -126,7 +126,7 @@ export function useSettingsController() {
     payload: {
       provider_name: string
       temperature?: number | null
-      max_tokens?: number | null
+      max_total_tokens?: number | null
       timeout?: number | null
       thinking_enabled?: boolean | null
       reasoning_effort?: string | null

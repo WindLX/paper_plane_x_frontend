@@ -27,7 +27,7 @@ const { t } = useI18n()
             <th>{{ t('settings.agents.name') }}</th>
             <th>{{ t('settings.agents.provider') }}</th>
             <th>{{ t('settings.agents.temperature') }}</th>
-            <th>{{ t('settings.agents.maxTokens') }}</th>
+            <th>{{ t('settings.agents.maxTotalTokens') }}</th>
             <th>{{ t('settings.agents.shortMemoryWindow') }}</th>
             <th>{{ t('settings.agents.thinking') }}</th>
             <th>{{ t('settings.agents.isVlm') }}</th>
@@ -48,7 +48,7 @@ const { t } = useI18n()
               {{ agent.temperature ?? t('settings.agents.noOverrides') }}
             </td>
             <td>
-              {{ agent.max_tokens ?? t('settings.agents.noOverrides') }}
+              {{ agent.max_total_tokens }}
             </td>
             <td>
               {{ agent.short_memory_window ?? t('settings.agents.noOverrides') }}
@@ -112,7 +112,13 @@ const { t } = useI18n()
               </div>
             </td>
             <td class="text-right">
-              <AppButton size="xs" variant="outline" @click="emit('edit', agent)">
+              <AppButton
+                size="xs"
+                variant="outline"
+                :aria-label="t('settings.agents.edit')"
+                :title="t('settings.agents.edit')"
+                @click="emit('edit', agent)"
+              >
                 <Pencil class="h-3.5 w-3.5" />
               </AppButton>
             </td>

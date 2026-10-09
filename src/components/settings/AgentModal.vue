@@ -21,7 +21,7 @@ const emit = defineEmits<{
       payload: {
         provider_name: string
         temperature?: number | null
-        max_tokens?: number | null
+        max_total_tokens?: number | null
         timeout?: number | null
         thinking_enabled?: boolean | null
         reasoning_effort?: string | null
@@ -76,7 +76,7 @@ watch(
         agent_name: '',
         provider_name: '',
         temperature: undefined,
-        max_tokens: undefined,
+        max_total_tokens: 240000,
         timeout: undefined,
         thinking_enabled: undefined,
         reasoning_effort: undefined,
@@ -96,7 +96,10 @@ function onSave() {
     {
       provider_name: agentForm.value.provider_name ?? 'default',
       temperature: agentForm.value.temperature ?? null,
-      max_tokens: agentForm.value.max_tokens ?? null,
+      max_total_tokens:
+        typeof agentForm.value.max_total_tokens === 'number'
+          ? agentForm.value.max_total_tokens
+          : 240000,
       timeout: agentForm.value.timeout ?? null,
       thinking_enabled: agentForm.value.thinking_enabled ?? null,
       reasoning_effort: agentForm.value.reasoning_effort ?? null,
@@ -120,7 +123,7 @@ function onSave() {
         <label class="workspace-label">{{ t('settings.agents.provider') }}</label>
         <AppSelect v-model="agentForm.provider_name" :options="providerOptions" />
       </div>
-      <div class="grid grid-cols-4 gap-3">
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label class="workspace-label">{{ t('settings.agents.temperature') }}</label>
           <input
@@ -131,8 +134,16 @@ function onSave() {
           />
         </div>
         <div>
-          <label class="workspace-label">{{ t('settings.agents.maxTokens') }}</label>
-          <input v-model.number="agentForm.max_tokens" type="number" class="workspace-input" />
+          <label for="agent-max-total-tokens" class="workspace-label">{{
+            t('settings.agents.maxTotalTokens')
+          }}</label>
+          <input
+            id="agent-max-total-tokens"
+            v-model.number="agentForm.max_total_tokens"
+            type="number"
+            min="1"
+            class="workspace-input"
+          />
         </div>
         <div>
           <label class="workspace-label">{{ t('settings.agents.timeout') }}</label>
@@ -148,6 +159,7 @@ function onSave() {
           />
         </div>
       </div>
+      <p class="workspace-muted text-xs">{{ t('settings.agents.tokenBudgetHint') }}</p>
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="workspace-label">{{ t('settings.agents.thinking') }}</label>

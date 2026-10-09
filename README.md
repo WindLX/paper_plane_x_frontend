@@ -266,3 +266,10 @@ Original PDF reading is available in the library, project library and paper link
 运行 `pnpm exec playwright install chromium` 安装测试浏览器，再运行 `just test-browser`。已有 Chromium 时可设置 `PPX_TEST_CHROMIUM=/absolute/path/to/chromium`。测试自行启动独立 Vite 服务，并拦截所有 API 与任务 WebSocket，使用合成论文、文件和 PDF；无需连接后端。覆盖批量操作标题栏固定高度、文件页 PDF、三个分隔条、宽度持久化、PDF 展开/关闭时保留详情宽度、中间横向滚动、拖拽中断和长元数据换行，并检查 1920/1440/1024/768/390px 下的亮暗主题。`just pre-commit` 包含单元测试和构建，浏览器测试需单独运行。
 
 Install the test browser with `pnpm exec playwright install chromium`, then run `just test-browser`; set `PPX_TEST_CHROMIUM` to reuse an existing Chromium executable. Tests start their own Vite server and intercept API/WebSocket traffic using synthetic records. Run browser regressions separately from `just pre-commit`.
+
+
+## Agent Token 预算 / Agent token budgets
+
+Settings 中六个 Agent 默认使用 `max_total_tokens = 240000`，含系统提示、历史、当前输入和本次生成。后端按模型名自动估算输入并分配剩余输出预算，无需选择 tokenizer。旧 `max_tokens` 设置已删除。Provider 高级设置中的上下文和最大生成量可留空使用已知模型信息；自定义网关可选填写实际能力。超预算时后端报告错误，不自动裁剪论文或压缩历史。
+
+All six agents default to `max_total_tokens = 240000` per request. The backend counts inputs and allocates remaining output space automatically, without a tokenizer setting. The legacy `max_tokens` setting is removed. Optional provider context/output capabilities describe custom gateways; oversized inputs report an error rather than being trimmed.

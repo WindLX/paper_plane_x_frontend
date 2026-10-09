@@ -2,18 +2,24 @@ export interface LLMProvider {
   name: string
   model: string
   base_url?: string | null
+  context_window_tokens?: number | null
+  max_output_tokens?: number | null
   has_api_key: boolean
 }
 
 export interface LLMProviderCreateRequest {
   name: string
   model: string
+  context_window_tokens?: number | null
+  max_output_tokens?: number | null
   api_key?: string | null
   base_url?: string | null
 }
 
 export interface LLMProviderUpdateRequest {
   model?: string | null
+  context_window_tokens?: number | null
+  max_output_tokens?: number | null
   api_key?: string | null
   base_url?: string | null
 }
@@ -26,7 +32,7 @@ export interface AgentLLMConfig {
   agent_name: string
   provider_name: string
   temperature: number
-  max_tokens?: number | null
+  max_total_tokens: number
   timeout: number
   thinking_enabled: boolean
   reasoning_effort?: string | null
@@ -40,7 +46,7 @@ export interface AgentLLMConfig {
 export interface AgentLLMConfigUpdateRequest {
   provider_name: string
   temperature?: number | null
-  max_tokens?: number | null
+  max_total_tokens?: number | null
   timeout?: number | null
   thinking_enabled?: boolean | null
   reasoning_effort?: string | null

@@ -24,6 +24,8 @@ interface ProviderFormData {
   model: string
   base_url: string
   api_key: string
+  context_window_tokens: number | '' | null
+  max_output_tokens: number | '' | null
 }
 
 const providerForm = ref<ProviderFormData>({
@@ -31,6 +33,8 @@ const providerForm = ref<ProviderFormData>({
   model: '',
   base_url: '',
   api_key: '',
+  context_window_tokens: null,
+  max_output_tokens: null,
 })
 const showKey = ref(false)
 const isEditing = computed(() => props.editingProvider !== null)
@@ -45,6 +49,8 @@ function initForm() {
       model: props.editingProvider.model,
       base_url: props.editingProvider.base_url ?? '',
       api_key: '',
+      context_window_tokens: props.editingProvider.context_window_tokens ?? null,
+      max_output_tokens: props.editingProvider.max_output_tokens ?? null,
     }
   } else {
     providerForm.value = {
@@ -52,6 +58,8 @@ function initForm() {
       model: 'deepseek-v4-pro',
       base_url: 'https://api.deepseek.com/v1',
       api_key: '',
+      context_window_tokens: null,
+      max_output_tokens: null,
     }
   }
 }
@@ -66,8 +74,19 @@ watch(
 )
 
 function onSave() {
+  const values = {
+    ...providerForm.value,
+    context_window_tokens:
+      typeof providerForm.value.context_window_tokens === 'number'
+        ? providerForm.value.context_window_tokens
+        : null,
+    max_output_tokens:
+      typeof providerForm.value.max_output_tokens === 'number'
+        ? providerForm.value.max_output_tokens
+        : null,
+  }
   if (isEditing.value) {
-    const { name, ...rest } = providerForm.value
+    const { name, ...rest } = values
     // If api_key is empty, omit it so the backend keeps the existing one.
     const payload: LLMProviderUpdateRequest & { name?: string } = {
       ...rest,
@@ -78,7 +97,7 @@ function onSave() {
     }
     emit('save', payload)
   } else {
-    emit('save', { ...providerForm.value })
+    emit('save', values)
   }
 }
 </script>
@@ -128,6 +147,35 @@ function onSave() {
           </AppButton>
         </div>
       </div>
+      <details class="workspace-subpanel p-3">
+        <summary class="workspace-label cursor-pointer">
+          {{ t('settings.providers.tokenLimits') }}
+        </summary>
+        <p class="workspace-muted mt-2 text-xs">{{ t('settings.providers.tokenLimitsHint') }}</p>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <label for="provider-context-window" class="workspace-label">{{
+              t('settings.providers.contextWindow')
+            }}</label
+            ><input
+              id="provider-context-window"
+              v-model.number="providerForm.context_window_tokens"
+              type="number"
+              min="1"
+              class="workspace-input"
+            />
+          </div>
+          <div>
+            <label class="workspace-label">{{ t('settings.providers.modelOutputLimit') }}</label
+            ><input
+              v-model.number="providerForm.max_output_tokens"
+              type="number"
+              min="1"
+              class="workspace-input"
+            />
+          </div>
+        </div>
+      </details>
       <div class="flex justify-end gap-2 pt-2">
         <AppButton size="sm" variant="outline" @click="emit('close')">
           {{ t('settings.providers.cancel') }}
