@@ -89,10 +89,15 @@ for (const theme of ['light', 'dark']) {
     await row.getByRole('button', { name: 'Edit', exact: true }).click()
     const dialog = page.getByRole('dialog')
     await expect(dialog).toBeVisible()
-    await expect(dialog).toContainText('Total tokens per request')
+    await expect(dialog).toContainText('Total token budget per request')
     await expect(dialog).not.toContainText('Tokenizer')
-    const total = dialog.getByRole('spinbutton', { name: 'Total tokens per request' })
+    const total = dialog.getByRole('spinbutton', { name: 'Total token budget per request' })
     await expect(total).toHaveValue('240000')
+    const inputs = await dialog
+      .locator('[data-agent-numeric-grid] input')
+      .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top))
+    expect(Math.abs(inputs[0]! - inputs[1]!)).toBeLessThan(1)
+    expect(Math.abs(inputs[2]! - inputs[3]!)).toBeLessThan(1)
     await total.fill('220000')
     await dialog.getByRole('button', { name: 'Save', exact: true }).click()
     await expect(dialog).toHaveCount(0)
@@ -118,9 +123,9 @@ for (const theme of ['light', 'dark']) {
     await page.setViewportSize({ width: 390, height: 844 })
     await row.getByRole('button', { name: 'Edit', exact: true }).click()
     await expect(dialog).toBeVisible()
-    await expect(dialog.getByRole('spinbutton', { name: 'Total tokens per request' })).toHaveValue(
-      '220000',
-    )
+    await expect(
+      dialog.getByRole('spinbutton', { name: 'Total token budget per request' }),
+    ).toHaveValue('220000')
     await expect(dialog).toBeInViewport()
     await page.screenshot({
       path: test.info().outputPath('budget-narrow.png'),

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useUiStore } from './ui'
 import { DRAWER_WIDTH_STORAGE_KEY } from '@/utils/drawerWidth'
 import { SIDEBAR_WIDTH_STORAGE_KEY } from '@/utils/sidebarWidth'
+import { FILE_TREE_WIDTH_STORAGE_KEY } from '@/utils/fileTreeWidth'
 
 let storage: Map<string, string>
 beforeEach(() => {
@@ -71,5 +72,41 @@ describe('left navigation width preference', () => {
     storage.set(SIDEBAR_WIDTH_STORAGE_KEY, 'invalid')
     setActivePinia(createPinia())
     expect(useUiStore().sidebarWidth).toBe(240)
+  })
+})
+
+describe('project file tree width preference', () => {
+  it('starts at the 256px workspace tree width when no preference exists', () => {
+    expect(useUiStore().fileTreeWidth).toBe(256)
+  })
+
+  it('previews a drag without writing storage and persists on completion', () => {
+    const ui = useUiStore()
+    ui.setFileTreeWidth(320, false)
+    expect(ui.fileTreeWidth).toBe(320)
+    expect(storage.has(FILE_TREE_WIDTH_STORAGE_KEY)).toBe(false)
+    ui.setFileTreeWidth(320)
+    expect(storage.get(FILE_TREE_WIDTH_STORAGE_KEY)).toBe('320')
+    setActivePinia(createPinia())
+    expect(useUiStore().fileTreeWidth).toBe(320)
+  })
+
+  it('clamps saved widths and falls back from malformed stored values', () => {
+    storage.set(FILE_TREE_WIDTH_STORAGE_KEY, '120')
+    expect(useUiStore().fileTreeWidth).toBe(180)
+    setActivePinia(createPinia())
+    storage.set(FILE_TREE_WIDTH_STORAGE_KEY, '9999')
+    expect(useUiStore().fileTreeWidth).toBe(400)
+    setActivePinia(createPinia())
+    storage.set(FILE_TREE_WIDTH_STORAGE_KEY, 'invalid')
+    expect(useUiStore().fileTreeWidth).toBe(256)
+  })
+
+  it('keeps the tree width independent of the drawer and sidebar widths', () => {
+    const ui = useUiStore()
+    ui.setFileTreeWidth(300)
+    expect(ui.drawerWidth).toBe(512)
+    expect(ui.sidebarWidth).toBe(240)
+    expect(storage.get(FILE_TREE_WIDTH_STORAGE_KEY)).toBe('300')
   })
 })

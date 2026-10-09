@@ -16,7 +16,7 @@ const uiStore = useUiStore()
     class="border-ppx-border/80 bg-ppx-bg-elevated/95 sticky top-0 z-10 min-w-0 border-b backdrop-blur"
   >
     <div
-      class="@container/ppx-topbar flex min-w-0 items-center justify-between gap-4 px-4 py-3 lg:px-6"
+      class="@container/ppx-topbar flex min-w-0 flex-col items-stretch justify-between gap-3 px-4 py-3 lg:flex-row lg:items-center lg:gap-4 lg:px-6"
     >
       <div class="flex min-w-0 flex-1 items-center gap-3">
         <button
@@ -40,8 +40,11 @@ const uiStore = useUiStore()
         </div>
       </div>
 
-      <div class="flex shrink-0 flex-col items-end gap-1">
-        <div id="app-topbar-page-actions" class="flex items-center gap-2">
+      <div class="flex max-w-full min-w-0 shrink-0 flex-col items-end gap-1">
+        <div
+          id="app-topbar-page-actions"
+          class="flex max-w-full min-w-0 items-center gap-2 overflow-x-auto p-1"
+        >
           <slot name="actions" />
         </div>
         <div id="app-topbar-page-actions-meta">

@@ -14,11 +14,15 @@ const mocks = vi.hoisted(() => ({
   uploadProjectFile: vi.fn(),
   downloadProjectFile: vi.fn(),
   exportProjectFile: vi.fn(),
+  projectFilePreviewUrl: vi.fn(
+    (projectId: string, filePath: string) => `preview://${projectId}${filePath}`,
+  ),
   choose: vi.fn(),
   confirm: vi.fn(),
   notify: vi.fn(),
 }))
 vi.mock('@/api', () => ({ api: mocks }))
+vi.mock('@/i18n', () => ({ translate: (key: string) => key }))
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('./useDialog', () => ({
   useDialog: () => ({ choose: mocks.choose, confirm: mocks.confirm }),
@@ -69,7 +73,7 @@ afterEach(() => {
 })
 
 describe('project file tree and editing', () => {
-  it('loads only expanded directories and retains their children on parent refresh', async () => {
+  it('opens directories by default and preserves loaded/collapsed state on refresh', async () => {
     mocks.listProjectFiles.mockImplementation(async (_pid: string, path: string) => ({
       items:
         path === '/'
@@ -77,16 +81,19 @@ describe('project file tree and editing', () => {
           : [{ name: 'draft.md', is_dir: false, size: 10 }],
     }))
     const { ctrl } = browser()
-    await vi.waitFor(() => expect(ctrl.rows).toHaveLength(1))
+    await vi.waitFor(() => expect(ctrl.rows).toHaveLength(2))
     const directory = ctrl.rows[0]!.node
-    expect(mocks.listProjectFiles).toHaveBeenCalledTimes(1)
-    await ctrl.toggleDirectory(directory)
+    expect(mocks.listProjectFiles).toHaveBeenCalledTimes(2)
     expect(ctrl.rows.map((row) => row.node.path)).toEqual(['/notes', '/notes/draft.md'])
     await ctrl.toggleDirectory(directory)
     await ctrl.toggleDirectory(directory)
     expect(mocks.listProjectFiles).toHaveBeenCalledTimes(2)
     await ctrl.loadDirectory(ctrl.root)
     expect(ctrl.rows).toHaveLength(2)
+    await ctrl.toggleDirectory(directory)
+    await ctrl.loadDirectory(ctrl.root)
+    expect(ctrl.rows).toHaveLength(1)
+    expect(directory.expanded).toBe(false)
   })
 
   it('uses the last clicked file when responses arrive in reverse order', async () => {
@@ -103,7 +110,8 @@ describe('project file tree and editing', () => {
     first.resolve({ file_path: '/a.json', content: 'A' })
     await a
     expect(ctrl.selectedFile?.filePath).toBe('/b.json')
-    expect(ctrl.selectedFile?.content).toBe('B')
+    expect(ctrl.selectedFile?.kind).toBe('text')
+    if (ctrl.selectedFile?.kind === 'text') expect(ctrl.selectedFile.content).toBe('B')
   })
 
   it('cancels navigation with unsaved changes, then supports discard', async () => {
@@ -135,7 +143,8 @@ describe('project file tree and editing', () => {
       file_path: '/draft.md',
       content: 'updated',
     })
-    expect(ctrl.selectedFile?.content).toBe('updated')
+    expect(ctrl.selectedFile?.kind).toBe('text')
+    if (ctrl.selectedFile?.kind === 'text') expect(ctrl.selectedFile.content).toBe('updated')
     expect(ctrl.dirty).toBe(false)
   })
 
@@ -232,8 +241,8 @@ describe('project file uploads and deletion', () => {
           : [{ name: 'existing.txt', is_dir: false, size: 10 }],
     }))
     const { ctrl } = browser()
-    await vi.waitFor(() => expect(ctrl.rows).toHaveLength(1))
-    await ctrl.toggleDirectory(ctrl.rows[0]!.node)
+    await vi.waitFor(() => expect(ctrl.rows).toHaveLength(2))
+    await ctrl.navigateToDir('/notes')
     await ctrl.uploadFiles([new File(['new'], 'existing.txt')])
     expect(mocks.confirm).toHaveBeenCalledTimes(1)
     expect(mocks.uploadProjectFile).toHaveBeenCalledWith(
@@ -274,5 +283,104 @@ describe('project file uploads and deletion', () => {
     mocks.deleteProjectFile.mockResolvedValue({ removed: '/notes/draft.md' })
     await ctrl.deleteFile({ ...node('draft.md'), path: '/notes/draft.md' })
     expect(mocks.deleteProjectFile).toHaveBeenCalledWith('project-one', '/notes/draft.md')
+  })
+})
+
+describe('project file images', () => {
+  it('previews an image without reading its content even when the list omits kind', async () => {
+    const { ctrl } = browser()
+    await ctrl.openFile({ ...node('figure.png'), kind: undefined })
+    expect(mocks.readProjectFile).not.toHaveBeenCalled()
+    expect(ctrl.selectedFile).toEqual({
+      kind: 'image',
+      filePath: '/figure.png',
+      name: 'figure.png',
+      previewUrl: 'preview://project-one/figure.png',
+    })
+    expect(ctrl.editMode).toBe(false)
+    expect(ctrl.loading).toBe(false)
+  })
+
+  it('honours the server kind when it disagrees with the extension', async () => {
+    const { ctrl } = browser()
+    await ctrl.openFile({ ...node('diagram.avif'), kind: 'image' })
+    expect(mocks.readProjectFile).not.toHaveBeenCalled()
+    expect(ctrl.selectedFile?.kind).toBe('image')
+  })
+
+  it('reads text files and ignores startEdit on an image selection', async () => {
+    const { ctrl } = browser()
+    await ctrl.openFile({ ...node('notes.md'), kind: 'text' })
+    expect(mocks.readProjectFile).toHaveBeenCalledWith('project-one', '/notes.md')
+    expect(ctrl.selectedFile?.kind).toBe('text')
+    await ctrl.openFile({ ...node('figure.svg') })
+    ctrl.startEdit()
+    expect(ctrl.editMode).toBe(false)
+  })
+
+  it('copies a project-root markdown reference for an image', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const { ctrl } = browser()
+    await ctrl.copyMarkdownRef({ ...node('figure.png'), path: '/assets/figure.png' })
+    expect(writeText).toHaveBeenCalledWith('![figure.png](/assets/figure.png)')
+    expect(mocks.notify).toHaveBeenCalledWith('projectFiles.markdownRefCopied', 'success', 2000)
+  })
+
+  it('accepts image uploads and reports unsupported extensions', async () => {
+    const { ctrl } = browser()
+    await ctrl.uploadFiles([new File(['x'], 'photo.png'), new File(['x'], 'clip.mp4')])
+    expect(ctrl.uploadResults.map((result) => result.status)).toEqual(['success', 'failed'])
+    expect(mocks.uploadProjectFile.mock.calls.map((call) => call[1])).toEqual(['/photo.png'])
+    expect(ctrl.uploadResults[1]?.reason).toBe('projectFiles.invalidExtension')
+  })
+})
+
+describe('deep-linked project paths', () => {
+  it('loads the directory chain and opens a nested file', async () => {
+    mocks.listProjectFiles.mockImplementation(async (_pid: string, path: string) => ({
+      items:
+        path === '/'
+          ? [{ name: 'notes', is_dir: true, size: null }]
+          : path === '/notes'
+            ? [{ name: 'draft.md', is_dir: false, size: 10 }]
+            : [],
+    }))
+    const { ctrl } = browser()
+    expect(await ctrl.openPath('/notes/draft.md')).toBe(true)
+    expect(ctrl.selectedFile?.filePath).toBe('/notes/draft.md')
+    expect(ctrl.rows.map((row) => row.node.path)).toEqual(['/notes', '/notes/draft.md'])
+  })
+
+  it('opens an image deep link through the preview endpoint', async () => {
+    mocks.listProjectFiles.mockResolvedValue({
+      items: [{ name: 'plot.png', is_dir: false, size: 5 }],
+    })
+    const { ctrl } = browser()
+    expect(await ctrl.openPath('plot.png')).toBe(true)
+    expect(ctrl.selectedFile?.kind).toBe('image')
+    expect(mocks.readProjectFile).not.toHaveBeenCalled()
+  })
+
+  it('rejects escaped and remote deep links without listing further', async () => {
+    const { ctrl } = browser()
+    await vi.waitFor(() => expect(mocks.listProjectFiles).toHaveBeenCalledTimes(1))
+    expect(await ctrl.openPath('../secret.md')).toBe(false)
+    expect(await ctrl.openPath('https://example.com/x.md')).toBe(false)
+    expect(mocks.listProjectFiles).toHaveBeenCalledTimes(1)
+  })
+
+  it('prompts instead of discarding an unsaved draft', async () => {
+    mocks.listProjectFiles.mockResolvedValue({
+      items: [{ name: 'other.txt', is_dir: false, size: 3 }],
+    })
+    const { ctrl } = browser()
+    await ctrl.openFile(node('draft.md'))
+    ctrl.startEdit()
+    ctrl.editContent = 'unsaved'
+    mocks.choose.mockResolvedValue('cancel')
+    expect(await ctrl.openPath('/other.txt')).toBe(false)
+    expect(ctrl.selectedFile?.filePath).toBe('/draft.md')
+    expect(ctrl.editContent).toBe('unsaved')
   })
 })

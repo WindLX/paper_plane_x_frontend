@@ -123,39 +123,45 @@ function onSave() {
         <label class="workspace-label">{{ t('settings.agents.provider') }}</label>
         <AppSelect v-model="agentForm.provider_name" :options="providerOptions" />
       </div>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <label class="workspace-label">{{ t('settings.agents.temperature') }}</label>
+      <!-- One column on narrow screens, two on desktop; every cell keeps an
+           equal label box so the numeric inputs line up. -->
+      <div data-agent-numeric-grid class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="flex flex-col gap-1">
+          <label class="workspace-label mb-0 sm:min-h-8">{{
+            t('settings.agents.temperature')
+          }}</label>
           <input
             v-model.number="agentForm.temperature"
             type="number"
             step="0.1"
-            class="workspace-input"
+            class="workspace-input w-full"
           />
         </div>
-        <div>
-          <label for="agent-max-total-tokens" class="workspace-label">{{
-            t('settings.agents.maxTotalTokens')
+        <div class="flex flex-col gap-1">
+          <label for="agent-max-total-tokens" class="workspace-label mb-0 sm:min-h-8">{{
+            t('tokenForm.maxTotalTokens')
           }}</label>
           <input
             id="agent-max-total-tokens"
             v-model.number="agentForm.max_total_tokens"
             type="number"
             min="1"
-            class="workspace-input"
+            class="workspace-input w-full"
           />
         </div>
-        <div>
-          <label class="workspace-label">{{ t('settings.agents.timeout') }}</label>
-          <input v-model.number="agentForm.timeout" type="number" class="workspace-input" />
+        <div class="flex flex-col gap-1">
+          <label class="workspace-label mb-0 sm:min-h-8">{{ t('settings.agents.timeout') }}</label>
+          <input v-model.number="agentForm.timeout" type="number" class="workspace-input w-full" />
         </div>
-        <div>
-          <label class="workspace-label">{{ t('settings.agents.shortMemoryWindow') }}</label>
+        <div class="flex flex-col gap-1">
+          <label class="workspace-label mb-0 sm:min-h-8">{{
+            t('settings.agents.shortMemoryWindow')
+          }}</label>
           <input
             v-model.number="agentForm.short_memory_window"
             type="number"
             min="1"
-            class="workspace-input"
+            class="workspace-input w-full"
           />
         </div>
       </div>

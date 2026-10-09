@@ -6,7 +6,9 @@ import katex from 'katex'
 import MarkdownIt from 'markdown-it'
 import texmath from 'markdown-it-texmath'
 
+import { api } from '@/api'
 import { useNotify } from '@/composables/useNotify'
+import { resolveProjectImagePath } from '@/utils/projectImage'
 import 'katex/dist/katex.min.css'
 
 const { t } = useI18n()
@@ -16,9 +18,15 @@ const props = withDefaults(
   defineProps<{
     markdown: string
     enableMath?: boolean
+    // When both are present, relative image sources resolve inside the project
+    // sandbox through the preview endpoint instead of the app origin.
+    projectId?: string
+    filePath?: string
   }>(),
   {
     enableMath: true,
+    projectId: '',
+    filePath: '',
   },
 )
 
@@ -84,10 +92,39 @@ function createMarkdownRenderer(enableMath: boolean): MarkdownIt {
   return md
 }
 
+function buildImageError(key: string, path: string): HTMLElement {
+  const placeholder = document.createElement('span')
+  placeholder.className = 'project-image-error'
+  placeholder.textContent = t(key) + ': ' + path
+  return placeholder
+}
+
+// Rewrites relative image sources to the project preview endpoint after
+// sanitisation, so the DOMPurify contract is preserved and network sources stay
+// untouched. Paths that escape the project root or cannot be resolved become an
+// explicit placeholder instead of a silently broken image.
+function rewriteProjectImages(input: string): string {
+  if (!props.projectId || !props.filePath || typeof document === 'undefined') return input
+  const template = document.createElement('template')
+  template.innerHTML = input
+  for (const image of Array.from(template.content.querySelectorAll('img[src]'))) {
+    const source = image.getAttribute('src') ?? ''
+    const resolution = resolveProjectImagePath(props.filePath, source)
+    if (resolution.status === 'remote') continue
+    if (resolution.status === 'invalid') {
+      image.replaceWith(buildImageError('projectFiles.imageOutsideProject', resolution.path))
+      continue
+    }
+    image.setAttribute('src', api.projectFilePreviewUrl(props.projectId, resolution.path))
+    image.setAttribute('data-project-image', resolution.path)
+  }
+  return template.innerHTML
+}
+
 const html = computed(() => {
   const renderer = createMarkdownRenderer(props.enableMath)
   const raw = preprocessPapers(props.markdown || '')
-  return DOMPurify.sanitize(renderer.render(raw), {
+  const sanitized = DOMPurify.sanitize(renderer.render(raw), {
     ALLOWED_TAGS: [
       'div',
       'span',
@@ -161,6 +198,7 @@ const html = computed(() => {
       'encoding',
     ],
   })
+  return rewriteProjectImages(sanitized)
 })
 
 function handleClick(e: MouseEvent): void {
@@ -192,11 +230,26 @@ function handleClick(e: MouseEvent): void {
       notifyPush(t('copyable.copyFailed'), 'warning')
     })
 }
+
+// Delegated capture listener: image `error` events do not bubble, so capture
+// catches failures from sanitised v-html images and swaps in a labelled error.
+function handleImageError(event: Event): void {
+  const target = event.target
+  if (!(target instanceof HTMLImageElement)) return
+  const path = target.getAttribute('data-project-image')
+  if (!path) return
+  target.replaceWith(buildImageError('projectFiles.imageLoadFailed', path))
+}
 </script>
 
 <template>
   <!-- eslint-disable vue/no-v-html -->
-  <div class="markdown-content max-w-none wrap-break-word" @click="handleClick" v-html="html" />
+  <div
+    class="markdown-content max-w-none wrap-break-word"
+    @click="handleClick"
+    @error.capture="handleImageError"
+    v-html="html"
+  />
   <!-- eslint-enable vue/no-v-html -->
 </template>
 
@@ -502,6 +555,19 @@ function handleClick(e: MouseEvent): void {
   max-width: 100%;
   border-radius: var(--ppx-radius-panel);
   margin: 0.5rem 0;
+}
+
+/* Explicit, addressable placeholder for images outside the project or missing. */
+.markdown-content :deep(.project-image-error) {
+  display: inline-block;
+  margin: 0.25rem 0;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--ppx-radius-interactive);
+  border: 1px solid color-mix(in srgb, var(--ppx-danger) 42%, transparent);
+  background: color-mix(in srgb, var(--ppx-danger) 12%, transparent);
+  color: var(--ppx-danger);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
 }
 
 /* ---------- Strikethrough ---------- */

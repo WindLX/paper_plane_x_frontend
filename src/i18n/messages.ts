@@ -13,6 +13,10 @@ import { paper } from './modules/paper'
 import { settings } from './modules/settings'
 import { redirect } from './modules/redirect'
 import { notFound } from './modules/notFound'
+import { workbench } from './modules/workbench'
+import { projectExports } from './modules/projectExports'
+import { projectFiles } from './modules/projectFiles'
+import { tokenForm } from './modules/tokenForm'
 
 export const messages = {
   'zh-CN': {
@@ -32,6 +36,10 @@ export const messages = {
     settings: settings['zh-CN'],
     notFound: notFound['zh-CN'],
     redirect: redirect['zh-CN'],
+    workbench: workbench['zh-CN'],
+    projectExports: projectExports['zh-CN'],
+    projectFiles: projectFiles['zh-CN'],
+    tokenForm: tokenForm['zh-CN'],
   },
   'en-US': {
     common: common['en-US'],
@@ -49,5 +57,9 @@ export const messages = {
     settings: settings['en-US'],
     notFound: notFound['en-US'],
     redirect: redirect['en-US'],
+    workbench: workbench['en-US'],
+    projectExports: projectExports['en-US'],
+    projectFiles: projectFiles['en-US'],
+    tokenForm: tokenForm['en-US'],
   },
 } as const

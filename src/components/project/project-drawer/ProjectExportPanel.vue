@@ -3,16 +3,27 @@ import { Download } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 import AppButton from '@/components/AppButton.vue'
+import AppCheckbox from '@/components/AppCheckbox.vue'
 import AppSelect from '@/components/AppSelect.vue'
 import { ALL_FIELDS } from '@/constants/export'
-import type { ProjectExportField, ProjectExportRequest } from '@/types/api'
+import type { ProjectExportField, ProjectExportRequest, ProjectExportJob } from '@/types/api'
+import type { BlobTransferProgress } from '@/api/core'
+import ProjectExportJobs from '../ProjectExportJobs.vue'
 
 defineProps<{
   exporting: boolean
+  exportJobs?: ProjectExportJob[]
+  exportError?: string | null
+  downloadingExportId?: string | null
+  downloadProgress?: BlobTransferProgress | null
 }>()
 
 const emit = defineEmits<{
   export: [payload: ProjectExportRequest]
+  cancelExport: [exportId: string]
+  downloadExport: [exportId: string]
+  stopExportDownload: []
+  refreshExports: []
 }>()
 
 const { t } = useI18n()
@@ -52,6 +63,16 @@ function handleExport(): void {
 
 <template>
   <div class="space-y-4">
+    <ProjectExportJobs
+      :jobs="exportJobs ?? []"
+      :error="exportError"
+      :downloading-export-id="downloadingExportId"
+      :download-progress="downloadProgress"
+      @cancel="emit('cancelExport', $event)"
+      @download="emit('downloadExport', $event)"
+      @stop-download="emit('stopExportDownload')"
+      @refresh="emit('refreshExports')"
+    />
     <div class="flex items-center justify-between">
       <h4 class="text-ppx-text text-sm font-semibold">
         {{ t('projects.exportFieldsTitle') }}
@@ -85,10 +106,9 @@ function handleExport(): void {
             : 'border-ppx-border bg-ppx-bg-elevated text-ppx-text-soft hover:bg-ppx-bg-subtle'
         "
       >
-        <input
-          type="checkbox"
+        <AppCheckbox
+          :label="t(`projects.exportFields.${field}`)"
           :checked="selectedFields.includes(field)"
-          class="accent-ppx-accent h-3.5 w-3.5"
           @change="toggleField(field)"
         />
         <span class="truncate">{{ t(`projects.exportFields.${field}`) || field }}</span>
@@ -101,10 +121,9 @@ function handleExport(): void {
             : 'border-ppx-border bg-ppx-bg-elevated text-ppx-text-soft hover:bg-ppx-bg-subtle'
         "
       >
-        <input
-          type="checkbox"
+        <AppCheckbox
+          :label="t('projects.includeSandboxFiles')"
           :checked="includeSandboxFiles"
-          class="accent-ppx-accent h-3.5 w-3.5"
           @change="includeSandboxFiles = !includeSandboxFiles"
         />
         <span class="truncate">{{ t('projects.includeSandboxFiles') }}</span>
@@ -127,7 +146,10 @@ function handleExport(): void {
       tone="sky"
       block
       :loading="exporting"
-      :disabled="selectedFields.length === 0"
+      :disabled="
+        selectedFields.length === 0 ||
+        exportJobs?.some((job) => job.status === 'queued' || job.status === 'running')
+      "
       @click="handleExport"
     >
       <Download class="h-4 w-4" />

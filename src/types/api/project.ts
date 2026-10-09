@@ -64,6 +64,9 @@ export interface ProjectFileItem {
   name: string
   is_dir: boolean
   size: number | null
+  kind?: 'directory' | 'text' | 'image'
+  content_type?: string | null
+  modified_at?: string | null
 }
 
 export interface ProjectFileListResponse {

@@ -1,4 +1,12 @@
-import { request, requestBlob } from './core'
+import { API_BASE_URL, request, requestBlob, type BlobTransferOptions } from './core'
+import type {
+  ProjectActivityQuery,
+  ProjectActivityListResponse,
+  ProjectOverviewResponse,
+  ProjectExportJob,
+  ProjectExportJobListResponse,
+  ProjectExportRequest,
+} from '@/types/api'
 import type {
   LibrarianUnifiedSearchRequest,
   LibrarianUnifiedSearchResponse,
@@ -17,6 +25,51 @@ import type {
 import type { SortOrder, ProjectSortKey } from '../types/sort'
 
 export const projectsApi = {
+  getProjectOverview(projectId: string): Promise<ProjectOverviewResponse> {
+    return request(`/projects/${projectId}/overview`)
+  },
+
+  listProjectActivities(
+    projectId: string,
+    query: ProjectActivityQuery = {},
+  ): Promise<ProjectActivityListResponse> {
+    const params = new URLSearchParams()
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== '') params.set(key, String(value))
+    }
+    return request(`/projects/${projectId}/activities?${params}`)
+  },
+
+  createProjectExport(projectId: string, payload: ProjectExportRequest): Promise<ProjectExportJob> {
+    return request(`/projects/${projectId}/exports`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  listProjectExports(projectId: string): Promise<ProjectExportJobListResponse> {
+    return request(`/projects/${projectId}/exports`)
+  },
+
+  getProjectExport(projectId: string, exportId: string): Promise<ProjectExportJob> {
+    return request(`/projects/${projectId}/exports/${exportId}`)
+  },
+
+  cancelProjectExport(projectId: string, exportId: string): Promise<ProjectExportJob> {
+    return request(`/projects/${projectId}/exports/${exportId}/cancel`, { method: 'POST' })
+  },
+
+  downloadProjectExport(
+    projectId: string,
+    exportId: string,
+    transfer?: BlobTransferOptions,
+  ): Promise<Blob> {
+    return requestBlob(`/projects/${projectId}/exports/${exportId}/download`, undefined, transfer)
+  },
+
+  projectFilePreviewUrl(projectId: string, filePath: string): string {
+    return `${API_BASE_URL}/projects/${encodeURIComponent(projectId)}/files/preview?file_path=${encodeURIComponent(filePath)}`
+  },
   listProjects(
     offset = 0,
     limit = 50,
@@ -149,10 +202,18 @@ export const projectsApi = {
     })
   },
 
-  exportProjectFile(projectId: string, payload: ProjectFileExportRequest): Promise<Blob> {
-    return requestBlob(`/projects/${projectId}/files/export`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    })
+  exportProjectFile(
+    projectId: string,
+    payload: ProjectFileExportRequest,
+    transfer?: BlobTransferOptions,
+  ): Promise<Blob> {
+    return requestBlob(
+      `/projects/${projectId}/files/export`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+      transfer,
+    )
   },
 }

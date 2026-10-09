@@ -12,6 +12,12 @@ import {
   SIDEBAR_WIDTH_STORAGE_KEY,
 } from '@/utils/sidebarWidth'
 
+import {
+  clampFileTreeWidth,
+  DEFAULT_FILE_TREE_WIDTH,
+  FILE_TREE_WIDTH_STORAGE_KEY,
+} from '@/utils/fileTreeWidth'
+
 const THEME_STORAGE_KEY = 'ppx-console-theme'
 const SIDEBAR_STORAGE_KEY = 'ppx-console-sidebar-collapsed'
 
@@ -49,6 +55,14 @@ export const useUiStore = defineStore('ui', () => {
       : clampSidebarWidth(Number(storedSidebarWidth)),
   )
 
+  const storedFileTreeWidth =
+    typeof window === 'undefined' ? null : window.localStorage.getItem(FILE_TREE_WIDTH_STORAGE_KEY)
+  const fileTreeWidth = ref(
+    storedFileTreeWidth === null || storedFileTreeWidth.trim() === ''
+      ? DEFAULT_FILE_TREE_WIDTH
+      : clampFileTreeWidth(Number(storedFileTreeWidth)),
+  )
+
   function setSidebarWidth(width: number): void {
     sidebarWidth.value = clampSidebarWidth(width)
     if (typeof window !== 'undefined')
@@ -59,6 +73,12 @@ export const useUiStore = defineStore('ui', () => {
     drawerWidth.value = clampDrawerWidth(width)
     if (persist && typeof window !== 'undefined')
       window.localStorage.setItem(DRAWER_WIDTH_STORAGE_KEY, String(drawerWidth.value))
+  }
+
+  function setFileTreeWidth(width: number, persist = true): void {
+    fileTreeWidth.value = clampFileTreeWidth(width)
+    if (persist && typeof window !== 'undefined')
+      window.localStorage.setItem(FILE_TREE_WIDTH_STORAGE_KEY, String(fileTreeWidth.value))
   }
 
   function setDarkMode(nextValue: boolean): void {
@@ -101,8 +121,10 @@ export const useUiStore = defineStore('ui', () => {
     mobileSidebarOpen,
     drawerWidth,
     sidebarWidth,
+    fileTreeWidth,
     setSidebarWidth,
     setDrawerWidth,
+    setFileTreeWidth,
     setDarkMode,
     toggleDarkMode,
     setSidebarCollapsed,

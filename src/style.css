@@ -899,3 +899,52 @@ textarea {
   width: 100%;
   min-width: 960px;
 }
+@media (max-width: 1023px) {
+  .workspace-content-canvas {
+    min-width: 0;
+  }
+}
+
+/* Native progress semantics with the same palette in Chromium and Firefox. */
+.workspace-progress {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 0.5rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: var(--ppx-bg-subtle);
+  accent-color: var(--ppx-accent);
+}
+.workspace-progress::-webkit-progress-bar {
+  border-radius: 999px;
+  background: var(--ppx-bg-subtle);
+}
+.workspace-progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: var(--ppx-accent);
+}
+.workspace-progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: var(--ppx-accent);
+}
+.workspace-progress:indeterminate {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ppx-accent-soft) 0 25%,
+    var(--ppx-accent) 25% 50%
+  );
+  background-size: 200% 100%;
+  animation: workspace-progress-pulse 1.5s linear infinite;
+}
+@keyframes workspace-progress-pulse {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workspace-progress:indeterminate {
+    animation: none;
+  }
+}

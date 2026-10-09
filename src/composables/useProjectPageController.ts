@@ -4,10 +4,20 @@ import { useI18n } from 'vue-i18n'
 
 import { api } from '@/api'
 import { useNotify } from '@/composables/useNotify'
+import { useProjectExports } from '@/composables/useProjectExports'
+import { useProjectOverview } from '@/composables/useProjectOverview'
 import { useProjectStore } from '@/stores/projects'
-import type { LibrarianGlobalFinderResponse, ProjectExportRequest } from '@/types/api'
+import type { ProjectExportRequest } from '@/types/api'
 
-export type ProjectPageTab = 'files' | 'papers'
+export type ProjectPageTab = 'overview' | 'papers' | 'files' | 'activity'
+
+export const PROJECT_PAGE_TABS: ProjectPageTab[] = ['overview', 'papers', 'files', 'activity']
+
+function isProjectPageTab(value: unknown): value is ProjectPageTab {
+  return typeof value === 'string' && (PROJECT_PAGE_TABS as string[]).includes(value)
+}
+
+export type ActivityDrawerKind = 'task' | 'trace' | 'paper'
 
 export function useProjectPageController(projectId: Ref<string>) {
   const router = useRouter()
@@ -16,87 +26,230 @@ export function useProjectPageController(projectId: Ref<string>) {
   const projectStore = useProjectStore()
 
   const loading = ref(false)
-  const globalFinder = ref<LibrarianGlobalFinderResponse | null>(null)
   const deleteConfirmOpen = ref(false)
-  const activeTab = ref<ProjectPageTab>('files')
+  const summaryUpdating = ref(false)
+  const summaryError = ref<string | null>(null)
+  let projectRequest = 0
+  let summaryRequest = 0
+  const activeTab = ref<ProjectPageTab>('overview')
   const fileDrawerOpen = ref(false)
   const fileDrawerPaperId = ref<string | null>(null)
   const paperDrawerOpen = ref(false)
   const paperDrawerPaperId = ref<string | null>(null)
+  const activityDrawerKind = ref<ActivityDrawerKind | null>(null)
+  const activityDrawerId = ref<string | null>(null)
+
+  const overview = useProjectOverview(projectId)
+  const exports = useProjectExports(projectId)
 
   const project = computed(() => projectStore.currentProject)
   const pageTitle = computed(() => project.value?.name ?? projectId.value)
   const pageSubtitle = computed(() => project.value?.description ?? '')
 
-  async function loadGlobalFinder(): Promise<void> {
-    globalFinder.value = await api.librarianGlobalFinder(projectId.value)
+  // ── Query-string deep links ───────────────────────────────────────────────
+  const routeFilePath = computed(() => {
+    const raw = router.currentRoute.value.query.file_path
+    return typeof raw === 'string' && raw ? raw : null
+  })
+  const routePaperId = computed(() => {
+    const raw = router.currentRoute.value.query.paper_id
+    return typeof raw === 'string' && raw ? raw : null
+  })
+
+  function updateQuery(patch: Record<string, string | undefined>, replace = false): void {
+    const query: Record<string, string> = {}
+    for (const [key, value] of Object.entries(router.currentRoute.value.query)) {
+      if (typeof value === 'string') query[key] = value
+    }
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined) {
+        delete query[key]
+      } else {
+        query[key] = value
+      }
+    }
+    const navigate = replace ? router.replace : router.push
+    void navigate({ query })
   }
 
+  function setActiveTab(tab: ProjectPageTab): void {
+    const returningToOverview = tab === 'overview' && activeTab.value !== tab
+    activeTab.value = tab
+    if (returningToOverview) void overview.load()
+    if (tab !== 'files') closeFileDrawer()
+    if (tab !== 'papers') closePaperDrawer()
+    if (tab !== 'activity') closeActivityDrawer()
+  }
+
+  function openTab(tab: ProjectPageTab): void {
+    setActiveTab(tab)
+    updateQuery({
+      tab,
+      ...(tab === 'papers' ? {} : { paper_id: undefined }),
+      ...(tab === 'files' ? {} : { file_path: undefined }),
+      ...(tab === 'activity' ? {} : { activity_id: undefined }),
+    })
+  }
+
+  function openFileDeepLink(filePath: string): void {
+    activeTab.value = 'files'
+    closeActivityDrawer()
+    closePaperDrawer()
+    updateQuery({ tab: 'files', file_path: filePath })
+  }
+
+  function openActivityDeepLink(activityId: string): void {
+    setActiveTab('activity')
+    updateQuery({
+      tab: 'activity',
+      activity_id: activityId,
+      file_path: undefined,
+      paper_id: undefined,
+    })
+  }
+
+  const routeActivityId = computed(() => {
+    const raw = router.currentRoute.value.query.activity_id
+    return typeof raw === 'string' && raw ? raw : null
+  })
+
+  // Reset per-project view state before the deep-link watchers below run, so a
+  // paper/file query parameter is not immediately cleared on the first render.
+  watch(
+    projectId,
+    () => {
+      summaryRequest++
+      summaryUpdating.value = false
+      summaryError.value = null
+      closeFileDrawer()
+      closePaperDrawer()
+      closeActivityDrawer()
+      void loadData()
+    },
+    { immediate: true },
+  )
+
+  watch(
+    () => router.currentRoute.value.query.tab,
+    (raw) => {
+      const tab = isProjectPageTab(raw) ? raw : 'overview'
+      if (tab !== activeTab.value) setActiveTab(tab)
+    },
+    { immediate: true },
+  )
+
+  watch(
+    routePaperId,
+    (paperId) => {
+      if (paperId) {
+        activeTab.value = 'papers'
+        paperDrawerPaperId.value = paperId
+        paperDrawerOpen.value = true
+      } else if (paperDrawerOpen.value) {
+        paperDrawerOpen.value = false
+        paperDrawerPaperId.value = null
+      }
+    },
+    { immediate: true },
+  )
+
+  // ── Data loading ─────────────────────────────────────────────────────────
   async function loadData(): Promise<void> {
     if (!projectId.value) return
     loading.value = true
+    const request = ++projectRequest
     projectStore.selectProject(projectId.value)
     try {
-      await Promise.all([projectStore.fetchProject(projectId.value), loadGlobalFinder()])
+      await Promise.all([projectStore.fetchProject(projectId.value), overview.load()])
     } catch (error) {
-      console.error(error)
+      if (request === projectRequest)
+        notify.push(
+          error instanceof Error ? error.message : t('projects.errors.requestFailed'),
+          'error',
+          3600,
+        )
     } finally {
-      loading.value = false
+      if (request === projectRequest) loading.value = false
     }
   }
 
   async function updateAgentSummary(content: string): Promise<void> {
+    const pid = projectId.value
+    const request = ++summaryRequest
+    summaryUpdating.value = true
+    summaryError.value = null
     try {
-      const nextProject = await api.setProjectAgentSummary(projectId.value, content)
+      const nextProject = await api.setProjectAgentSummary(pid, content)
+      if (pid !== projectId.value || request !== summaryRequest) return
       projectStore.syncProject(nextProject)
-      if (globalFinder.value) {
-        globalFinder.value.agent_summary = nextProject.agent_summary
-      }
+      overview.patchAgentSummary(nextProject.agent_summary)
       notify.push(t('projects.agentSummaryUpdated'), 'success', 2000)
     } catch (error) {
+      if (pid !== projectId.value || request !== summaryRequest) return
+      summaryError.value = error instanceof Error ? error.message : t('workbench.summary.failed')
       notify.push(
         error instanceof Error ? error.message : t('projects.errors.requestFailed'),
         'error',
         3600,
       )
+    } finally {
+      if (pid === projectId.value && request === summaryRequest) summaryUpdating.value = false
     }
   }
 
   async function deleteAgentSummary(): Promise<void> {
+    const pid = projectId.value
+    const request = ++summaryRequest
+    summaryUpdating.value = true
+    summaryError.value = null
     try {
-      const nextProject = await api.deleteProjectAgentSummary(projectId.value)
+      const nextProject = await api.deleteProjectAgentSummary(pid)
+      if (pid !== projectId.value || request !== summaryRequest) return
       projectStore.syncProject(nextProject)
-      if (globalFinder.value) {
-        globalFinder.value.agent_summary = null
-      }
+      overview.patchAgentSummary(null)
       notify.push(t('projects.agentSummaryDeleted'), 'success', 2000)
     } catch (error) {
+      if (pid !== projectId.value || request !== summaryRequest) return
+      summaryError.value = error instanceof Error ? error.message : t('workbench.summary.failed')
       notify.push(
         error instanceof Error ? error.message : t('projects.errors.requestFailed'),
         'error',
         3600,
       )
+    } finally {
+      if (pid === projectId.value && request === summaryRequest) summaryUpdating.value = false
     }
   }
 
   async function forceAgentSummary(): Promise<void> {
+    const pid = projectId.value
+    const request = ++summaryRequest
+    summaryUpdating.value = true
+    summaryError.value = null
     try {
-      const result = await api.librarianForceAgentSummary(projectId.value)
+      const result = await api.librarianForceAgentSummary(pid)
+      if (pid !== projectId.value || request !== summaryRequest) return
+      if (!result.agent_summary) {
+        summaryError.value = t('workbench.summary.failed')
+        return
+      }
       if (project.value) {
-        projectStore.patchProject(projectId.value, {
+        projectStore.patchProject(pid, {
           agent_summary: result.agent_summary,
         })
       }
-      if (globalFinder.value) {
-        globalFinder.value.agent_summary = result.agent_summary
-      }
+      overview.patchAgentSummary(result.agent_summary)
       notify.push(t('projects.agentSummaryUpdated'), 'success', 2000)
     } catch (error) {
+      if (pid !== projectId.value || request !== summaryRequest) return
+      summaryError.value = error instanceof Error ? error.message : t('workbench.summary.failed')
       notify.push(
         error instanceof Error ? error.message : t('projects.errors.requestFailed'),
         'error',
         3600,
       )
+    } finally {
+      if (pid === projectId.value && request === summaryRequest) summaryUpdating.value = false
     }
   }
 
@@ -134,43 +287,22 @@ export function useProjectPageController(projectId: Ref<string>) {
     await router.push('/')
   }
 
-  async function exportProject(payload: ProjectExportRequest): Promise<void> {
-    try {
-      const blob = await api.exportProject(projectId.value, {
-        fields: payload.fields,
-        citations_mode: payload.citations_mode,
-        include_sandbox_files: payload.include_sandbox_files,
-      })
-      const url = URL.createObjectURL(blob)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = `${projectId.value}_export.zip`
-      document.body.appendChild(anchor)
-      anchor.click()
-      document.body.removeChild(anchor)
-      URL.revokeObjectURL(url)
-      notify.push(t('projects.exportReady'), 'success', 2000)
-    } catch (error) {
-      notify.push(
-        error instanceof Error ? error.message : t('projects.errors.requestFailed'),
-        'error',
-        3600,
-      )
-    }
+  function exportProject(payload: ProjectExportRequest): void {
+    void exports.start(payload)
   }
 
+  // ── Drawers ──────────────────────────────────────────────────────────────
   const drawerOpen = computed(() => {
     if (activeTab.value === 'files') return fileDrawerOpen.value
     if (activeTab.value === 'papers') return paperDrawerOpen.value
+    if (activeTab.value === 'activity') return activityDrawerKind.value !== null
     return false
   })
 
   function closeDrawer(): void {
-    if (activeTab.value === 'files') {
-      closeFileDrawer()
-    } else if (activeTab.value === 'papers') {
-      closePaperDrawer()
-    }
+    if (activeTab.value === 'files') closeFileDrawer()
+    else if (activeTab.value === 'papers') closePaperDrawer()
+    else if (activeTab.value === 'activity') closeActivityDrawer()
   }
 
   function openFileDrawer(paperId?: string): void {
@@ -185,24 +317,21 @@ export function useProjectPageController(projectId: Ref<string>) {
     fileDrawerPaperId.value = null
   }
 
-  function toggleFileDrawer(): void {
-    if (fileDrawerOpen.value) {
-      closeFileDrawer()
-    } else {
-      openFileDrawer()
-    }
-  }
-
   function openPaperDrawer(paperId?: string): void {
     if (paperId) {
       paperDrawerPaperId.value = paperId
     }
     paperDrawerOpen.value = true
+    activeTab.value = 'papers'
+    closeFileDrawer()
+    closeActivityDrawer()
+    updateQuery({ tab: 'papers', paper_id: paperDrawerPaperId.value ?? undefined }, true)
   }
 
   function closePaperDrawer(): void {
     paperDrawerOpen.value = false
     paperDrawerPaperId.value = null
+    if (routePaperId.value) updateQuery({ paper_id: undefined }, true)
   }
 
   function togglePaperDrawer(): void {
@@ -213,29 +342,33 @@ export function useProjectPageController(projectId: Ref<string>) {
     }
   }
 
-  function openTab(tab: ProjectPageTab): void {
-    activeTab.value = tab
+  function openActivityDrawer(kind: ActivityDrawerKind, id: string): void {
+    activityDrawerKind.value = kind
+    activityDrawerId.value = id
   }
 
-  watch(
-    projectId,
-    () => {
-      closeFileDrawer()
-      closePaperDrawer()
-      void loadData()
-    },
-    { immediate: true },
-  )
+  function openActivityTask(taskId: string): void {
+    openActivityDrawer('task', taskId)
+  }
 
-  watch(activeTab, () => {
-    closeFileDrawer()
-    closePaperDrawer()
-  })
+  function openActivityTrace(traceId: string): void {
+    openActivityDrawer('trace', traceId)
+  }
+
+  function openActivityPaper(paperId: string): void {
+    openActivityDrawer('paper', paperId)
+  }
+
+  function closeActivityDrawer(): void {
+    activityDrawerKind.value = null
+    activityDrawerId.value = null
+  }
 
   return reactive({
     loading,
+    summaryUpdating,
+    summaryError,
     project,
-    globalFinder,
     pageTitle,
     pageSubtitle,
     deleteConfirmOpen,
@@ -245,8 +378,13 @@ export function useProjectPageController(projectId: Ref<string>) {
     fileDrawerPaperId,
     paperDrawerOpen,
     paperDrawerPaperId,
+    activityDrawerKind,
+    activityDrawerId,
+    routeFilePath,
+    routePaperId,
+    overview,
+    exports,
     loadData,
-    loadGlobalFinder,
     updateAgentSummary,
     deleteAgentSummary,
     forceAgentSummary,
@@ -256,12 +394,18 @@ export function useProjectPageController(projectId: Ref<string>) {
     confirmDeleteProject,
     exportProject,
     openTab,
+    openFileDeepLink,
+    openActivityDeepLink,
+    routeActivityId,
     closeDrawer,
     openFileDrawer,
     closeFileDrawer,
-    toggleFileDrawer,
     openPaperDrawer,
     closePaperDrawer,
     togglePaperDrawer,
+    openActivityTask,
+    openActivityTrace,
+    openActivityPaper,
+    closeActivityDrawer,
   })
 }

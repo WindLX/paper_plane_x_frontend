@@ -1,44 +1,54 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ProjectTopbarActions from './project-drawer/ProjectTopbarActions.vue'
-import ProjectPanelShell from './project-drawer/ProjectPanelShell.vue'
-import ProjectOverviewPanel from './project-drawer/ProjectOverviewPanel.vue'
-import ProjectExportPanel from './project-drawer/ProjectExportPanel.vue'
 import ProjectEditPanel from './project-drawer/ProjectEditPanel.vue'
-import ProjectLogsPanel from './project-drawer/ProjectLogsPanel.vue'
-import type {
-  ProjectResponse,
-  LibrarianGlobalFinderResponse,
-  ProjectExportField,
-  ProjectExportRequest,
-} from '@/types/api'
+import ProjectExportPanel from './project-drawer/ProjectExportPanel.vue'
+import ProjectPanelShell from './project-drawer/ProjectPanelShell.vue'
+import ProjectTopbarActions from './project-drawer/ProjectTopbarActions.vue'
+import type { BlobTransferProgress } from '@/api/core'
 import type { ProjectPageTab } from '@/composables/useProjectPageController'
+import type {
+  ProjectExportField,
+  ProjectExportJob,
+  ProjectExportRequest,
+  ProjectResponse,
+} from '@/types/api'
 
-const props = defineProps<{
-  project: ProjectResponse | null
-  globalFinder: LibrarianGlobalFinderResponse | null
-  loading: boolean
-  activeTab: ProjectPageTab
-}>()
+const props = withDefaults(
+  defineProps<{
+    project: ProjectResponse | null
+    activeTab: ProjectPageTab
+    exportJobs?: ProjectExportJob[]
+    exportSubmitting?: boolean
+    exportError?: string | null
+    downloadingExportId?: string | null
+    downloadProgress?: BlobTransferProgress | null
+  }>(),
+  {
+    exportJobs: () => [],
+    exportSubmitting: false,
+    exportError: null,
+    downloadingExportId: null,
+    downloadProgress: null,
+  },
+)
 
 const emit = defineEmits<{
-  'update:agentSummary': [content: string]
-  'delete:agentSummary': []
-  forceAgentSummary: []
   'update:project': [payload: { name?: string | null; description?: string | null }]
   'delete:project': []
   'export:project': [payload: ProjectExportRequest]
   openTab: [tab: ProjectPageTab]
+  cancelExport: [exportId: string]
+  downloadExport: [exportId: string]
+  stopExportDownload: []
+  refreshExports: []
 }>()
 
 const { t } = useI18n()
 
-const activePanel = ref<string | null>(null)
-const exporting = ref(false)
+const activePanel = ref<'export' | 'edit' | null>(null)
 
-// Export state
 const selectedFields = ref<ProjectExportField[]>([
   'paper_id',
   'project_ids',
@@ -67,26 +77,16 @@ const selectedFields = ref<ProjectExportField[]>([
 const citationsMode = ref<'keep' | 'strip'>('keep')
 const includeSandboxFiles = ref(true)
 
-// Edit state
 const editName = ref('')
 const editDescription = ref('')
 
 const panelTitle = computed(() => {
-  switch (activePanel.value) {
-    case 'overview':
-      return t('projects.overview')
-    case 'export':
-      return t('projects.exportPanelTitle')
-    case 'edit':
-      return t('projects.editPanelTitle')
-    case 'logs':
-      return t('projects.logsPanelTitle')
-    default:
-      return ''
-  }
+  if (activePanel.value === 'export') return t('projects.exportPanelTitle')
+  if (activePanel.value === 'edit') return t('projects.editPanelTitle')
+  return ''
 })
 
-function openPanel(name: string): void {
+function openPanel(name: 'export' | 'edit'): void {
   activePanel.value = name
   if (name === 'edit' && props.project) {
     editName.value = props.project.name
@@ -98,8 +98,8 @@ function closePanel(): void {
   activePanel.value = null
 }
 
-function handleKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') closePanel()
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.key === 'Escape') closePanel()
 }
 
 onMounted(() => {
@@ -111,7 +111,6 @@ onUnmounted(() => {
 })
 
 function handleExport(payload: ProjectExportRequest): void {
-  exporting.value = true
   emit('export:project', payload)
 }
 
@@ -124,30 +123,28 @@ function handleSaveProject(payload: { name: string | null; description: string |
 <template>
   <ProjectTopbarActions
     :active-panel="activePanel"
-    :active-tab="activeTab"
+    :active-tab="props.activeTab"
     @open-panel="openPanel"
     @open-tab="emit('openTab', $event)"
     @delete-project="emit('delete:project')"
   />
 
   <ProjectPanelShell :open="!!activePanel" :title="panelTitle" @close="closePanel">
-    <ProjectOverviewPanel
-      v-if="activePanel === 'overview'"
-      :project="project"
-      :global-finder="globalFinder"
-      :loading="loading"
-      @update:agent-summary="emit('update:agentSummary', $event)"
-      @delete:agent-summary="emit('delete:agentSummary')"
-      @force-agent-summary="emit('forceAgentSummary')"
-    />
-
     <ProjectExportPanel
-      v-else-if="activePanel === 'export'"
+      v-if="activePanel === 'export'"
       v-model:selected-fields="selectedFields"
       v-model:citations-mode="citationsMode"
       v-model:include-sandbox-files="includeSandboxFiles"
-      :exporting="exporting"
+      :exporting="props.exportSubmitting"
+      :export-jobs="props.exportJobs"
+      :export-error="props.exportError"
+      :downloading-export-id="props.downloadingExportId"
+      :download-progress="props.downloadProgress"
       @export="handleExport"
+      @cancel-export="emit('cancelExport', $event)"
+      @download-export="emit('downloadExport', $event)"
+      @stop-export-download="emit('stopExportDownload')"
+      @refresh-exports="emit('refreshExports')"
     />
 
     <ProjectEditPanel
@@ -156,11 +153,5 @@ function handleSaveProject(payload: { name: string | null; description: string |
       v-model:description="editDescription"
       @save="handleSaveProject"
     />
-
-    <ProjectLogsPanel v-else-if="activePanel === 'logs' && project" :project="project" />
-
-    <div v-else class="text-ppx-text-soft py-8 text-center text-sm">
-      {{ t('projects.projectDrawer.empty') }}
-    </div>
   </ProjectPanelShell>
 </template>

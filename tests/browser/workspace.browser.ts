@@ -185,6 +185,10 @@ for (const route of ['/library', '/tasks', '/projects/prj-test']) {
 
 test('project files can open and close original paper PDF', async ({ page }) => {
   await page.goto('/projects/prj-test')
+  await page
+    .locator('#app-topbar-page-actions')
+    .getByRole('button', { name: 'Files', exact: true })
+    .click()
   await page.getByRole('button', { name: 'notes.md', exact: true }).click()
   await page.getByRole('link', { name: 'pap-test | Synthetic paper', exact: true }).click()
   await page.getByRole('button', { name: 'Read PDF', exact: true }).click()
@@ -301,3 +305,25 @@ for (const theme of ['light', 'dark']) {
     }
   })
 }
+
+test('PDF iframe focus during resize does not cancel the gesture', async ({ page }) => {
+  await openLibrary(page)
+  await page.getByRole('button', { name: 'Read PDF', exact: true }).click()
+  await expectContained(page)
+  await page.getByRole('button', { name: 'Close right sidebar', exact: true }).focus()
+  const handle = page.getByRole('separator', { name: 'Resize PDF reader', exact: true })
+  await expect(handle).toHaveAttribute('data-panel-resize-handle-enabled', 'true')
+  const box = (await handle.boundingBox())!
+  const before = await page.locator('iframe').evaluate((el) => el.getBoundingClientRect().width)
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await expect(handle).toHaveAttribute('data-state', 'drag')
+  await page.locator('iframe').evaluate((el) => el.focus())
+  await expect(handle).toHaveAttribute('data-state', 'drag')
+  await page.mouse.move(box.x - 70, box.y + box.height / 2, { steps: 12 })
+  await page.mouse.up()
+  await expect
+    .poll(() => page.locator('iframe').evaluate((el) => el.getBoundingClientRect().width))
+    .toBeGreaterThan(before + 50)
+  await expect(handle).not.toHaveAttribute('data-state', 'drag')
+})

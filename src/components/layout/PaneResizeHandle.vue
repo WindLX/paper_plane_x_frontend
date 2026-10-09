@@ -2,7 +2,7 @@
 import { injectSplitterGroupContext, SplitterResizeHandle } from 'reka-ui'
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
-defineProps<{ label: string; hint: string }>()
+defineProps<{ label: string; hint: string; inset?: boolean }>()
 // Conditional handles are inserted after their group already exists. Register
 // only once the element is mounted so Reka can attach its keyboard listener.
 const ready = ref(false)
@@ -11,10 +11,10 @@ const active = ref(false)
 const generation = ref(0)
 onMounted(() => {
   ready.value = true
-  window.addEventListener('blur', interruptResize)
+  window.addEventListener('blur', handleWindowBlur)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('blur', interruptResize)
+  window.removeEventListener('blur', handleWindowBlur)
   finishResize()
 })
 
@@ -30,6 +30,13 @@ function finishResize(): void {
   if (!active.value) return
   group.stopDragging()
   setDragging(false)
+}
+function handleWindowBlur(): void {
+  // Chromium's PDF viewer can take iframe focus while the top-level document
+  // still has focus. This is not leaving the application and must not abort a
+  // gesture; the dragging overlay keeps mouse events in the parent document.
+  if (document.hasFocus() && document.activeElement instanceof HTMLIFrameElement) return
+  interruptResize()
 }
 function interruptResize(): void {
   if (!active.value) return
@@ -59,16 +66,17 @@ function capturePointer(event: PointerEvent): void {
     :aria-label="label"
     :title="hint"
     :hit-area-margins="{ fine: 0, coarse: 0 }"
-    class="group bg-ppx-bg-elevated data-[state=drag]:bg-ppx-accent-soft relative z-30 -mx-1 w-2 shrink-0 cursor-col-resize focus-visible:outline-none"
+    class="group data-[state=drag]:bg-ppx-accent-soft relative z-30 w-2 shrink-0 cursor-col-resize focus-visible:outline-none"
+    :class="inset ? 'mx-0 bg-transparent' : 'bg-ppx-bg-elevated -mx-1'"
     @pointerdown="capturePointer"
     @dragging="setDragging"
     @pointercancel="interruptResize"
-    @lostpointercapture="interruptResize"
     @keyup="emit('commit')"
     @dblclick="emit('reset')"
   >
     <span
-      class="bg-ppx-border group-hover:bg-ppx-accent group-focus-visible:bg-ppx-accent group-data-[state=drag]:bg-ppx-accent absolute inset-y-0 left-1/2 w-px -translate-x-1/2 transition-colors"
+      class="bg-ppx-border group-hover:bg-ppx-accent group-focus-visible:bg-ppx-accent group-data-[state=drag]:bg-ppx-accent absolute left-1/2 w-px -translate-x-1/2 transition-colors"
+      :class="inset ? 'inset-y-4' : 'inset-y-0'"
     />
   </SplitterResizeHandle>
 </template>

@@ -1,4 +1,5 @@
 export * from './project'
+export * from './projectWorkbench'
 export * from './paper'
 export * from './task'
 export * from './trace'

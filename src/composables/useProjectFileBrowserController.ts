@@ -1,17 +1,50 @@
-import { computed, onScopeDispose, reactive, ref, watch, type Ref } from 'vue'
+import { computed, nextTick, onScopeDispose, reactive, ref, watch, type Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { api } from '@/api'
+import { ApiError } from '@/api/core'
 import { useDialog } from '@/composables/useDialog'
 import { useNotify } from '@/composables/useNotify'
 import type { ProjectFileItem } from '@/types/api'
+import {
+  isSupportedProjectFilePath,
+  normalizeProjectFilePath,
+  PROJECT_FILE_MAX_SIZE,
+  resolveProjectFileKind,
+} from '@/utils/projectImage'
 
-export type ProjectFileBrowserSelectedFile = {
+/**
+ * The open file is a discriminated union: text artifacts carry editable
+ * content, images only carry a preview URL so the controller never issues a
+ * content read for binary files (even when an older list payload omits `kind`).
+ */
+export type ProjectFileTextSelection = {
+  kind: 'text'
   filePath: string
+  name: string
   content: string
   isMarkdown: boolean
 }
+export type ProjectFileImageSelection = {
+  kind: 'image'
+  filePath: string
+  name: string
+  previewUrl: string
+}
+export type ProjectFileBrowserSelectedFile = ProjectFileTextSelection | ProjectFileImageSelection
 export type ProjectFileExportFormat = 'markdown' | 'docx' | 'pdf' | 'html'
+/**
+ * Export progress is surfaced for the coordinating change that streams the
+ * conversion/download. The browser renders the state reactively; the transfer
+ * wiring lands separately.
+ */
+export type ProjectFileExportPhase =
+  | 'preparing'
+  | 'converting'
+  | 'transferring'
+  | 'completed'
+  | 'failed'
+export type ProjectFileExportProgress = { received: number; total: number | null }
 export type ProjectFileTreeNode = ProjectFileItem & {
   path: string
   children: ProjectFileTreeNode[] | null
@@ -25,9 +58,6 @@ export type ProjectFileUploadResult = {
   status: 'success' | 'failed' | 'skipped'
   reason: string
 }
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024
-const ALLOWED_EXTENSIONS = new Set(['md', 'txt', 'json', 'csv', 'yaml', 'yml', 'toml'])
 
 export function joinProjectFilePath(directory: string, name: string): string {
   return `${directory === '/' ? '' : directory}/${name}`
@@ -57,6 +87,7 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     name: '/',
     path: '/',
     is_dir: true,
+    kind: 'directory',
     size: null,
     children: null,
     expanded: true,
@@ -75,6 +106,8 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
   const newFileContent = ref('')
   const newDirName = ref('')
   const exportLoading = ref(false)
+  const exportPhase = ref<ProjectFileExportPhase | null>(null)
+  const exportProgress = ref<ProjectFileExportProgress | null>(null)
   const downloadLoading = ref(false)
   const uploadResults = ref<ProjectFileUploadResult[]>([])
   let generation = 0
@@ -82,12 +115,14 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
   let pendingDecision: Promise<boolean> | null = null
   const directoryRequests = new Map<string, number>()
 
-  const dirty = computed(
-    () =>
-      (editMode.value && editContent.value !== selectedFile.value?.content) ||
+  const dirty = computed(() => {
+    const file = selectedFile.value
+    return (
+      (editMode.value && file?.kind === 'text' && editContent.value !== file.content) ||
       (createMode.value && Boolean(newFileName.value || newFileContent.value)) ||
-      (createDirMode.value && Boolean(newDirName.value)),
-  )
+      (createDirMode.value && Boolean(newDirName.value))
+    )
+  })
   const rows = computed(() => {
     const result: ProjectFileTreeRow[] = []
     function visit(nodes: ProjectFileTreeNode[], depth: number): void {
@@ -142,9 +177,16 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
           const existing = previous.get(path)
           return existing && existing.is_dir === item.is_dir
             ? Object.assign(existing, item)
-            : { ...item, path, children: null, expanded: false, loading: false, error: null }
+            : { ...item, path, children: null, expanded: item.is_dir, loading: false, error: null }
         })
         .sort((a, b) => Number(b.is_dir) - Number(a.is_dir) || a.name.localeCompare(b.name))
+      // New directories open by default. Previously collapsed directories keep
+      // their state on refresh, and each expanded directory uses the same loader.
+      for (const child of node.children) {
+        if (owner !== generation) return false
+        if (child.is_dir && child.expanded && child.children === null && !child.loading)
+          await loadDirectory(child)
+      }
       return true
     } catch (err) {
       if (owner === generation && directoryRequests.get(node.path) === request) {
@@ -167,6 +209,13 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     createDirMode.value = false
   }
 
+  function resetSelection(): void {
+    fileRequest++
+    loading.value = false
+    selectedFile.value = null
+    resetModes()
+  }
+
   async function ensureCanLeave(): Promise<boolean> {
     if (busy.value) return false
     if (!dirty.value) return true
@@ -183,7 +232,7 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
       if (owner !== generation || result === 'cancel') return false
       if (result === 'secondary') {
         resetModes()
-        editContent.value = selectedFile.value?.content ?? ''
+        editContent.value = selectedFile.value?.kind === 'text' ? selectedFile.value.content : ''
         return true
       }
       if (editMode.value) return confirmEdit()
@@ -214,16 +263,33 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
   }
 
   async function openFile(node: ProjectFileTreeNode): Promise<void> {
+    const kind = resolveProjectFileKind(node)
     const request = ++fileRequest
     const owner = generation
+    const pid = projectId.value
     if (!(await ensureCanLeave()) || owner !== generation || request !== fileRequest) return
-    loading.value = true
     error.value = null
+    // Images stream from the preview endpoint; never request text content for them.
+    if (kind === 'image') {
+      loading.value = false
+      selectedFile.value = {
+        kind: 'image',
+        filePath: node.path,
+        name: node.name,
+        previewUrl: api.projectFilePreviewUrl(pid, node.path),
+      }
+      currentDir.value = parentDirectory(node.path)
+      resetModes()
+      return
+    }
+    loading.value = true
     try {
-      const response = await api.readProjectFile(projectId.value, node.path)
+      const response = await api.readProjectFile(pid, node.path)
       if (owner !== generation || request !== fileRequest) return
       selectedFile.value = {
+        kind: 'text',
         filePath: response.file_path,
+        name: node.name,
         content: response.content,
         isMarkdown: node.name.toLowerCase().endsWith('.md'),
       }
@@ -238,13 +304,43 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     }
   }
 
+  /**
+   * Opens a project-relative path, loading and expanding its directory chain
+   * first. Used by the guarded `file_path` deep link; drafts still prompt
+   * through `openFile`/`ensureCanLeave` so the query never discards them.
+   */
+  async function openPath(filePath: string): Promise<boolean> {
+    const target = normalizeProjectFilePath(filePath)
+    if (!target) return false
+    const owner = generation
+    const parts = target.split('/').filter(Boolean)
+    if (!parts.length) return false
+    if (!(await ensureDirectoryLoaded(root)) || owner !== generation) return false
+    let directory = root
+    for (let index = 0; index < parts.length - 1; index += 1) {
+      const next = directory.children?.find((child) => child.is_dir && child.name === parts[index])
+      if (!next) return false
+      next.expanded = true
+      if (!(await ensureDirectoryLoaded(next)) || owner !== generation) return false
+      directory = next
+    }
+    const node = directory.children?.find(
+      (child) => !child.is_dir && child.name === parts[parts.length - 1],
+    )
+    if (!node) return false
+    await openFile(node)
+    return owner === generation && selectedFile.value?.filePath === node.path
+  }
+
+  async function ensureDirectoryLoaded(node: ProjectFileTreeNode): Promise<boolean> {
+    if (node.children === null || node.error) return loadDirectory(node)
+    return true
+  }
+
   async function closeSelectedFile(): Promise<boolean> {
     const owner = generation
     if (!(await ensureCanLeave()) || owner !== generation) return false
-    fileRequest++
-    loading.value = false
-    selectedFile.value = null
-    resetModes()
+    resetSelection()
     return true
   }
 
@@ -315,20 +411,21 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
   }
 
   function startEdit(): void {
-    if (!selectedFile.value || busy.value || loading.value) return
-    editContent.value = selectedFile.value.content
+    const file = selectedFile.value
+    if (!file || file.kind !== 'text' || busy.value || loading.value) return
+    editContent.value = file.content
     editMode.value = true
   }
 
   async function cancelEdit(): Promise<void> {
     if (!(await ensureCanLeave())) return
-    editContent.value = selectedFile.value?.content ?? ''
+    editContent.value = selectedFile.value?.kind === 'text' ? selectedFile.value.content : ''
     editMode.value = false
   }
 
   async function confirmEdit(): Promise<boolean> {
     const file = selectedFile.value
-    if (!file || busy.value) return false
+    if (!file || file.kind !== 'text' || busy.value) return false
     const owner = generation
     const pid = projectId.value
     const content = editContent.value
@@ -406,9 +503,8 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
         if (owner !== generation) break
         let reason = ''
         let status: ProjectFileUploadResult['status'] = 'failed'
-        const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
-        if (!ALLOWED_EXTENSIONS.has(extension)) reason = t('projects.fileBrowser.invalidExtension')
-        else if (file.size > MAX_FILE_SIZE) reason = t('projects.fileBrowser.tooLarge')
+        if (!isSupportedProjectFilePath(file.name)) reason = t('projectFiles.invalidExtension')
+        else if (file.size > PROJECT_FILE_MAX_SIZE) reason = t('projects.fileBrowser.tooLarge')
         else if (existing.get(file.name)?.is_dir)
           reason = t('projects.fileBrowser.directoryConflict')
         else {
@@ -472,23 +568,72 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     }
   }
 
+  /** Copies a project-root Markdown image reference for the given file. */
+  async function copyMarkdownRef(node: ProjectFileTreeNode): Promise<void> {
+    if (node.is_dir) return
+    const reference = `![${node.name}](${node.path})`
+    const clipboard = typeof navigator === 'undefined' ? undefined : navigator.clipboard
+    if (!clipboard) {
+      notify.push(t('copyable.copyFailed'), 'warning')
+      return
+    }
+    try {
+      await clipboard.writeText(reference)
+      notify.push(t('projectFiles.markdownRefCopied'), 'success', 2000)
+    } catch {
+      notify.push(t('copyable.copyFailed'), 'warning')
+    }
+  }
+
   async function exportFile(format: ProjectFileExportFormat): Promise<void> {
     const file = selectedFile.value
-    if (!file || exportLoading.value) return
+    if (!file || file.kind !== 'text' || exportLoading.value) return
     const owner = generation
     exportLoading.value = true
+    exportPhase.value = 'preparing'
+    exportProgress.value = null
+    error.value = null
+    await nextTick()
+    if (owner !== generation) return
+    exportPhase.value = 'converting'
     try {
-      const blob = await api.exportProjectFile(projectId.value, {
-        file_path: file.filePath,
-        format,
-      })
+      const blob = await api.exportProjectFile(
+        projectId.value,
+        {
+          file_path: file.filePath,
+          format,
+        },
+        {
+          onResponse: () => {
+            if (owner === generation) exportPhase.value = 'transferring'
+          },
+          onProgress: (progress) => {
+            if (owner === generation) exportProgress.value = progress
+          },
+        },
+      )
       if (owner !== generation) return
       const extension = format === 'markdown' ? 'md' : format
       saveBlob(blob, `${file.filePath.split('/').pop()?.replace(/\.md$/i, '')}.${extension}`)
+      exportPhase.value = 'completed'
       notify.push(t('projects.fileExported', { format: format.toUpperCase() }), 'success', 2000)
     } catch (err) {
-      if (owner === generation)
-        error.value = err instanceof Error ? err.message : t('projects.errors.requestFailed')
+      if (owner === generation) {
+        exportPhase.value = 'failed'
+        error.value =
+          err instanceof ApiError && err.resourceIssues.length
+            ? t('projectFiles.exportResourcesInvalid') +
+              '\n' +
+              err.resourceIssues
+                .map(
+                  (issue) =>
+                    `${issue.reference}: ${t(`projectFiles.resourceReasons.${issue.reason}`)}`,
+                )
+                .join('\n')
+            : err instanceof Error
+              ? err.message
+              : t('projects.errors.requestFailed')
+      }
     } finally {
       if (owner === generation) exportLoading.value = false
     }
@@ -509,6 +654,8 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
       loading.value = false
       downloadLoading.value = false
       exportLoading.value = false
+      exportPhase.value = null
+      exportProgress.value = null
       error.value = null
       uploadResults.value = []
       void loadDirectory(root)
@@ -537,6 +684,8 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     newDirName,
     dirty,
     exportLoading,
+    exportPhase,
+    exportProgress,
     downloadLoading,
     uploadResults,
     breadcrumbs,
@@ -545,6 +694,7 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     navigateToDir,
     toggleDirectory,
     openFile,
+    openPath,
     startCreate,
     startCreateDir,
     confirmCreate,
@@ -555,6 +705,7 @@ export function useProjectFileBrowserController(projectId: Ref<string>) {
     deleteFile,
     uploadFiles,
     downloadFile,
+    copyMarkdownRef,
     exportFile,
     closeSelectedFile,
     ensureCanLeave,

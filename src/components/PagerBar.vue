@@ -51,8 +51,10 @@ function jumpToPage(): void {
     <div class="workspace-body">
       {{ t('common.pageSummary', { current: currentPage, total: totalPages, count: totalCount }) }}
     </div>
-    <div class="flex items-center gap-2">
-      <label class="workspace-muted text-xs">{{ t('common.rows') }}</label>
+    <div class="flex min-w-0 flex-wrap items-center gap-2">
+      <label class="workspace-muted shrink-0 text-xs whitespace-nowrap">{{
+        t('common.rows')
+      }}</label>
       <AppSelect
         :model-value="rowsPerPage"
         :options="rowsOptions.map((o) => ({ label: String(o), value: o }))"
@@ -68,7 +70,7 @@ function jumpToPage(): void {
         <span>{{ t('actions.next') }}</span>
         <ChevronRight class="h-3.5 w-3.5" />
       </AppButton>
-      <div class="ml-1 inline-flex items-center gap-1.5">
+      <div class="ml-1 inline-flex shrink-0 items-center gap-1.5">
         <input
           v-model="jumpInput"
           type="number"
