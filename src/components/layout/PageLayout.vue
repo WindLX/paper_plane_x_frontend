@@ -62,6 +62,9 @@ const compact = useMediaQuery('(max-width: 1023px)')
       >
         <div class="workspace-content-canvas flex h-full flex-col">
           <PageTopbar :title="props.title" :subtitle="props.subtitle">
+            <template v-if="$slots['topbar-title-suffix']" #title-suffix>
+              <slot name="topbar-title-suffix" />
+            </template>
             <template #actions><slot name="topbar-actions" /></template>
           </PageTopbar>
           <main

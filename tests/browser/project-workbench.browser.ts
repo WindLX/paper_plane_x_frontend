@@ -158,3 +158,88 @@ test('activity filters drive the request and rows expand into technical detail',
   await expect(page.getByText('task_completed', { exact: true })).toBeVisible()
   await expect(page.getByText('The linked task no longer exists')).toBeVisible()
 })
+
+test('project ID stays copyable in the topbar across tabs', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.goto('/projects/prj-test')
+  const copy = page.locator('header').getByRole('button', { name: 'prj-test', exact: true })
+  await expect(copy).toBeVisible()
+  await copy.click()
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('prj-test')
+  await page
+    .locator('#app-topbar-page-actions')
+    .getByRole('button', { name: 'Files', exact: true })
+    .click()
+  await expect(copy).toBeVisible()
+  await expect(copy).toHaveAttribute('title', 'Project ID: prj-test')
+})
+
+test('project IDs use available title width and truncate only when space runs out', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  const projectId = 'prj-0123456789abcdef0123456789abcdef'
+  await page.route(`**/api/v1/projects/${projectId}**`, async (route) => {
+    const body = new URL(route.request().url()).pathname.endsWith('/overview')
+      ? { ...overview, project_id: projectId }
+      : { ...project, project_id: projectId }
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) })
+  })
+  await page.goto(`/projects/${projectId}`)
+  const header = page.locator('header')
+  const copy = header.getByRole('button', { name: projectId, exact: true })
+  await expect(copy).toBeVisible()
+  await expect(copy).toHaveAttribute('title', `Project ID: ${projectId}`)
+  const titleBox = await header.getByRole('heading').boundingBox()
+  const copyBox = await copy.boundingBox()
+  expect(
+    Math.abs(titleBox!.y + titleBox!.height / 2 - copyBox!.y - copyBox!.height / 2),
+  ).toBeLessThan(2)
+  const idText = copy.locator('span')
+  expect(await idText.evaluate((element) => element.scrollWidth === element.clientWidth)).toBe(true)
+  expect((await header.boundingBox())!.height).toBeLessThanOrEqual(72)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(copy).toBeVisible()
+  expect(await idText.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true)
+  expect(
+    await header
+      .getByRole('heading')
+      .evaluate((element) => element.scrollWidth === element.clientWidth),
+  ).toBe(true)
+  expect((await copy.boundingBox())!.x + (await copy.boundingBox())!.width).toBeLessThanOrEqual(390)
+  await page.screenshot({ path: '/tmp/ppx-project-id-flex-390.png' })
+  await copy.click()
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(projectId)
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  expect(await idText.evaluate((element) => element.scrollWidth === element.clientWidth)).toBe(true)
+  await page.screenshot({ path: '/tmp/ppx-project-id-flex-1366.png' })
+})
+
+for (const width of [1920, 1366, 390]) {
+  for (const theme of ['light', 'dark']) {
+    test(`overview statistics lead the research content at ${width}px in ${theme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 1080 })
+      await page.addInitScript((theme) => localStorage.setItem('ppx-console-theme', theme), theme)
+      await page.goto('/projects/prj-test')
+      const stats = page.locator('.overview-stats')
+      const tags = page.getByRole('heading', { name: 'Top Tags' })
+      const attention = page.getByRole('heading', { name: 'Needs Attention' })
+      await expect(stats).toBeVisible()
+      await expect(tags).toBeVisible()
+      const statsBox = await stats.boundingBox()
+      const tagsBox = await tags.boundingBox()
+      const attentionBox = await attention.boundingBox()
+      expect(statsBox!.y + statsBox!.height).toBeLessThan(tagsBox!.y)
+      expect(tagsBox!.y).toBeLessThan(attentionBox!.y)
+      await expect(
+        page.locator('header').getByRole('button', { name: 'prj-test', exact: true }),
+      ).toBeVisible()
+      await page.screenshot({ path: `/tmp/ppx-project-header-${width}-${theme}.png` })
+    })
+  }
+}

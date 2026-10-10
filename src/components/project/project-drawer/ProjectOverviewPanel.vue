@@ -240,6 +240,75 @@ defineExpose({ ensureCanLeave })
           class="overview-stats xl:col-span-2"
         />
 
+        <!-- Project statistics precede research and recent records. -->
+        <div class="overview-card grid gap-4 md:grid-cols-2 xl:col-span-2">
+          <div class="min-w-0 space-y-3">
+            <h4 class="overview-card-heading">
+              <Tag class="text-ppx-accent h-4 w-4" />{{ t('workbench.overview.tags.title') }}
+            </h4>
+            <div
+              v-if="sectionError('top_tags')"
+              class="text-ppx-text-soft flex items-center justify-between gap-2 text-sm"
+            >
+              <span>{{ t('workbench.overview.sectionFailed') }}</span
+              ><AppButton size="xs" variant="outline" @click="emit('retry')">{{
+                t('actions.retry')
+              }}</AppButton>
+            </div>
+            <p v-else-if="!topTags.length" class="text-ppx-text-muted text-sm">
+              {{ t('workbench.overview.tags.empty') }}
+            </p>
+            <div v-else class="flex flex-wrap gap-2">
+              <span
+                v-for="tag in topTags"
+                :key="tag.tag"
+                class="border-ppx-border bg-ppx-bg-subtle text-ppx-text inline-flex max-w-full items-center gap-2 rounded-full border py-1.5 pr-1.5 pl-3 text-xs"
+              >
+                <span class="min-w-0 truncate">{{ tag.tag }}</span
+                ><span
+                  class="bg-ppx-accent-soft text-ppx-accent rounded-full px-2 py-0.5 font-semibold tabular-nums"
+                  >{{ tag.count }}</span
+                >
+              </span>
+            </div>
+          </div>
+          <div
+            class="border-ppx-border min-w-0 space-y-3 border-t pt-4 md:border-t-0 md:border-l md:pt-0 md:pl-4"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 class="overview-card-heading">
+                <Calendar class="text-ppx-accent h-4 w-4" />{{
+                  t('workbench.overview.years.title')
+                }}
+              </h4>
+              <span v-if="yearRange" class="text-ppx-text-muted text-xs tabular-nums">{{
+                yearRange
+              }}</span>
+            </div>
+            <div
+              v-if="sectionError('year_distribution')"
+              class="text-ppx-text-soft flex items-center justify-between gap-2 text-sm"
+            >
+              <span>{{ t('workbench.overview.sectionFailed') }}</span
+              ><AppButton size="xs" variant="outline" @click="emit('retry')">{{
+                t('actions.retry')
+              }}</AppButton>
+            </div>
+            <dl v-else-if="yearDistribution" class="grid grid-cols-2 gap-3">
+              <div
+                v-for="metric in yearMetrics"
+                :key="metric.key"
+                class="rounded-ppx-interactive border-ppx-border bg-ppx-bg-subtle border px-3 py-2.5"
+              >
+                <dt class="text-ppx-text-muted text-xs">{{ metric.label }}</dt>
+                <dd class="text-ppx-text mt-1 text-xl font-semibold tracking-tight tabular-nums">
+                  {{ metric.value }}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
         <!-- Attention -->
         <div class="overview-card space-y-4 xl:col-span-2">
           <h4 class="overview-card-heading">
@@ -501,71 +570,6 @@ defineExpose({ ensureCanLeave })
               </button>
             </li>
           </ul>
-        </div>
-
-        <!-- Auxiliary statistics keep their natural height. -->
-        <div class="overview-card space-y-4">
-          <h4 class="overview-card-heading">
-            <Tag class="text-ppx-accent h-4 w-4" />{{ t('workbench.overview.tags.title') }}
-          </h4>
-          <div
-            v-if="sectionError('top_tags')"
-            class="text-ppx-text-soft flex items-center justify-between gap-2 text-sm"
-          >
-            <span>{{ t('workbench.overview.sectionFailed') }}</span
-            ><AppButton size="xs" variant="outline" @click="emit('retry')">{{
-              t('actions.retry')
-            }}</AppButton>
-          </div>
-          <p v-else-if="!topTags.length" class="text-ppx-text-muted text-sm">
-            {{ t('workbench.overview.tags.empty') }}
-          </p>
-          <div v-else class="flex flex-wrap gap-2">
-            <span
-              v-for="tag in topTags"
-              :key="tag.tag"
-              class="border-ppx-border bg-ppx-bg-subtle text-ppx-text inline-flex max-w-full items-center gap-2 rounded-full border py-1.5 pr-1.5 pl-3 text-xs"
-            >
-              <span class="min-w-0 truncate">{{ tag.tag }}</span
-              ><span
-                class="bg-ppx-accent-soft text-ppx-accent rounded-full px-2 py-0.5 font-semibold tabular-nums"
-                >{{ tag.count }}</span
-              >
-            </span>
-          </div>
-          <div class="border-ppx-border space-y-3 border-t pt-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <h4 class="overview-card-heading">
-                <Calendar class="text-ppx-accent h-4 w-4" />{{
-                  t('workbench.overview.years.title')
-                }}
-              </h4>
-              <span v-if="yearRange" class="text-ppx-text-muted text-xs tabular-nums">{{
-                yearRange
-              }}</span>
-            </div>
-            <div
-              v-if="sectionError('year_distribution')"
-              class="text-ppx-text-soft flex items-center justify-between gap-2 text-sm"
-            >
-              <span>{{ t('workbench.overview.sectionFailed') }}</span
-              ><AppButton size="xs" variant="outline" @click="emit('retry')">{{
-                t('actions.retry')
-              }}</AppButton>
-            </div>
-            <dl v-else-if="yearDistribution" class="grid grid-cols-2 gap-3">
-              <div
-                v-for="metric in yearMetrics"
-                :key="metric.key"
-                class="rounded-ppx-interactive border-ppx-border bg-ppx-bg-subtle border px-3 py-2.5"
-              >
-                <dt class="text-ppx-text-muted text-xs">{{ metric.label }}</dt>
-                <dd class="text-ppx-text mt-1 text-xl font-semibold tracking-tight tabular-nums">
-                  {{ metric.value }}
-                </dd>
-              </div>
-            </dl>
-          </div>
         </div>
       </div>
     </div>

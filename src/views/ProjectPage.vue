@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
 import PageLayout from '@/components/layout/PageLayout.vue'
+import CopyableText from '@/components/CopyableText.vue'
 import SlidePanel from '@/components/layout/SlidePanel.vue'
 import PaperPdfReader from '@/components/paper/PaperPdfReader.vue'
 import ProjectActivityView from '@/components/project/ProjectActivityView.vue'
@@ -118,6 +119,16 @@ watch(
       no-padding
       @close-drawer="ctrl.closeDrawer"
     >
+      <template #topbar-title-suffix>
+        <span class="inline-flex min-w-9">
+          <CopyableText
+            :text="props.projectId"
+            mono
+            class="[&>span]:truncate"
+            :title="`${t('projects.projectId')}: ${props.projectId}`"
+          />
+        </span>
+      </template>
       <template #topbar-actions>
         <ProjectTopbarDrawer
           :project="ctrl.project"

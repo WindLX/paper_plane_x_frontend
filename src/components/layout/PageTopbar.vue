@@ -27,14 +27,21 @@ const uiStore = useUiStore()
         >
           <Menu class="h-4 w-4" />
         </button>
-        <div class="min-w-0">
-          <h1 class="text-ppx-text truncate text-xl font-semibold tracking-tight">
-            {{ props.title }}
-          </h1>
+        <div class="min-w-0 flex-1">
+          <div class="flex min-w-0 items-center gap-2">
+            <!-- Keep the name first; reserve 36px for the suffix control and 8px for the gap. -->
+            <h1
+              class="text-ppx-text min-w-0 truncate text-xl font-semibold tracking-tight"
+              :class="$slots['title-suffix'] ? 'max-w-[calc(100%-2.75rem)] shrink-0' : ''"
+            >
+              {{ props.title }}
+            </h1>
+            <slot name="title-suffix" />
+          </div>
           <p v-if="props.subtitle" class="text-ppx-text-muted mt-0.5 truncate text-xs">
             {{ props.subtitle }}
           </p>
-          <div class="mt-1">
+          <div v-if="$slots['title-meta']" class="mt-1">
             <slot name="title-meta" />
           </div>
         </div>
